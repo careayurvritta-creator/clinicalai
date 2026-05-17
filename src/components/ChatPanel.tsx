@@ -15,7 +15,7 @@ export function ChatPanel() {
   }, [messages])
 
   return (
-    <div className="flex flex-col h-full bg-panel-chat border-r border-border">
+    <div className="flex flex-col h-full bg-panel-chat border-r border-border min-w-[280px]">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <h2 className="text-sm font-semibold text-foreground">Chat</h2>
         <span className="text-xs text-muted-foreground">

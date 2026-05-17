@@ -13,7 +13,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} animate-fade-in`}>
       <div
-        className={`max-w-[90%] rounded-2xl px-4 py-3 ${
+        className={`max-w-full rounded-2xl px-4 py-3 ${
           isUser
             ? 'bg-chat-user text-foreground rounded-br-md'
             : 'bg-chat-ai border border-border text-foreground rounded-bl-md'
