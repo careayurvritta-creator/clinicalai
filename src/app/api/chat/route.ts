@@ -43,6 +43,13 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    if (error instanceof Error && error.message.includes('NVIDIA_API_KEY')) {
+      return NextResponse.json(
+        { error: 'API key not configured. Set NVIDIA_API_KEY in environment variables.' },
+        { status: 500 }
+      )
+    }
+
     const message = error instanceof Error ? error.message : 'Internal server error'
     return NextResponse.json({ error: message }, { status: 500 })
   }
