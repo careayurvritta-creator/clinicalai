@@ -136,6 +136,7 @@ export function ChatInput() {
       let fullContent = ''
       let buffer = ''
       let chunkCount = 0
+      let sampleData = ''
 
       while (true) {
         const { done, value } = await reader.read()
@@ -150,11 +151,28 @@ export function ChatInput() {
           const trimmed = line.trim()
           if (!trimmed.startsWith('data:')) continue
           const data = trimmed.slice(5).trim()
-          if (!data || data === '[DONE]') continue
+          
+          if (data === '[DONE]') {
+            console.log('[Chat] Received [DONE]')
+            continue
+          }
+          if (!data) continue
+
+          // Save first non-empty data for debugging
+          if (!sampleData && data.length < 500) {
+            sampleData = data
+          }
 
           try {
             const json = JSON.parse(data)
-            const content = json.choices?.[0]?.delta?.content ?? ''
+            // Try multiple possible paths for content
+            const content = 
+              json.choices?.[0]?.delta?.content ?? 
+              json.choices?.[0]?.delta?.text ??
+              json.choices?.[0]?.message?.content ??
+              json.content ??
+              json.text ??
+              ''
             if (content) {
               fullContent += content
               updateLastMessage(fullContent, 'streaming')
@@ -165,7 +183,11 @@ export function ChatInput() {
         }
       }
 
-      console.log('[Chat] Stream complete:', { chunks: chunkCount, contentLength: fullContent.length })
+      console.log('[Chat] Stream complete:', { 
+        chunks: chunkCount, 
+        contentLength: fullContent.length,
+        sampleData: sampleData.substring(0, 300)
+      })
 
       if (!fullContent.trim()) {
         throw new Error('AI returned empty response. Check NVIDIA_API_KEY in Vercel settings.')

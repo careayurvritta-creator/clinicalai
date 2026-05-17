@@ -29,7 +29,24 @@ export async function POST(req: NextRequest) {
 
     console.log('[Chat API] Stream created successfully')
 
-    return new Response(stream.toReadableStream() as any, {
+    const encoder = new TextEncoder()
+    const readable = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of stream) {
+            const data = JSON.stringify(chunk)
+            controller.enqueue(encoder.encode(`data: ${data}\n\n`))
+          }
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'))
+          controller.close()
+        } catch (err) {
+          console.error('[Chat API] Stream error:', err)
+          controller.error(err)
+        }
+      },
+    })
+
+    return new Response(readable, {
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache, no-transform',
