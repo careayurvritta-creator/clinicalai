@@ -113,11 +113,15 @@ export function ChatInput() {
 
       const body: any = { messages: apiMessages, model: selectedModel }
 
+      console.log('[Chat] Sending request:', { model: selectedModel, messageCount: apiMessages.length })
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
+
+      console.log('[Chat] Response status:', response.status)
 
       if (!response.ok) {
         const errorBody = await response.json().catch(() => null)
@@ -131,11 +135,13 @@ export function ChatInput() {
       const decoder = new TextDecoder()
       let fullContent = ''
       let buffer = ''
+      let chunkCount = 0
 
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
 
+        chunkCount++
         buffer += decoder.decode(value, { stream: true })
         const lines = buffer.split(/\r?\n/)
         buffer = lines.pop() || ''
@@ -159,8 +165,10 @@ export function ChatInput() {
         }
       }
 
+      console.log('[Chat] Stream complete:', { chunks: chunkCount, contentLength: fullContent.length })
+
       if (!fullContent.trim()) {
-        throw new Error('AI returned an empty response. Check your API key in Vercel settings.')
+        throw new Error('AI returned empty response. Check NVIDIA_API_KEY in Vercel settings.')
       }
 
       updateLastMessage(fullContent, 'complete')

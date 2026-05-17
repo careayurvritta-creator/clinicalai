@@ -18,12 +18,16 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { messages, model } = chatRequestSchema.parse(body)
 
+    console.log('[Chat API] Request received:', { model, messageCount: messages.length })
+
     const systemMessages = [
       { role: 'system' as const, content: SYSTEM_PROMPT },
       ...messages,
     ]
 
     const stream = await createChatStream(systemMessages as any, model)
+
+    console.log('[Chat API] Stream created successfully')
 
     return new Response(stream.toReadableStream() as any, {
       headers: {
@@ -34,7 +38,7 @@ export async function POST(req: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('Chat API error:', error)
+    console.error('[Chat API] Error:', error)
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -45,7 +49,7 @@ export async function POST(req: NextRequest) {
 
     if (error instanceof Error && error.message.includes('NVIDIA_API_KEY')) {
       return NextResponse.json(
-        { error: 'API key not configured. Set NVIDIA_API_KEY in environment variables.' },
+        { error: 'API key not configured. Set NVIDIA_API_KEY in Vercel environment variables.' },
         { status: 500 }
       )
     }
