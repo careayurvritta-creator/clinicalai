@@ -43,7 +43,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
           </div>
         )}
 
-        <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
+        <div className="text-sm leading-relaxed whitespace-pre-wrap break-words overflow-wrap-anywhere min-w-0">
           {message.content || (message.status === 'streaming' && (
             <span className="inline-block w-2 h-4 bg-primary animate-blink ml-0.5" />
           ))}

@@ -193,7 +193,7 @@ export function ChatInput() {
   }, [input])
 
   return (
-    <div {...getRootProps()} className="border-t border-border">
+    <div {...getRootProps()} className="border-t border-border flex-shrink-0">
       <input {...getInputProps()} />
 
       {attachments.length > 0 && (
