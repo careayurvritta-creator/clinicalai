@@ -137,13 +137,14 @@ export function ChatInput() {
         if (done) break
 
         buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split('\n')
+        const lines = buffer.split(/\r?\n/)
         buffer = lines.pop() || ''
 
         for (const line of lines) {
-          if (!line.startsWith('data: ')) continue
-          const data = line.slice(6)
-          if (data === '[DONE]') continue
+          const trimmed = line.trim()
+          if (!trimmed.startsWith('data:')) continue
+          const data = trimmed.slice(5).trim()
+          if (!data || data === '[DONE]') continue
 
           try {
             const json = JSON.parse(data)
@@ -156,6 +157,10 @@ export function ChatInput() {
             // Skip malformed chunks
           }
         }
+      }
+
+      if (!fullContent.trim()) {
+        throw new Error('AI returned an empty response. Check your API key in Vercel settings.')
       }
 
       updateLastMessage(fullContent, 'complete')
@@ -172,7 +177,7 @@ export function ChatInput() {
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
     }
@@ -290,7 +295,7 @@ export function ChatInput() {
 
         <div className="flex items-center justify-between mt-2 px-1">
           <span className="text-[10px] text-muted-foreground/40">
-            Ctrl+Enter to send
+            Enter to send, Shift+Enter for new line
           </span>
           <ModelSelector />
         </div>
