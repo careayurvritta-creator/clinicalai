@@ -37,7 +37,7 @@ export const HERBS: Herb[] = [
     indications: ['Stress', 'Anxiety', 'Fatigue', 'Arthritis', 'Insomnia', 'Low immunity', 'Muscle weakness'],
     dosage: '3-6g powder, 1-2 tsp decoction',
     contraindications: ['Pregnancy', 'Autoimmune conditions', 'Thyroid disorders'],
-    interactions: 'May potentiate sedatives, thyroid medications, immunosuppressants',
+    interactions: ['May potentiate sedatives', 'May affect thyroid medications', 'May interact with immunosuppressants'],
     partUsed: ['Root', 'Leaf'],
     preparation: ['Churna (powder)', 'Kwath (decoction)', 'Ghrita', 'Taila']
   },
@@ -57,7 +57,7 @@ export const HERBS: Herb[] = [
     indications: ['Inflammation', 'Arthritis', 'Digestion', 'Skin diseases', 'Wound healing', 'Detoxification', 'Liver disorders'],
     dosage: '1-3g powder',
     contraindications: ['Gallbladder obstruction', 'Bleeding disorders'],
-    interactions: 'May increase bleeding risk with anticoagulants, may interact with antacids',
+    interactions: ['May increase bleeding risk with anticoagulants', 'May interact with antacids'],
     partUsed: ['Rhizome'],
     preparation: ['Churna', 'Kwath', 'Ghrita', 'Taila', 'Fresh juice']
   },
@@ -77,7 +77,7 @@ export const HERBS: Herb[] = [
     indications: ['Digestion', 'Nausea', 'Cold', 'Cough', 'Pain', 'Inflammation'],
     dosage: '1-3g fresh, 0.5-1g powder',
     contraindications: ['Ulcers', 'Gallstones', 'Bleeding disorders'],
-    interactions: 'May increase bleeding risk with anticoagulants, may affect blood pressure',
+    interactions: ['May increase bleeding risk with anticoagulants', 'May affect blood pressure'],
     partUsed: ['Rhizome'],
     preparation: ['Fresh juice', 'Churna', 'Kwath', 'Shunti']
   },
@@ -97,7 +97,7 @@ export const HERBS: Herb[] = [
     indications: ['Constipation', 'Digestion', 'Detoxification', 'Rejuvenation', 'Weight loss', 'Eye health'],
     dosage: '3-6g at bedtime',
     contraindications: ['Pregnancy', 'Severe dehydration'],
-    interactions: 'May potentiate other laxatives, may affect drug absorption',
+    interactions: ['May potentiate other laxatives', 'May affect drug absorption'],
     partUsed: ['Fruit'],
     preparation: ['Churna', 'Vati', 'Ghrita']
   },
@@ -117,7 +117,7 @@ export const HERBS: Herb[] = [
     indications: ['Cholesterol', 'Arthritis', 'Obesity', 'Skin diseases', 'Detoxification', 'Wound healing'],
     dosage: '1-3g twice daily',
     contraindications: ['Pregnancy', 'Kidney disease', 'Thyroid disorders'],
-    interactions: 'May potentiate anticoagulants, thyroid medications, may affect lipid-lowering drugs',
+    interactions: ['May potentiate anticoagulants', 'May affect thyroid medications', 'May affect lipid-lowering drugs'],
     partUsed: ['Gum resin'],
     preparation: ['Churna', 'Vati', 'Taila', 'Ghrita']
   },
@@ -137,7 +137,7 @@ export const HERBS: Herb[] = [
     indications: ['Cough', 'Asthma', 'Digestion', 'Fever', 'Rejuvenation', 'Fertility'],
     dosage: '1-3g powder',
     contraindications: ['High fever', 'Bleeding disorders'],
-    interactions: 'May affect bioavailability of other drugs',
+    interactions: ['May affect bioavailability of other drugs'],
     partUsed: ['Fruit'],
     preparation: ['Churna', 'Kwath', 'Ghrita', 'Chyawanprash']
   },
@@ -157,7 +157,7 @@ export const HERBS: Herb[] = [
     indications: ['Female reproductive health', 'Lactation', 'Menopause', 'Digestion', 'Immunity', 'Stress'],
     dosage: '3-6g powder',
     contraindications: 'None significant',
-    interactions: 'May affect estrogen levels, may interact with diuretics (electrolyte imbalance)',
+    interactions: ['May affect estrogen levels', 'May interact with diuretics (electrolyte imbalance)'],
     partUsed: ['Root'],
     preparation: ['Churna', 'Kwath', 'Ghrita', 'Asava']
   },
@@ -177,7 +177,7 @@ export const HERBS: Herb[] = [
     indications: ['Skin diseases', 'Detoxification', 'Diabetes', 'Infection', 'Fever', 'Dental health'],
     dosage: '2-4g powder, 10-20ml juice',
     contraindications: ['Pregnancy', 'Kidney disease'],
-    interactions: 'May potentiate diabetes medications, may affect liver function',
+    interactions: ['May potentiate diabetes medications', 'May affect liver function'],
     partUsed: ['Leaf', 'Bark', 'Seed'],
     preparation: ['Churna', 'Kwath', 'Taila', 'Ghanavati']
   },
@@ -197,7 +197,7 @@ export const HERBS: Herb[] = [
     indications: ['Memory', 'Anxiety', 'ADHD', 'Stress', 'Epilepsy', 'Skin diseases'],
     dosage: '2-4g powder',
     contraindications: ['Epilepsy', 'Thyroid disorders'],
-    interactions: 'May potentiate sedatives, anticonvulsants, thyroid medications',
+    interactions: ['May potentiate sedatives', 'May affect anticonvulsants', 'May affect thyroid medications'],
     partUsed: ['Whole plant'],
     preparation: ['Churna', 'Kwath', 'Ghrita', 'Taila']
   },
@@ -217,7 +217,7 @@ export const HERBS: Herb[] = [
     indications: ['Immunity', 'Digestion', 'Hair health', 'Skin', 'Liver', 'Vision', 'Rejuvenation'],
     dosage: '3-6g powder, 10-20ml juice',
     contraindications: 'None significant',
-    interactions: 'May enhance iron absorption, may affect blood sugar',
+    interactions: ['May enhance iron absorption', 'May affect blood sugar'],
     partUsed: ['Fruit'],
     preparation: ['Churna', 'Rasayana', 'Chyawanprash', 'Triphala']
   },
@@ -237,7 +237,7 @@ export const HERBS: Herb[] = [
     indications: ['Heart disease', 'High blood pressure', 'Chest pain', 'Heart failure', 'Wound healing'],
     dosage: '3-6g powder, 20-40ml decoction',
     contraindications: 'None significant',
-    interactions: 'May potentiate beta-blockers, anticoagulants',
+    interactions: ['May potentiate beta-blockers', 'May potentiate anticoagulants'],
     partUsed: ['Bark'],
     preparation: ['Churna', 'Kwath', 'Arishta']
   },
@@ -257,7 +257,7 @@ export const HERBS: Herb[] = [
     indications: ['Fever', 'Immunity', 'Diabetes', 'Digestion', 'Skin diseases', 'Autoimmune'],
     dosage: '3-6g powder, 10-20ml juice',
     contraindications: 'None significant',
-    interactions: 'May affect autoimmune conditions, may interact with immunosuppressants',
+    interactions: ['May affect autoimmune conditions', 'May interact with immunosuppressants'],
     partUsed: ['Stem'],
     preparation: ['Churna', 'Kwath', 'Ghrita', 'Taila']
   },
@@ -277,7 +277,7 @@ export const HERBS: Herb[] = [
     indications: ['Muscle weakness', 'Fatigue', 'Nervous system', 'Fertility', 'Urinary disorders'],
     dosage: '3-6g powder',
     contraindications: 'None significant',
-    interactions: 'May have CNS depressant effects',
+    interactions: ['May have CNS depressant effects'],
     partUsed: ['Root', 'Whole plant'],
     preparation: ['Churna', 'Kwath', 'Ghrita']
   },
@@ -297,7 +297,7 @@ export const HERBS: Herb[] = [
     indications: ['Diarrhea', 'Digestion', 'Fever', 'Menstrual disorders', 'Skin diseases'],
     dosage: '3-6g powder',
     contraindications: 'None significant',
-    interactions: 'None known',
+    interactions: ['None known'],
     partUsed: ['Tuber'],
     preparation: ['Churna', 'Kwath']
   },
@@ -317,7 +317,7 @@ export const HERBS: Herb[] = [
     indications: ['Skin diseases', 'Fever', 'Burns', 'Inflammation', 'Anxiety'],
     dosage: '1-3g powder',
     contraindications: 'None significant',
-    interactions: 'None significant',
+    interactions: ['None significant'],
     partUsed: ['Heartwood'],
     preparation: ['Churna', 'Taila', 'Ghrita', 'Paste']
   }
