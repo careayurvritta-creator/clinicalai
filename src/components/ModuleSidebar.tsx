@@ -70,7 +70,7 @@ export function ModuleSidebar() {
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="absolute top-1/2 -translate-y-1/2 z-10 w-5 h-12 bg-panel-chat border border-border rounded-r-lg flex items-center justify-center hover:bg-primary/10 transition-colors"
-        style={{ left: isExpanded ? '272px' : '-20px' }}
+        style={{ left: 0 }}
       >
         <svg
           className={`w-3 h-3 text-muted-foreground transition-transform duration-300 ${isExpanded ? '' : 'rotate-180'}`}
