@@ -58,7 +58,7 @@ export async function vectorSearch(
 
     // Search herbs
     for (const herb of AYURVEDA_KNOWLEDGE.herbs || []) {
-      const searchText = `${herb.name} ${herb.sanskrit} ${herb.indications.join(' ')} ${herb.properties.join(' ')}`.toLowerCase()
+      const searchText = `${herb.name} ${herb.sanskrit} ${herb.indications.join(' ')} ${herb.guna.join(' ')}`.toLowerCase()
       if (searchText.includes(lowerQuery)) {
         const id = herb.name.toLowerCase()
         if (!seen.has(id)) {
@@ -66,7 +66,7 @@ export async function vectorSearch(
           results.push({
             id,
             type: 'ayur_knowledge',
-            content: `${herb.name} (${herb.sanskrit})\nIndications: ${herb.indications.slice(0, 5).join(', ')}\nProperties: ${herb.properties.join(', ')}`,
+            content: `${herb.name} (${herb.sanskrit})\nIndications: ${herb.indications.slice(0, 5).join(', ')}\nGuna: ${herb.guna.join(', ')}`,
             source: herb.name,
             category: 'Herb',
             relevance: searchText.split(lowerQuery).length,
