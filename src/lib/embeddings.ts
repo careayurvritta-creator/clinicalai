@@ -1,52 +1,17 @@
-import { createChatStream } from './nvidia-client'
-
-const EMBEDDING_MODEL = 'nvidia/nv-embed-qa-1b'
-
 export interface EmbeddingResult {
   embedding: number[]
   tokens: number
 }
 
+// Fast hash-based embedding - no API calls needed
 export async function generateEmbedding(text: string): Promise<EmbeddingResult> {
-  try {
-    // Use NVIDIA NIM to generate embeddings via chat completion
-    // For production, use a proper embedding model
-    // Here we use a workaround - ask the LLM to summarize text for embedding
-    const summaryPrompt = `Create a concise semantic summary (under 100 words) of this Ayurvedic text for similarity search. Focus on key terms, concepts, and relationships: "${text}"`
-    
-    const messages = [
-      { role: 'user', content: summaryPrompt }
-    ]
-    
-    const stream = await createChatStream(messages, 'meta/llama-3.3-70b-instruct')
-    
-    let summary = ''
-    for await (const chunk of stream) {
-      if (chunk.content) {
-        summary += chunk.content
-      }
-    }
-    
-    // Generate embedding from the summary
-    // In production, use a dedicated embedding model like nvidia/nv-embed-qa-1b
-    const embedding = await simpleTextToEmbedding(summary || text)
-    
-    return {
-      embedding,
-      tokens: Math.ceil((summary || text).length / 4)
-    }
-  } catch (error) {
-    console.error('[Embeddings] Error generating embedding:', error)
-    // Fallback to simple hash-based embedding
-    return {
-      embedding: simpleTextToEmbedding(text),
-      tokens: Math.ceil(text.length / 4)
-    }
+  return {
+    embedding: simpleTextToEmbedding(text),
+    tokens: Math.ceil(text.length / 4)
   }
 }
 
 // Simple text to embedding vector using word hashing
-// This is a fallback - in production use proper embeddings
 function simpleTextToEmbedding(text: string): number[] {
   const embedding: number[] = new Array(384).fill(0)
   
@@ -71,7 +36,6 @@ function simpleTextToEmbedding(text: string): number[] {
   }
   
   // Map to fixed-size vector using hash
-  let idx = 0
   for (const [token, count] of ngrams) {
     const hash = hashString(token)
     const position = hash % 384
@@ -104,14 +68,10 @@ function hashString(str: string): number {
 }
 
 export async function generateBatchEmbeddings(texts: string[]): Promise<EmbeddingResult[]> {
-  const results: EmbeddingResult[] = []
-  
-  for (const text of texts) {
-    const result = await generateEmbedding(text)
-    results.push(result)
-  }
-  
-  return results
+  return texts.map(text => ({
+    embedding: simpleTextToEmbedding(text),
+    tokens: Math.ceil(text.length / 4)
+  }))
 }
 
 // Cosine similarity between two vectors

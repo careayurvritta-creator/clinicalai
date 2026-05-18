@@ -157,6 +157,7 @@ Key classical references available:
 - Include Sanskrit terms with English explanations
 - Provide Dosha analysis for each condition
 - Include Pathya (recommended) and Apathya (avoid) dietary advice
+- **ALWAYS cite sources** - Reference WHO ITA codes (e.g., ITA-2.1.1) and Charak Samhita chapters when providing information
 - End with appropriate disclaimer`
 
 export interface UserProfile {
