@@ -18,7 +18,7 @@ export function ChatPanel() {
   return (
     <div className="flex h-full w-full">
       <ModuleSidebar />
-      <div className="flex flex-col flex-1 h-full bg-panel-chat">
+      <div className="flex flex-col flex-1 h-full">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
           <h2 className="text-sm font-semibold text-foreground">Chat</h2>
           <span className="text-xs text-muted-foreground">

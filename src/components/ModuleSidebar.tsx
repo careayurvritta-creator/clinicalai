@@ -66,14 +66,14 @@ export function ModuleSidebar() {
   const [isExpanded, setIsExpanded] = useState(true)
 
   return (
-    <div className="relative flex flex-col bg-panel-chat border-r border-border h-full flex-shrink-0">
+    <div className="relative flex h-full">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="absolute top-1/2 -translate-y-1/2 z-10 w-5 h-12 bg-panel-chat border border-border rounded-r-lg flex items-center justify-center hover:bg-primary/10 transition-colors"
-        style={{ left: 0 }}
+        style={{ left: isExpanded ? '268px' : '0px' }}
       >
         <svg
-          className={`w-3 h-3 text-muted-foreground transition-transform duration-300 ${isExpanded ? '' : 'rotate-180'}`}
+          className={`w-3 h-3 text-muted-foreground transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -82,7 +82,7 @@ export function ModuleSidebar() {
         </svg>
       </button>
 
-      <div className={`flex flex-col h-full overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'w-72' : 'w-0'}`}>
+      <div className={`flex flex-col h-full overflow-hidden transition-all duration-300 ease-in-out bg-panel-chat border-r border-border ${isExpanded ? 'w-64' : 'w-0'}`}>
         <div className="flex-shrink-0 border-b border-border">
           <div className="flex items-center justify-between px-4 py-3">
             <h3 className="text-sm font-semibold text-foreground">Modules</h3>

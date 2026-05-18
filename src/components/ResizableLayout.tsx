@@ -8,7 +8,7 @@ interface ResizableLayoutProps {
 }
 
 export function ResizableLayout({ chatPanel, canvasPanel }: ResizableLayoutProps) {
-  const [chatWidth, setChatWidth] = useState(380)
+  const [chatWidth, setChatWidth] = useState(450)
   const containerRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
 
@@ -21,7 +21,7 @@ export function ResizableLayout({ chatPanel, canvasPanel }: ResizableLayoutProps
     const handleMouseMove = (e: MouseEvent) => {
       if (!isDragging.current || !containerRef.current) return
       const rect = containerRef.current.getBoundingClientRect()
-      const newWidth = Math.max(300, Math.min(600, e.clientX - rect.left))
+      const newWidth = Math.max(300, Math.min(700, e.clientX - rect.left))
       setChatWidth(newWidth)
     }
 
@@ -39,7 +39,12 @@ export function ResizableLayout({ chatPanel, canvasPanel }: ResizableLayoutProps
 
   return (
     <div ref={containerRef} className="flex h-full w-full">
-      {chatPanel}
+      <div
+        className="flex flex-col flex-shrink-0 border-r border-border bg-panel-chat"
+        style={{ width: chatWidth, minWidth: 300, maxWidth: 700 }}
+      >
+        {chatPanel}
+      </div>
 
       <div
         className="w-1 bg-border hover:bg-primary/50 transition-colors cursor-col-resize flex-shrink-0 relative group"
