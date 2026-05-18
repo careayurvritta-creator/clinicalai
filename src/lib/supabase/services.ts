@@ -1,7 +1,4 @@
 import { supabase } from './client'
-import type { Database } from './database.types'
-
-type Tables = Database['public']['Tables']
 
 // ============================================
 // PROFILES
@@ -14,7 +11,7 @@ export async function getProfile(userId: string) {
     .single()
 }
 
-export async function updateProfile(userId: string, data: Tables['profiles']['Update']) {
+export async function updateProfile(userId: string, data: Record<string, unknown>) {
   return supabase
     .from('profiles')
     .update(data)
@@ -43,7 +40,7 @@ export async function getPatient(patientId: string) {
     .single()
 }
 
-export async function createPatient(data: Tables['patients']['Insert']) {
+export async function createPatient(data: Record<string, unknown>) {
   return supabase
     .from('patients')
     .insert(data)
@@ -51,7 +48,7 @@ export async function createPatient(data: Tables['patients']['Insert']) {
     .single()
 }
 
-export async function updatePatient(patientId: string, data: Tables['patients']['Update']) {
+export async function updatePatient(patientId: string, data: Record<string, unknown>) {
   return supabase
     .from('patients')
     .update(data)
@@ -104,7 +101,7 @@ export async function getCase(caseId: string) {
     .single()
 }
 
-export async function createCase(data: Tables['cases']['Insert']) {
+export async function createCase(data: Record<string, unknown>) {
   return supabase
     .from('cases')
     .insert(data)
@@ -112,7 +109,7 @@ export async function createCase(data: Tables['cases']['Insert']) {
     .single()
 }
 
-export async function updateCase(caseId: string, data: Tables['cases']['Update']) {
+export async function updateCase(caseId: string, data: Record<string, unknown>) {
   return supabase
     .from('cases')
     .update(data)
@@ -140,7 +137,7 @@ export async function getChiefComplaints(caseId: string) {
     .order('created_at')
 }
 
-export async function createChiefComplaint(data: Tables['chief_complaints']['Insert']) {
+export async function createChiefComplaint(data: Record<string, unknown>) {
   return supabase
     .from('chief_complaints')
     .insert(data)
@@ -159,7 +156,7 @@ export async function getInvestigationFindings(caseId: string) {
     .order('report_date', { ascending: false })
 }
 
-export async function createInvestigationFinding(data: Tables['investigation_findings']['Insert']) {
+export async function createInvestigationFinding(data: Record<string, unknown>) {
   return supabase
     .from('investigation_findings')
     .insert(data)
@@ -183,7 +180,7 @@ export async function getTreatmentProtocols(caseId: string) {
     .order('protocol_version', { ascending: false })
 }
 
-export async function createTreatmentProtocol(data: Tables['treatment_protocols']['Insert']) {
+export async function createTreatmentProtocol(data: Record<string, unknown>) {
   return supabase
     .from('treatment_protocols')
     .insert(data)
@@ -191,7 +188,7 @@ export async function createTreatmentProtocol(data: Tables['treatment_protocols'
     .single()
 }
 
-export async function updateTreatmentProtocol(protocolId: string, data: Tables['treatment_protocols']['Update']) {
+export async function updateTreatmentProtocol(protocolId: string, data: Record<string, unknown>) {
   return supabase
     .from('treatment_protocols')
     .update(data)
@@ -211,7 +208,7 @@ export async function getCaseOutcomes(caseId: string) {
     .order('follow_up_date', { ascending: false })
 }
 
-export async function createCaseOutcome(data: Tables['case_outcomes']['Insert']) {
+export async function createCaseOutcome(data: Record<string, unknown>) {
   return supabase
     .from('case_outcomes')
     .insert(data)
@@ -230,7 +227,7 @@ export async function getCaseLearnings(caseId: string) {
     .order('created_at', { ascending: false })
 }
 
-export async function createCaseLearning(data: Tables['case_learnings']['Insert']) {
+export async function createCaseLearning(data: Record<string, unknown>) {
   return supabase
     .from('case_learnings')
     .insert(data)
@@ -257,7 +254,7 @@ export async function getConversation(sessionId: string) {
     .single()
 }
 
-export async function createConversation(data: Tables['conversations']['Insert']) {
+export async function createConversation(data: Record<string, unknown>) {
   return supabase
     .from('conversations')
     .insert(data)
@@ -265,7 +262,7 @@ export async function createConversation(data: Tables['conversations']['Insert']
     .single()
 }
 
-export async function updateConversation(conversationId: string, data: Tables['conversations']['Update']) {
+export async function updateConversation(conversationId: string, data: Record<string, unknown>) {
   return supabase
     .from('conversations')
     .update(data)
@@ -285,7 +282,7 @@ export async function getMessages(conversationId: string) {
     .order('created_at', { ascending: true })
 }
 
-export async function createMessage(data: Tables['messages']['Insert']) {
+export async function createMessage(data: Record<string, unknown>) {
   return supabase
     .from('messages')
     .insert(data)
@@ -293,7 +290,7 @@ export async function createMessage(data: Tables['messages']['Insert']) {
     .single()
 }
 
-export async function updateMessage(messageId: string, data: Tables['messages']['Update']) {
+export async function updateMessage(messageId: string, data: Record<string, unknown>) {
   return supabase
     .from('messages')
     .update(data)
@@ -317,7 +314,7 @@ export async function getAttachments(caseId?: string, conversationId?: string) {
   return query
 }
 
-export async function createAttachment(data: Tables['attachments']['Insert']) {
+export async function createAttachment(data: Record<string, unknown>) {
   return supabase
     .from('attachments')
     .insert(data)
@@ -336,7 +333,7 @@ export async function getIntakeSession(sessionId: string) {
     .single()
 }
 
-export async function createIntakeSession(data: Tables['intake_sessions']['Insert']) {
+export async function createIntakeSession(data: Record<string, unknown>) {
   return supabase
     .from('intake_sessions')
     .insert(data)
@@ -344,7 +341,7 @@ export async function createIntakeSession(data: Tables['intake_sessions']['Inser
     .single()
 }
 
-export async function updateIntakeSession(sessionId: string, data: Tables['intake_sessions']['Update']) {
+export async function updateIntakeSession(sessionId: string, data: Record<string, unknown>) {
   return supabase
     .from('intake_sessions')
     .update(data)
