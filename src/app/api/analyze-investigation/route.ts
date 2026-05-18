@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Invalid request', details: error.errors }, { status: 400 })
+      return NextResponse.json({ error: 'Invalid request', details: error.issues }, { status: 400 })
     }
     return NextResponse.json({ error: 'Failed to analyze investigation' }, { status: 500 })
   }
