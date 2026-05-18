@@ -39,12 +39,7 @@ export function ResizableLayout({ chatPanel, canvasPanel }: ResizableLayoutProps
 
   return (
     <div ref={containerRef} className="flex h-full w-full">
-      <div
-        className="flex flex-col flex-shrink-0 border-r border-border bg-panel-chat"
-        style={{ width: chatWidth, minWidth: 300, maxWidth: 600 }}
-      >
-        {chatPanel}
-      </div>
+      {chatPanel}
 
       <div
         className="w-1 bg-border hover:bg-primary/50 transition-colors cursor-col-resize flex-shrink-0 relative group"

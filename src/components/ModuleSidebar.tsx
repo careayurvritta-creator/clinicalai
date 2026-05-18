@@ -63,42 +63,33 @@ const modules: ModuleItem[] = [
 ]
 
 export function ModuleSidebar() {
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(true)
 
   return (
-    <div
-      className={`relative flex flex-col bg-panel-chat border-r border-border transition-all duration-300 ease-in-out ${
-        isExpanded ? 'w-72' : 'w-0'
-      }`}
-    >
-      <div
-        className={`flex-shrink-0 border-b border-border ${isExpanded ? 'opacity-100' : 'opacity-0'}`}
-      >
-        <div className="flex items-center justify-between px-4 py-3">
-          <h3 className="text-sm font-semibold text-foreground">Modules</h3>
-        </div>
-      </div>
-
+    <div className="relative flex flex-col bg-panel-chat border-r border-border h-full flex-shrink-0">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-6 h-12 bg-panel-chat border border-border rounded-r-lg flex items-center justify-center hover:bg-primary/10 transition-colors group"
-        style={{ left: isExpanded ? '288px' : '0px' }}
+        className="absolute top-1/2 -translate-y-1/2 z-10 w-5 h-12 bg-panel-chat border border-border rounded-r-lg flex items-center justify-center hover:bg-primary/10 transition-colors"
+        style={{ left: isExpanded ? '272px' : '-20px' }}
       >
         <svg
-          className={`w-4 h-4 text-muted-foreground transition-transform duration-300 ${
-            isExpanded ? 'rotate-180' : ''
-          }`}
+          className={`w-3 h-3 text-muted-foreground transition-transform duration-300 ${isExpanded ? '' : 'rotate-180'}`}
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
       </button>
 
-      <div
-        className={`flex-1 overflow-y-auto py-2 ${isExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-      >
+      <div className={`flex flex-col h-full overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? 'w-72' : 'w-0'}`}>
+        <div className="flex-shrink-0 border-b border-border">
+          <div className="flex items-center justify-between px-4 py-3">
+            <h3 className="text-sm font-semibold text-foreground">Modules</h3>
+          </div>
+        </div>
+
+        <div className={`flex-1 overflow-y-auto py-2 ${isExpanded ? '' : 'invisible'}`}>
         <div className="px-3 pb-3">
           <div className="flex items-center gap-3 px-3 py-3 rounded-lg bg-muted/30 border border-border mb-4">
             <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
