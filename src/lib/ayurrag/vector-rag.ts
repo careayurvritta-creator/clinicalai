@@ -136,17 +136,19 @@ export async function vectorSearch(
     }
 
     // Search drug interactions
-    for (const interaction of AYURVEDA_KNOWLEDGE.drugInteractionDB || []) {
-      const searchText = `${interaction.herb} ${interaction.drugClass} ${interaction.mechanism} ${interaction.effect} ${interaction.recommendation} ${interaction.severity}`.toLowerCase()
+    const drugDB = AYURVEDA_KNOWLEDGE.drugInteractionDB
+    const allInteractions = drugDB ? [...(drugDB.highRisk || []), ...(drugDB.moderateRisk || []), ...(drugDB.safeToCombine || [])] : []
+    for (const interaction of allInteractions) {
+      const searchText = `${interaction.herb} ${interaction.drugs?.join(' ')} ${interaction.reason}`.toLowerCase()
       if (searchText.includes(lowerQuery)) {
-        const id = `interaction-${interaction.herb.toLowerCase()}-${interaction.drugClass.toLowerCase()}`
+        const id = `interaction-${interaction.herb.toLowerCase()}-${interaction.drugs?.join('-').toLowerCase()}`
         if (!seen.has(id)) {
           seen.add(id)
           results.push({
             id,
             type: 'ayur_knowledge',
-            content: `Drug Interaction: ${interaction.herb} + ${interaction.drugClass}\nSeverity: ${interaction.severity}\nMechanism: ${interaction.mechanism}\nEffect: ${interaction.effect}\nRecommendation: ${interaction.recommendation}`,
-            source: `${interaction.herb} + ${interaction.drugClass}`,
+            content: `Drug Interaction: ${interaction.herb} + ${interaction.drugs?.join(', ')}\nReason: ${interaction.reason}`,
+            source: `${interaction.herb} + ${interaction.drugs?.join(', ')}`,
             category: 'Drug Interaction',
             relevance: searchText.split(lowerQuery).length,
             metadata: { ...interaction }
