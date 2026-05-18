@@ -17,6 +17,7 @@ interface ChatActions {
   setCanvasContent: (content: string) => void
   appendToCanvas: (content: string) => void
   clearMessages: () => void
+  setActiveModule: (module: string) => void
 }
 
 export const useChatStore = create<ChatState & ChatActions>()(
@@ -24,6 +25,7 @@ export const useChatStore = create<ChatState & ChatActions>()(
     (set, get) => ({
       ...defaultState,
       isStreaming: false,
+      activeModule: 'chat',
 
       addMessage: (message) =>
         set((state) => ({
@@ -63,6 +65,8 @@ export const useChatStore = create<ChatState & ChatActions>()(
           canvasContent: '',
           isStreaming: false,
         }),
+
+      setActiveModule: (module) => set({ activeModule: module }),
     }),
     {
       name: 'clinical-ai-chat',

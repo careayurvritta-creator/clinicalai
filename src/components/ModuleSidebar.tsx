@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useChatStore } from '@/lib/store'
 
 interface ModuleItem {
   id: string
@@ -64,24 +65,11 @@ const modules: ModuleItem[] = [
 
 export function ModuleSidebar() {
   const [isExpanded, setIsExpanded] = useState(true)
+  const activeModule = useChatStore((state) => state.activeModule)
+  const setActiveModule = useChatStore((state) => state.setActiveModule)
 
   return (
     <div className="relative flex h-full">
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="absolute top-1/2 -translate-y-1/2 z-10 w-5 h-12 bg-panel-chat border border-border rounded-r-lg flex items-center justify-center hover:bg-primary/10 transition-colors"
-        style={{ left: isExpanded ? '268px' : '0px' }}
-      >
-        <svg
-          className={`w-3 h-3 text-muted-foreground transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-        </svg>
-      </button>
-
       <div className={`flex flex-col h-full overflow-hidden transition-all duration-300 ease-in-out bg-panel-chat border-r border-border ${isExpanded ? 'w-64' : 'w-0'}`}>
         <div className="flex-shrink-0 border-b border-border">
           <div className="flex items-center justify-between px-4 py-3">
@@ -105,13 +93,22 @@ export function ModuleSidebar() {
               {modules.map((module) => (
                 <button
                   key={module.id}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left hover:bg-muted/30 transition-colors group"
+                  onClick={() => setActiveModule(module.id)}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
+                    activeModule === module.id
+                      ? 'bg-primary/20 text-primary'
+                      : 'hover:bg-muted/30 text-foreground'
+                  }`}
                 >
-                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary/20 transition-colors">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                    activeModule === module.id
+                      ? 'bg-primary/20 text-primary'
+                      : 'bg-primary/10 text-primary'
+                  }`}>
                     {module.icon}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{module.name}</p>
+                    <p className="text-sm font-medium truncate">{module.name}</p>
                     <p className="text-xs text-muted-foreground truncate">{module.description}</p>
                   </div>
                 </button>
@@ -135,6 +132,21 @@ export function ModuleSidebar() {
           </div>
         </div>
       </div>
+
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="absolute top-1/2 -translate-y-1/2 z-10 w-5 h-12 bg-panel-chat border border-border rounded-r-lg flex items-center justify-center hover:bg-primary/10 transition-colors"
+        style={{ left: isExpanded ? '268px' : '0px' }}
+      >
+        <svg
+          className={`w-3 h-3 text-muted-foreground transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
     </div>
   )
 }

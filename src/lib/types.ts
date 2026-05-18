@@ -19,6 +19,7 @@ export interface ChatState {
   isStreaming: boolean
   selectedModel: string
   canvasContent: string
+  activeModule: string
 }
 
 export interface ModelOption {
