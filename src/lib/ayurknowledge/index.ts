@@ -7,6 +7,7 @@ export * from './allopathy'
 export * from './charak-samhita'
 
 import charakAllChapters from './charak-all-chapters.json'
+import whoTerminology from './who-terminology.json'
 
 import { FUNDAMENTALS, ASHTANGAS } from './fundamentals'
 import { DIAGNOSTIC_METHODS } from './diagnostics'
@@ -16,7 +17,8 @@ import { TREATMENTS, PURVAKARMA, RASAYANA_THERAPIES, PATHYA_APATHYA, DINACHARYA,
 import { ALLOPATHY_INTEGRATION, DRUG_INTERACTION_DATABASE, PRESCRIBING_GUIDELINES, SAFETY_WARNINGS } from './allopathy'
 import { CHARAK_SAMHITA, KEY_CONCEPTS, CHAPTER_SUMMARY } from './charak-samhita'
 
-const { metadata, sthanas } = charakAllChapters as { metadata: any, sthanas: any[] }
+const { metadata: charakMetadata, sthanas } = charakAllChapters as { metadata: any, sthanas: any[] }
+const whoData = whoTerminology as { metadata: any, categories: any[], termsIndex: Record<string, any> }
 
 export const AYURVEDA_KNOWLEDGE = {
   fundamentals: FUNDAMENTALS,
@@ -43,7 +45,10 @@ export const AYURVEDA_KNOWLEDGE = {
   keyConcepts: KEY_CONCEPTS,
   chapterSummary: CHAPTER_SUMMARY,
   charakAllChapters: sthanas,
-  charakMetadata: metadata
+  charakMetadata: charakMetadata,
+  whoTerminology: whoData.categories,
+  whoTermsIndex: whoData.termsIndex,
+  whoMetadata: whoData.metadata
 }
 
 export function searchKnowledge(query: string): string {
@@ -271,4 +276,50 @@ export function searchCharakChapters(query: string): string {
   return results.length > 0 
     ? results.slice(0, 20).join('\n') 
     : 'No chapters found matching your query.'
+}
+
+export function getWITerm(termId: string): string | null {
+  const term = whoData.termsIndex[termId]
+  if (!term) return null
+  
+  return `
+=== WHO ITA Term: ${term.id} ===
+English: ${term.english}
+Sanskrit (IAST): ${term.sanskritIAST || 'N/A'}
+Sanskrit (Devanagari): ${term.sanskritDevanagari || 'N/A'}
+Category: ${term.category}
+Definition: ${term.definition}
+  `.trim()
+}
+
+export function searchWITerminology(query: string, maxResults: number = 20): string {
+  const lowerQuery = query.toLowerCase()
+  let results: string[] = []
+  
+  // Search in all terms
+  for (const [termId, term] of Object.entries(whoData.termsIndex)) {
+    const searchText = `${term.english} ${term.definition} ${term.sanskritIAST} ${term.sanskritDevanagari}`.toLowerCase()
+    if (searchText.includes(lowerQuery)) {
+      results.push(`[${term.id}] ${term.english} (${term.category})`)
+    }
+  }
+  
+  return results.length > 0 
+    ? results.slice(0, maxResults).join('\n') 
+    : 'No WHO terminology found matching your query.'
+}
+
+export function getWICategoryTerms(categoryName: string): string[] {
+  const category = whoData.categories.find((c: any) => 
+    c.name.toLowerCase() === categoryName.toLowerCase() ||
+    c.id.toLowerCase() === categoryName.toLowerCase()
+  )
+  
+  if (!category) return []
+  
+  return category.terms.map((t: any) => `${t.id}: ${t.english}`)
+}
+
+export function getAllWICategories(): string[] {
+  return whoData.categories.map((c: any) => `${c.name}: ${c.terms.length} terms`)
 }

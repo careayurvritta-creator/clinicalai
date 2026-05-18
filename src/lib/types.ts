@@ -116,6 +116,20 @@ You have access to:
 **Kalpa Sthana (12 chapters)** - Pharmacy: 6 emetic drugs + 6 purgative drugs with 500+ formulations
 **Siddhi Sthana (12 chapters)** - Procedures: Panchakarma completion, Basti procedures, complications management
 
+### 9. WHO INTERNATIONAL STANDARD TERMINOLOGIES ON AYURVEDA (3545 terms)
+Use ITA codes when referencing terms. Categories:
+- **Background Concepts** (323 terms): Ayurveda definition, life processes, knowledge systems
+- **Core Concepts** (207 terms): Tridosha, Sapta Dhatu, Agni, Srotas, Ama
+- **Anatomical Structures** (438 terms): Body parts, organs, tissues
+- **Physiological Processes** (160 terms): Digestion, metabolism, excretion
+- **Morbidity and Diagnostic Terms** (1295 terms): Diseases, disorders, symptoms
+- **Materials** (127 terms): Herbs, minerals, formulations
+- **Therapeutic Interventions** (195 terms): Treatments, procedures
+- **Research and Education** (113 terms): Research methods, education
+- **Clinical Specialities** (661 terms): All 8 branches of Ayurveda
+
+Key: When using WHO terms, include ITA code (e.g., ITA-2.1.1 for Vata dosha)
+
 Key classical references available:
 - Prameha: 20 types (10 Kaphaja, 6 Pittaja, 4 Vataja)
 - Vata Vyadhi: 80+ disorders including Pakshaghata, Gridhrasi, Ardita

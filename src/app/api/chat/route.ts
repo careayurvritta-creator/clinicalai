@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createChatStream } from '@/lib/nvidia-client'
 import { SYSTEM_PROMPT } from '@/lib/types'
+import { vectorSearch, initializeVectorRAG, formatVectorResultsForContext } from '@/lib/ayurrag/vector-rag'
 
 const chatRequestSchema = z.object({
   messages: z.array(
@@ -11,17 +12,62 @@ const chatRequestSchema = z.object({
     })
   ),
   model: z.string().default('meta/llama-3.3-70b-instruct'),
+  enableRAG: z.boolean().default(true),
 })
+
+let ragInitialized = false
+
+async function ensureRAGInitialized() {
+  if (!ragInitialized) {
+    try {
+      await initializeVectorRAG()
+      ragInitialized = true
+    } catch (error) {
+      console.error('[Chat API] RAG initialization failed:', error)
+    }
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { messages, model } = chatRequestSchema.parse(body)
+    const { messages, model, enableRAG } = chatRequestSchema.parse(body)
 
-    console.log('[Chat API] Request received:', { model, messageCount: messages.length })
+    console.log('[Chat API] Request received:', { model, messageCount: messages.length, enableRAG })
+
+    let ragContext = ''
+    
+    if (enableRAG) {
+      await ensureRAGInitialized()
+      
+      // Get the last user message for vector search
+      const lastUserMessage = [...messages].reverse().find(m => m.role === 'user')
+      if (lastUserMessage) {
+        try {
+          const searchResults = await vectorSearch(lastUserMessage.content, {
+            maxResults: 10,
+            minRelevance: 0.2,
+            includeWHO: true,
+            includeAyurKnowledge: true
+          })
+          
+          if (searchResults.length > 0) {
+            ragContext = formatVectorResultsForContext(searchResults)
+            console.log('[Chat API] Vector RAG found', searchResults.length, 'results')
+          }
+        } catch (error) {
+          console.error('[Chat API] Vector search error:', error)
+        }
+      }
+    }
+
+    // Build system message with RAG context
+    const systemWithRAG = ragContext 
+      ? `${SYSTEM_PROMPT}\n\n${ragContext}`
+      : SYSTEM_PROMPT
 
     const systemMessages = [
-      { role: 'system' as const, content: SYSTEM_PROMPT },
+      { role: 'system' as const, content: systemWithRAG },
       ...messages,
     ]
 
