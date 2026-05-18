@@ -1,0 +1,1044 @@
+{
+  "metadata": {
+    "title": "Charaka Samhita - Kalpa Sthana & Siddhi Sthana",
+    "totalSthanas": 2,
+    "totalChapters": 24,
+    "source": "carakasamhitaonline.com & siva.sh",
+    "description": "Kalpa Sthana (Pharmaceutical Preparations) and Siddhi Sthana (Therapeutic Procedures) are the seventh and eighth sections of Charaka Samhita. Kalpa Sthana deals with the science of medicinal formulations including emetic and purgative drugs, their preparations, combinations and administration. Siddhi Sthana represents the pinnacle of therapeutic practice, exploring detoxification, Panchakarma procedures, complications management and successful treatment outcomes."
+  },
+  "sthanas": [
+    {
+      "sthanaNumber": 7,
+      "sanskritName": "कल्पस्थानम्",
+      "englishName": "Kalpa Sthana",
+      "alternateEnglishName": "Pharmaceutical Preparations",
+      "totalChapters": 12,
+      "description": "Kalpa-sthana is the seventh section of Charaka Samhita that unveils the exquisite science of medicinal formulation—the art of Kalpa. It explores the transformative alchemy of processing raw botanical ingredients into potent, standardized therapeutic preparations. Through themes of purification, extraction, and complex compounding, this section establishes the foundational principles of ancient pharmaceutics.",
+      "chapters": [
+        {
+          "chapterNumber": 1,
+          "sanskritName": "मदनकल्प अध्याय",
+          "englishName": "Madanakalpa Adhyaya",
+          "alternateEnglishName": "MadanaPhala Preparations",
+          "totalVerses": 30,
+          "abstract": "This chapter deals with pharmaceutical preparations of Madana (Randia dumatorum), also known as Madanaphala. It serves as the introductory chapter to Kalpa Sthana, explaining the objectives of the section and the fundamental concepts of Vamana (therapeutic emesis) and Virechana (therapeutic purgation). The chapter describes the pharmacodynamics of emetic and purgative drugs, their mode of action, and the criteria for their classification.",
+          "keyConcepts": [
+            "Objective of Kalpa Sthana",
+            "Vamana (therapeutic emesis) - definition and mechanism",
+            "Virechana (therapeutic purgation) - definition and mechanism",
+            "Pharmacodynamics of emetic drugs - ushna, tikshna, sukshma, vyavayi, vikashi properties",
+            "Madanaphala (Randia dumatorum) - botanical source",
+            "Emetic drug identification criteria",
+            "Purgative drug identification criteria",
+            "Doshahara property - upper and lower channel elimination",
+            "Mahabhuta composition affecting drug direction",
+            "Udana vayu role in emesis",
+            "Drug preparation methods",
+            "Formulation combinations",
+            "Administration methods",
+            "Sukhopaya - easy methods of administration",
+            "Kalpa - pharmaceutical preparations",
+            "Vamanopaga dravya - supportive emetic drugs",
+            "Virechanopaga dravya - supportive purgative drugs",
+            "Sthaulya and Karshya indications",
+            "Pratyahara - contraindication for emesis",
+            "Parihara - contraindication for purgation",
+            "Fasting protocol before purification",
+            "Abhyanga - oleation before purification",
+            "Swedana - sudation therapy",
+            "Patient assessment for purification therapy",
+            "Dietary preparations for purification",
+            "Anupana - vehicle for medicines",
+            "Time of administration",
+            "Dosage determination",
+            "Signs of proper purification",
+            "Samyak yoga - adequate purification",
+            "Atiyoga - excessive purification",
+            "Ayoga - inadequate purification"
+          ],
+          "summary": "Madanakalpa Adhyaya introduces the fundamental concepts of pharmaceutical preparations in Ayurveda. The chapter begins by stating the objective of Kalpa Sthana - to describe preparations of emetic and purgative drugs, their combinations, and easy methods of administration. It defines Vamana as elimination of doshas from the upper part of the body and Virechana from the lower part. The pharmacodynamics explain how drugs with ushna (hot), tikshna (sharp), sukshma (subtle), vyavayi (pervasive), and vikashi (spreading) properties act by reaching the heart, circulating through vessels, and affecting dosha masses throughout the body. The direction of drug action (upward for emesis, downward for purgation) is determined by the predominance of certain mahabhutas - agni and vayu for upward movement, jala and prithvi for downward movement.",
+          "importantVerses": [
+            {
+              "verseNumber": 3,
+              "sanskrit": "अथ खलु वमनविरेचनार्थं वमनविरेचनद्रव्याणां सुखोपभोगतमैः सहान्यैर्द्रव्यैर्विविधैः कल्पनार्थं भेदार्थं विभागार्थं चेत्यर्थः",
+              "translation": "Now I shall expound the section on pharmaceuticals that deals with preparations of emetic and purgative drugs, describing combinations and administration of these formulations."
+            },
+            {
+              "verseNumber": 4,
+              "sanskrit": "तत्र दोषहरणमूर्ध्वभागं वमनसञ्ज्ञकम, अधोभागं विरेचनसञ्ज्ञकम",
+              "translation": "Of all drugs, those that eliminate impurities from the upper part are known as emetics while those that act via the lower part are called purgatives."
+            },
+            {
+              "verseNumber": 5,
+              "sanskrit": "तत्रोष्ण-तीक्ष्ण-सूक्ष्म-व्यवायि-विकाशीन्यौषधानि स्ववीर्येण हृदयमुपेत्य धमनीरनुसृत्य स्थूलाणुस्रोतोभ्यः केवलं शरीरगतं दोषसङ्घातमाग्नेयत्वाद्विष्यन्दयन्ति",
+              "translation": "The ushna, tikshna, sukshma, vyavayi and vikashi drugs, because of their vigorous ability in reaching the heart and circulating through the vessels, affect masses of impurity within the entire body, liquefying them."
+            }
+          ],
+          "formulations": [
+            {
+              "name": "Madanaphala Churna",
+              "ingredients": "Madanaphala (Randia dumatorum) fruit powder",
+              "preparation": "Fruit is cleaned, dried and powdered",
+              "indications": "Kapha disorders, as emetic agent"
+            }
+          ]
+        },
+        {
+          "chapterNumber": 2,
+          "sanskritName": "जीमूतककल्प अध्याय",
+          "englishName": "Jimutaka Kalpa Adhyaya",
+          "alternateEnglishName": "Jimutaka Preparations",
+          "totalVerses": 15,
+          "abstract": "This chapter describes the pharmaceutical preparations of Jimutaka (Luffa echinata), a potent emetic herb. Jimutaka is considered one of the main Vamana drugs and is particularly effective for Kapha-related disorders. The chapter provides detailed information about its identification, properties, formulations, and therapeutic applications.",
+          "keyConcepts": [
+            "Jimutaka (Luffa echinata) - botanical identification",
+            "Vamana dravya - primary emetic drug",
+            "Kapha hara property",
+            "Drug collection and storage",
+            "Formulation preparation methods",
+            "Anupana - vehicle selection",
+            "Dosage for different conditions",
+            "Combination with other drugs",
+            "Indications in respiratory disorders",
+            "Kasa (cough) treatment",
+            "Kshaya (wasting) treatment",
+            "Hrudaya - cardiac indications",
+            "Mutra - diuretic action",
+            "Purification therapy adjunct",
+            "Seasonal administration",
+            "Age considerations",
+            "Contraindications",
+            "Side effects management"
+          ],
+          "summary": "Jimutaka Kalpa Adhyaya focuses on the emetic drug Jimutaka (Luffa echinata). This herb is recognized for its potent Vamana (emetic) properties and is particularly effective in eliminating excess Kapha dosha. The chapter describes various formulations prepared from Jimutaka, including powders, decoctions, and medicated preparations. It discusses the specific indications for each formulation, considering the patient's condition, season, and constitution. The therapeutic applications extend beyond simple emesis to treat various disorders including cough, asthma, and cardiac conditions.",
+          "importantVerses": [
+            {
+              "verseNumber": 1,
+              "sanskrit": "अथातो जीमूतककल्पं व्याख्यास्यामः",
+              "translation": "Now we shall expound the chapter on Jimutaka preparations."
+            }
+          ],
+          "formulations": [
+            {
+              "name": "Jimutaka Kvatha",
+              "ingredients": "Jimutaka root decoction",
+              "preparation": "Root boiled in water",
+              "indications": "Kapha disorders, emesis therapy"
+            }
+          ]
+        },
+        {
+          "chapterNumber": 3,
+          "sanskritName": "इक्ष्वाकुकल्प अध्याय",
+          "englishName": "Ikshvaku Kalpa Adhyaya",
+          "alternateEnglishName": "Ikshvaku Preparations",
+          "totalVerses": 23,
+          "abstract": "This chapter describes the pharmaceutical preparations of Ikshvaku (Lagenaria siceraria), also known as bottle gourd. Ikshvaku is an important Vamana drug used for therapeutic emesis. The chapter provides comprehensive details about its properties, formulations, and therapeutic applications in various diseases.",
+          "keyConcepts": [
+            "Ikshvaku (Lagenaria siceraria) - botanical source",
+            "Vamana dravya properties",
+            "Kapha-Pitta hara action",
+            "Fruit and seed usage",
+            "Preparation methods",
+            "Diet combinations",
+            "Therapeutic indications",
+            "Kasa (cough) management",
+            "Swasa (dyspnea) treatment",
+            "Hridaya roga - cardiac disorders",
+            "Rajayakshma - tuberculosis",
+            "Dosage variations",
+            "Seasonal considerations",
+            "Patient selection criteria",
+            "Adjunct therapies",
+            "Post-therapy care"
+          ],
+          "summary": "Ikshvaku Kalpa Adhyaya discusses the preparations of Ikshvaku (Lagenaria siceraria), commonly known as bottle gourd. This vegetable is recognized for its medicinal properties and is used as a primary Vamana drug. The chapter details various formulations prepared from different parts of the plant - fruits, seeds, and leaves. It explains the therapeutic applications for treating Kapha-related disorders, respiratory conditions, and cardiac ailments. The preparations are designed to facilitate safe and effective therapeutic emesis.",
+          "importantVerses": [
+            {
+              "verseNumber": 1,
+              "sanskrit": "अथात इक्ष्वाकुकल्पं व्याख्यास्यामः",
+              "translation": "Now we shall expound the chapter on Ikshvaku preparations."
+            }
+          ],
+          "formulations": [
+            {
+              "name": "Ikshvaku Phala Ras",
+              "ingredients": "Fresh Ikshvaku fruit juice",
+              "preparation": "Fruit juice extracted fresh",
+              "indications": "Vamana therapy, Kapha disorders"
+            }
+          ]
+        },
+        {
+          "chapterNumber": 4,
+          "sanskritName": "धामार्गवकल्प अध्याय",
+          "englishName": "Dhamargava Kalpa Adhyaya",
+          "alternateEnglishName": "Dhamargava Preparations",
+          "totalVerses": 20,
+          "abstract": "This chapter describes the pharmaceutical preparations of Dhamargava (Luffa cylindrica), also known as sponge gourd. Dhamargava is an important emetic drug used in Ayurveda for therapeutic purification. The chapter provides detailed information about its properties, formulations, and applications.",
+          "keyConcepts": [
+            "Dhamargava (Luffa cylindrica) - botanical identification",
+            "Vamana property",
+            "Kapha hara action",
+            "Different plant parts usage",
+            "Formulation preparation",
+            "Therapeutic applications",
+            "Kostha - body constitution consideration",
+            "Indications for purification",
+            "Combination therapies",
+            "Dosage variations",
+            "Seasonal timing",
+            "Adjunct treatments",
+            "Post-purification care"
+          ],
+          "summary": "Dhamargava Kalpa Adhyaya covers the pharmaceutical preparations of Dhamargava (Luffa cylindrica), commonly known as sponge gourd or loofah. This plant is recognized for its Vamana (emetic) properties and is used extensively in therapeutic purification procedures. The chapter details various methods of preparing the drug for different therapeutic purposes. It explains the indications, contraindications, and special considerations for different body types and disease conditions.",
+          "importantVerses": [
+            {
+              "verseNumber": 1,
+              "sanskrit": "अथातो धामार्गवकल्पं व्याख्यास्यामः",
+              "translation": "Now we shall expound the chapter on Dhamargava preparations."
+            }
+          ],
+          "formulations": [
+            {
+              "name": "Dhamargava Kwatha",
+              "ingredients": "Dhamargava plant decoction",
+              "preparation": "Boiled in water",
+              "indications": "Vamana therapy"
+            }
+          ]
+        },
+        {
+          "chapterNumber": 5,
+          "sanskritName": "वत्सककल्प अध्याय",
+          "englishName": "Vatsaka Kalpa Adhyaya",
+          "alternateEnglishName": "Vatsaka Preparations",
+          "totalVerses": 12,
+          "abstract": "This chapter describes the pharmaceutical preparations of Vatsaka (Holarrhena antidysenterica), also known as kutaja or contry. Vatsaka is primarily a Virechana (purgative) drug and is extensively used in Ayurveda for treating intestinal disorders, especially diarrhea and dysentery.",
+          "keyConcepts": [
+            "Vatsaka (Holarrhena antidysenterica) - kutaja",
+            "Virechana dravya - purgative drug",
+            "Atisara (diarrhea) treatment",
+            "Grahani (IBS) management",
+            "Pittahara property",
+            "Raktashodhana - blood purification",
+            "Drug identification",
+            "Bark and seed usage",
+            "Formulation methods",
+            " Decoction preparations",
+            "Indications for intestinal disorders",
+            "Dosage considerations",
+            "Seasonal administration",
+            "Combination with other drugs"
+          ],
+          "summary": "Vatsaka Kalpa Adhyaya focuses on the purgative drug Vatsaka (Holarrhena antidysenterica), commonly known as kutaja. This herb is one of the most important Virechana drugs in Ayurveda and is particularly effective for treating intestinal disorders. The chapter provides detailed information about various formulations prepared from the bark and seeds of the plant. It explains the specific applications for treating diarrhea, dysentery, irritable bowel syndrome, and other digestive conditions.",
+          "importantVerses": [
+            {
+              "verseNumber": 1,
+              "sanskrit": "अथातो वत्सककल्पं व्याख्यास्यामः",
+              "translation": "Now we shall expound the chapter on Vatsaka preparations."
+            }
+          ],
+          "formulations": [
+            {
+              "name": "Vatsaka Kwatha",
+              "ingredients": "Vatsaka bark decoction",
+              "preparation": "Bark boiled in water",
+              "indications": "Atisara, Grahani, Pravahika"
+            },
+            {
+              "name": "Kutajarishta",
+              "ingredients": "Vatsaka bark, jaggery, water",
+              "preparation": "Fermented preparation",
+              "indications": "Chronic diarrhea, dysentery"
+            }
+          ]
+        },
+        {
+          "chapterNumber": 6,
+          "sanskritName": "कृतवेधनकल्प अध्याय",
+          "englishName": "Kritavedhana Kalpa Adhyaya",
+          "alternateEnglishName": "Kritavedhana Preparations",
+          "totalVerses": 14,
+          "abstract": "This chapter describes the pharmaceutical preparations of Kritavedhana (Citrullus colocynthis), also known as indicुम. Kritavedhana is a potent purgative drug used in Ayurveda for treating various disorders. The chapter provides detailed information about its properties, formulations, and therapeutic applications.",
+          "keyConcepts": [
+            "Kritavedhana (Citrullus colocynthis) - colocynth",
+            "Virechana property - strong purgative",
+            "Basti (constipation) treatment",
+            "Koshtha shodhana - bowel cleansing",
+            "Vata hara action",
+            "Drug identification and collection",
+            "Fruit preparation methods",
+            "Dosage considerations",
+            "Indications in various disorders",
+            "Safety considerations",
+            "Combination therapies",
+            "Anupana selection",
+            "Contraindications"
+          ],
+          "summary": "Kritavedhana Kalpa Adhyaya discusses the purgative drug Kritavedhana (Citrullus colocynthis), also known as colocynth or indicum. This is one of the most potent purgative agents in Ayurveda, used primarily for therapeutic purgation and bowel cleansing. The chapter details various formulations and their specific applications for different disease conditions.",
+          "importantVerses": [
+            {
+              "verseNumber": 1,
+              "sanskrit": "अथातः कृतवेधनकल्पं व्याख्यास्यामः",
+              "translation": "Now we shall expound the chapter on Kritavedhana preparations."
+            }
+          ],
+          "formulations": [
+            {
+              "name": "Kritavedhana Yoga",
+              "ingredients": "Kritavedhana fruit pulp",
+              "preparation": "Prepared as per classical method",
+              "indications": "Virechana therapy, constipation"
+            }
+          ]
+        },
+        {
+          "chapterNumber": 7,
+          "sanskritName": "श्यामात्रिवृत्कल्प अध्याय",
+          "englishName": "Shyamatrivrita Kalpa Adhyaya",
+          "alternateEnglishName": "Shyama-Trivrita Preparations",
+          "totalVerses": 80,
+          "abstract": "This is one of the most extensive chapters in Kalpa Sthana, describing the pharmaceutical preparations of Shyama-Trivrita (Operculina turpethum), also known as trivrita or turpeth. This is a highly important and widely used purgative drug in Ayurveda. The chapter provides comprehensive details about its properties, numerous formulations, and diverse therapeutic applications.",
+          "keyConcepts": [
+            "Shyama-Trivrita (Operculina turpethum) - turpeth",
+            "Virechana dravya - main purgative",
+            "Anulomana - downward movement of Vata",
+            "Srotoshodhana - channel purification",
+            "Vata hara property",
+            "Kapha hara action",
+            "Multiple formulation types",
+            "Churna (powder) preparations",
+            "Ghrita (ghee) preparations",
+            "Taila (oil) preparations",
+            "Kwatha (decoction) preparations",
+            "Rasakriya (semisolid) preparations",
+            "Modaka (confection) preparations",
+            "Patient selection criteria",
+            "Kostha assessment",
+            "Dosage variations",
+            "Seasonal considerations",
+            "Indications in various diseases",
+            "Post-therapy diet",
+            "Contraindications",
+            "Complications management"
+          ],
+          "summary": "Shyamatrivrita Kalpa Adhyaya is a comprehensive chapter on Shyama-Trivrita (Operculina turpethum), one of the most important purgative drugs in Ayurveda. The chapter extensively describes various formulations including powders, ghee preparations, oils, decoctions, semi-solids, and confections. It explains the therapeutic applications for treating numerous conditions including constipation, digestive disorders, fever, skin diseases, and neurological conditions. The detailed formulations and preparation methods make this chapter extremely valuable for practical pharmacy.",
+          "importantVerses": [
+            {
+              "verseNumber": 1,
+              "sanskrit": "अथातः श्यामात्रिवृत्कल्पं व्याख्यास्यामः",
+              "translation": "Now we shall expound the chapter on Shyama-Trivrita preparations."
+            }
+          ],
+          "formulations": [
+            {
+              "name": "Trivrita Churna",
+              "ingredients": "Trivrita root powder",
+              "preparation": "Dried root powdered",
+              "indications": "Vata disorders, constipation"
+            },
+            {
+              "name": "Trivrita Ghrita",
+              "ingredients": "Trivrita, ghee, herbs",
+              "preparation": "Medicated ghee",
+              "indications": "Nervine disorders, purification"
+            },
+            {
+              "name": "Trivrita Taila",
+              "ingredients": "Trivrita, sesame oil",
+              "preparation": "Medicated oil",
+              "indications": "Vata disorders, external application"
+            },
+            {
+              "name": "Trivrita Modaka",
+              "ingredients": "Trivrita, sugar, honey",
+              "preparation": "Confection",
+              "indications": "Purgation therapy"
+            }
+          ]
+        },
+        {
+          "chapterNumber": 8,
+          "sanskritName": "चतुरङ्गुलकल्प अध्याय",
+          "englishName": "Chaturangula Kalpa Adhyaya",
+          "alternateEnglishName": "Aragwadha Preparations",
+          "totalVerses": 18,
+          "abstract": "This chapter describes the pharmaceutical preparations of Chaturangula (Cassia fistula), also known as aragwadha or golden shower tree. Chaturangula is an important purgative drug used in Ayurveda. The chapter provides detailed information about its properties, formulations, and therapeutic applications.",
+          "keyConcepts": [
+            "Chaturangula (Cassia fistula) - aragwadha",
+            "Virechana dravya - purgative",
+            "Pittahara property",
+            "Kapha hara action",
+            "Purgation therapy applications",
+            "Fruit pulp usage",
+            "Flower usage",
+            "Bark usage",
+            "Formulation methods",
+            "Pulp preparations",
+            "Decoction preparations",
+            "Indications in digestive disorders",
+            "Fever treatment",
+            "Skin disease applications",
+            "Dosage considerations"
+          ],
+          "summary": "Chaturangula Kalpa Adhyaya covers the purgative drug Chaturangula (Cassia fistula), commonly known as aragwadha or golden shower tree. The plant is used extensively in Ayurvedic pharmacy for its purgative properties. Various parts of the plant - fruits, flowers, and bark - are utilized in different formulations. The chapter describes the therapeutic applications for treating digestive disorders, fever, skin conditions, and other ailments.",
+          "importantVerses": [
+            {
+              "verseNumber": 1,
+              "sanskrit": "अथातश्चतुरङ्गुलकल्पं व्याख्यास्यामः",
+              "translation": "Now we shall expound the chapter on Chaturangula preparations."
+            }
+          ],
+          "formulations": [
+            {
+              "name": "Aragwadha Phala Churna",
+              "ingredients": "Aragwadha fruit pulp powder",
+              "preparation": "Fruit pulp dried and powdered",
+              "indications": "Virechana therapy, constipation"
+            }
+          ]
+        },
+        {
+          "chapterNumber": 9,
+          "sanskritName": "तिल्वककल्प अध्याय",
+          "englishName": "Tilvaka Kalpa Adhyaya",
+          "alternateEnglishName": "Tilvaka Preparations",
+          "totalVerses": 18,
+          "abstract": "This chapter describes the pharmaceutical preparations of Tilvaka (Symplocos racemosa), also known as lodhra. Tilvaka is primarily a Virechana drug used in Ayurveda for treating various disorders. The chapter provides comprehensive details about its properties, formulations, and applications.",
+          "keyConcepts": [
+            "Tilvaka (Symplocos racemosa) - lodhra",
+            "Virechana dravya - purgative",
+            "Pittahara property",
+            "Raktashodhana - blood purification",
+            "Pomegranate bark usage",
+            "Formulation methods",
+            "Decoction preparations",
+            "Powder preparations",
+            "Indications in skin disorders",
+            "Pittaja disorders treatment",
+            "Raktaja disorders management",
+            "Dosage variations",
+            "Seasonal considerations"
+          ],
+          "summary": "Tilvaka Kalpa Adhyaya discusses the purgative drug Tilvaka (Symplocos racemosa), commonly known as lodhra. This herb is recognized for its purgative and blood-purifying properties. The chapter details various formulations and their specific applications for treating skin disorders, pitta-related conditions, and blood-related diseases.",
+          "importantVerses": [
+            {
+              "verseNumber": 1,
+              "sanskrit": "अथातस्तिल्वककल्पं व्याख्यास्यामः",
+              "translation": "Now we shall expound the chapter on Tilvaka preparations."
+            }
+          ],
+          "formulations": [
+            {
+              "name": "Tilvaka Kwatha",
+              "ingredients": "Tilvaka bark decoction",
+              "preparation": "Bark boiled in water",
+              "indications": "Skin disorders, Pitta disorders"
+            }
+          ]
+        },
+        {
+          "chapterNumber": 10,
+          "sanskritName": "सुधाकल्प अध्याय",
+          "englishName": "Sudha Kalpa Adhyaya",
+          "alternateEnglishName": "Sudha Preparations",
+          "totalVerses": 22,
+          "abstract": "This chapter describes the pharmaceutical preparations of Sudha, which refers to various alkaline substances used in Ayurveda. Sudha drugs include different types of alkali preparations used as purgatives and for other therapeutic purposes.",
+          "keyConcepts": [
+            "Sudha - alkaline substances",
+            "Virechana dravya - purgative alkali",
+            "Types of alkali preparations",
+            "Nakula - potassium nitrate",
+            "Yavakshara - barley alkali",
+            "Sarjika - sodium carbonate",
+            "Kshara preparations",
+            "Agni karma - cauterization agents",
+            "Srotoshodhana - channel purification",
+            "Kapha hara action",
+            "Karma removal applications",
+            "Formulation methods",
+            "Safety considerations",
+            "Indications in various disorders"
+          ],
+          "summary": "Sudha Kalpa Adhyaya covers the pharmacological preparations of various alkaline substances (Sudha) used in Ayurveda. These include different types of alkali preparations derived from plants and minerals. The chapter details their purgative properties and applications in purification therapies.",
+          "importantVerses": [
+            {
+              "verseNumber": 1,
+              "sanskrit": "अथातः सुधाकल्पं व्याख्यास्यामः",
+              "translation": "Now we shall expound the chapter on Sudha preparations."
+            }
+          ],
+          "formulations": [
+            {
+              "name": "Kshara preparations",
+              "ingredients": "Various alkaline substances",
+              "preparation": "Processed as per classical method",
+              "indications": "Purgation, channel cleansing"
+            }
+          ]
+        },
+        {
+          "chapterNumber": 11,
+          "sanskritName": "सप्तलाशङ्खिनीकल्प अध्याय",
+          "englishName": "Saptalashankhini Kalpa Adhyaya",
+          "alternateEnglishName": "Saptala-Shankhini Preparations",
+          "totalVerses": 19,
+          "abstract": "This chapter describes the pharmaceutical preparations of Saptala (Euphorbia retusa) and Shankhini (Euphorbia pilosa), two important purgative drugs in Ayurveda. These drugs are known for their potent Virechana properties and are used in various formulations.",
+          "keyConcepts": [
+            "Saptala (Euphorbia retusa) - botanical identification",
+            "Shankhini (Euphorbia pilosa) - botanical identification",
+            "Virechana dravya - strong purgative",
+            "Kapha-Vata hara action",
+            "Latex usage",
+            "Root usage",
+            "Formulation methods",
+            "Safety considerations",
+            "Dosage variations",
+            "Indications in various disorders",
+            "Combination therapies",
+            "Contraindications"
+          ],
+          "summary": "Saptalashankhini Kalpa Adhyaya covers two important purgative drugs - Saptala and Shankhini (both species of Euphorbia). These are potent purgative agents used in therapeutic purification. The chapter provides detailed information about their identification, properties, formulations, and specific therapeutic applications.",
+          "importantVerses": [
+            {
+              "verseNumber": 1,
+              "sanskrit": "अथातः सप्तलाशङ्खिनीकल्पं व्याख्यास्यामः",
+              "translation": "Now we shall expound the chapter on Saptala-Shankhini preparations."
+            }
+          ],
+          "formulations": [
+            {
+              "name": "Saptala Shankhini Yoga",
+              "ingredients": "Saptala and Shankhini preparations",
+              "preparation": "Mixed formulation",
+              "indications": "Virechana therapy"
+            }
+          ]
+        },
+        {
+          "chapterNumber": 12,
+          "sanskritName": "दन्तीद्रवन्तीकल्प अध्याय",
+          "englishName": "Dantidravanti Kalpa Adhyaya",
+          "alternateEnglishName": "Danti-Dravanti Preparations",
+          "totalVerses": 107,
+          "abstract": "This is the largest chapter in Kalpa Sthana, describing the pharmaceutical preparations of Danti (Baliospermum montanum) and Dravanti (Baliospermum axillare). These are extremely important purgative drugs in Ayurveda, known for their potent Virechana properties. The chapter provides exhaustive details about numerous formulations and their applications.",
+          "keyConcepts": [
+            "Danti (Baliospermum montanum) - botanical identification",
+            "Dravanti (Baliospermum axillare) - botanical identification",
+            "Virechana dravya - powerful purgative",
+            "Srotoshodhana - channel purification",
+            "Vata hara property",
+            "Kapha hara action",
+            "Karma removal applications",
+            "Multiple formulation types",
+            "Churna preparations",
+            "Ghrita preparations",
+            "Taila preparations",
+            "Kwatha preparations",
+            "Rasakriya preparations",
+            "Modaka preparations",
+            "Patient selection criteria",
+            "Kostha assessment",
+            "Dosage considerations",
+            "Seasonal timing",
+            "Indications in numerous diseases",
+            "Post-therapy care",
+            "Contraindications",
+            "Complications and management",
+            "Combination with other drugs"
+          ],
+          "summary": "Dantidravanti Kalpa Adhyaya is the most extensive chapter in Kalpa Sthana, covering Danti and Dravanti (Baliospermum species). These are among the most potent purgative drugs in Ayurveda. The chapter provides exhaustive details about numerous formulations - powders, ghee, oils, decoctions, semi-solids, and confections. It explains their applications for treating various disorders including digestive issues, fever, skin diseases, neurological conditions, and many more. The detailed formulations and preparation methods make this chapter invaluable for Ayurvedic pharmacy.",
+          "importantVerses": [
+            {
+              "verseNumber": 1,
+              "sanskrit": "अथातो दन्तीद्रवन्तीकल्पं व्याख्यास्यामः",
+              "translation": "Now we shall expound the chapter on Danti-Dravanti preparations."
+            }
+          ],
+          "formulations": [
+            {
+              "name": "Danti Churna",
+              "ingredients": "Danti root powder",
+              "preparation": "Root dried and powdered",
+              "indications": "Strong purgation therapy"
+            },
+            {
+              "name": "Danti Ghrita",
+              "ingredients": "Danti, ghee, herbs",
+              "preparation": "Medicated ghee",
+              "indications": "Nervine purification, Vata disorders"
+            },
+            {
+              "name": "Danti Taila",
+              "ingredients": "Danti, sesame oil",
+              "preparation": "Medicated oil",
+              "indications": "Vata disorders, external therapy"
+            },
+            {
+              "name": "Danti Modaka",
+              "ingredients": "Danti, sugar, honey",
+              "preparation": "Confection",
+              "indications": "Therapeutic purgation"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sthanaNumber": 8,
+      "sanskritName": "सिद्धिस्थानम्",
+      "englishName": "Siddhi Sthana",
+      "alternateEnglishName": "Therapeutic Procedures",
+      "totalChapters": 12,
+      "description": "Siddhi-sthana is the crowning jewel of Charaka Samhita, representing the pinnacle of healing mastery. While earlier chapters focus on pathology and diagnosis, Siddhi-sthana explores the art of perfection - the successful culmination of therapeutic practice. It delves into profound themes of detoxification, Panchakarma procedures, complications management, and the science of therapeutic success.",
+      "chapters": [
+        {
+          "chapterNumber": 1,
+          "sanskritName": "कल्पनासिद्धि",
+          "englishName": "Kalpana Siddhi",
+          "alternateEnglishName": "Panchakarma Summary",
+          "totalVerses": 60,
+          "abstract": "This chapter provides a comprehensive summary of Panchakarma (five purification therapies) - Vamana, Virechana, Basti, Nasya, and Raktamokshana. It describes the standard administration procedures, indications, contraindications, and outcomes of each therapy. The chapter serves as an introduction to the therapeutic procedures detailed in Siddhi Sthana.",
+          "keyConcepts": [
+            "Panchakarma - five purification therapies",
+            "Vamana - therapeutic emesis",
+            "Virechana - therapeutic purgation",
+            "Basti - therapeutic enema",
+            "Nasya - nasal administration",
+            "Raktamokshana - bloodletting",
+            "Purva karma - preparatory procedures",
+            "Pradhana karma - main therapy",
+            "Paschat karma - post-therapy care",
+            "Snehana - oleation therapy",
+            "Swedana - sudation therapy",
+            "Abhyanga - massage therapy",
+            "Dosha assessment for therapy selection",
+            "Kostha - body constitution assessment",
+            "Roga - disease assessment",
+            "Indications for each therapy",
+            "Contraindications for each therapy",
+            "Seasonal considerations",
+            "Patient selection criteria",
+            "Therapy outcomes",
+            "Signs of successful therapy",
+            "Complications prevention",
+            "Post-therapy diet",
+            "Rejuvenation after purification",
+            "Rasayana applications"
+          ],
+          "summary": "Kalpana Siddhi provides a comprehensive overview of Panchakarma therapies. The chapter explains the five main purification procedures - Vamana (therapeutic emesis), Virechana (therapeutic purgation), Basti (therapeutic enema), Nasya (nasal administration), and Raktamokshana (bloodletting). It details the preparatory procedures (purva karma), main procedures (pradhana karma), and post-therapy care (paschat karma). The chapter emphasizes proper patient assessment, seasonal considerations, and outcomes evaluation for successful therapy.",
+          "importantVerses": [
+            {
+              "verseNumber": 1,
+              "sanskrit": "अथातः कल्पनासिद्धिं व्याख्यास्यामः",
+              "translation": "Now we shall expound the chapter on standard administration of purification procedures."
+            }
+          ]
+        },
+        {
+          "chapterNumber": 2,
+          "sanskritName": "पञ्चकर्मीया सिद्धिः",
+          "englishName": "Panchakarmiya Siddhi",
+          "alternateEnglishName": "Panchakarma Overview",
+          "totalVerses": 28,
+          "abstract": "This chapter provides an overview of Panchakarma therapies, describing the indications, procedures, and outcomes for each of the five purification therapies. It explains the selection criteria for different therapies based on patient condition and disease characteristics.",
+          "keyConcepts": [
+            "Panchakarma selection criteria",
+            "Vamana indications and procedures",
+            "Virechana indications and procedures",
+            "Basti indications and procedures",
+            "Nasya indications and procedures",
+            "Raktamokshana indications and procedures",
+            "Disease-specific therapy selection",
+            "Constitution-based therapy selection",
+            "Seasonal therapy timing",
+            "Therapy sequence",
+            "Multiple therapy combinations",
+            "Therapy duration",
+            "Patient monitoring during therapy",
+            "Outcome assessment",
+            "Therapy completion criteria"
+          ],
+          "summary": "Panchakarmiya Siddhi provides an overview of the five Panchakarma therapies. The chapter explains the specific indications for each therapy based on the disease type, patient constitution, and season. It details the procedures and outcomes expected from properly administered therapies.",
+          "importantVerses": [
+            {
+              "verseNumber": 1,
+              "sanskrit": "अथातः पञ्चकर्मीया सिद्धिं व्याख्यास्यामः",
+              "translation": "Now we shall expound the chapter on successful administration of Panchakarma therapies."
+            }
+          ]
+        },
+        {
+          "chapterNumber": 3,
+          "sanskritName": "बस्तिसूत्रीया सिद्धिः",
+          "englishName": "Bastisutriyam Siddhi",
+          "alternateEnglishName": "Basti Procedure",
+          "totalVerses": 71,
+          "abstract": "This chapter is one of the most important in Siddhi Sthana, providing detailed information about Basti (therapeutic enema) therapy. It describes the types of Basti, formulations, administration procedures, indications, contraindications, and complications management. Basti is considered the most important therapy for Vata disorders.",
+          "keyConcepts": [
+            "Basti - therapeutic enema",
+            "Types of Basti - Niruha and Anuvasana",
+            "Niruha Basti - decoction enema",
+            "Anuvasana Basti - oil enema",
+            "Basti dravya - enema formulations",
+            "Basti karma - enema administration",
+            "Basti netra - enema nozzle",
+            "Basti pada - enema quantity",
+            "Basti Kala - timing of administration",
+            "Basti patana - retention time",
+            "Vata disorders treatment",
+            "Vataja disorders management",
+            "Basti indications",
+            "Basti contraindications",
+            "Basti complications",
+            "Basti sansarjana - post-enema diet",
+            "Matra Basti - moderate enema",
+            "Karma Basti - therapeutic course",
+            "Yoga Basti - combination enema",
+            "Basti success criteria",
+            "Basti failure management"
+          ],
+          "summary": "Bastisutriyam Siddhi is an extensive chapter on Basti (therapeutic enema), one of the most important therapies in Ayurveda. The chapter provides comprehensive details about different types of Basti - Niruha (decoction enema) and Anuvasana (oil enema). It explains the formulations, administration procedures, indications, contraindications, and complications management. Basti is particularly important for Vata disorders and is considered the main therapy for balancing Vata dosha.",
+          "importantVerses": [
+            {
+              "verseNumber": 1,
+              "sanskrit": "अथातो बस्तिसूत्रीयां सिद्धिं व्याख्यास्यामः",
+              "translation": "Now we shall expound the chapter on standard practices of Basti (therapeutic enema)."
+            }
+          ],
+          "formulations": [
+            {
+              "name": "Niruha Basti",
+              "ingredients": "Decoction of various herbs, salt, oil, honey",
+              "preparation": "Mixed as per classical formula",
+              "indications": "Vata disorders, purification"
+            },
+            {
+              "name": "Anuvasana Basti",
+              "ingredients": "Medicated oil or ghee",
+              "preparation": "Oil preparations",
+              "indications": "Vata disorders, nourishment"
+            }
+          ]
+        },
+        {
+          "chapterNumber": 4,
+          "sanskritName": "स्नेहव्यापत्सिद्धिः",
+          "englishName": "Snehavyapat Siddhi",
+          "alternateEnglishName": "Oleation Complications",
+          "totalVerses": 56,
+          "abstract": "This chapter describes the complications that can occur during and after Snehana (oleation therapy) and their successful management. It provides detailed information about various complications and their treatment protocols.",
+          "keyConcepts": [
+            "Snehana - oleation therapy",
+            "Snehana complications",
+            "Ghee complications",
+            "Oil complications",
+            "Abhyanga complications",
+            "Internal oleation complications",
+            "External oleation complications",
+            "Complication symptoms",
+            "Complication diagnosis",
+            "Complication management",
+            "Treatment protocols",
+            "Contraindication identification",
+            "Over-oleation management",
+            "Improper oleation management",
+            "Allergic reactions",
+            "Digestive complications",
+            "Skin reactions",
+            "Vata aggravation signs"
+          ],
+          "summary": "Snehavyapat Siddhi deals with the complications that can occur during and after oleation therapy (Snehana). The chapter provides detailed information about various complications that may arise from improper or excessive oleation, their diagnosis, and treatment protocols for managing these complications effectively.",
+          "importantVerses": [
+            {
+              "verseNumber": 1,
+              "sanskrit": "अथातः स्नेहव्यापत्सिद्धिं व्याख्यास्यामः",
+              "translation": "Now we shall expound the chapter on complications of unctuous enema and their successful management."
+            }
+          ]
+        },
+        {
+          "chapterNumber": 5,
+          "sanskritName": "नेत्रबस्तिव्यापत्सिद्धिः",
+          "englishName": "Netrabastivyapat Siddhi",
+          "alternateEnglishName": "Instrumental Complications",
+          "totalVerses": 19,
+          "abstract": "This chapter describes the complications that can occur due to improper use of instruments in Basti therapy, particularly concerning the Basti netra (enema nozzle). It provides guidance on preventing and managing these complications.",
+          "keyConcepts": [
+            "Basti netra - enema nozzle",
+            "Instrument-related complications",
+            "Nozzle injury management",
+            "Improper insertion complications",
+            "Trauma prevention",
+            "Anatomical considerations",
+            "Safe administration techniques",
+            "Complication symptoms",
+            "Treatment protocols",
+            "Prevention methods"
+          ],
+          "summary": "Netrabastivyapat Siddhi focuses on complications that arise from improper use of instruments during Basti therapy. The chapter specifically addresses issues related to the Basti netra (enema nozzle) and provides guidance on safe administration techniques and complication management.",
+          "importantVerses": [
+            {
+              "verseNumber": 1,
+              "sanskrit": "अथातो नेत्रबस्तिव्यापत्सिद्धिं व्याख्यास्यामः",
+              "translation": "Now we shall expound the chapter on management of complications due to enema nozzle."
+            }
+          ]
+        },
+        {
+          "chapterNumber": 6,
+          "sanskritName": "वमनविरेचनव्यापत्सिद्धिः",
+          "englishName": "Vamana Virechana Vyapat Siddhi",
+          "alternateEnglishName": "Emesis-Purgation Complications",
+          "totalVerses": 95,
+          "abstract": "This is one of the largest chapters in Siddhi Sthana, describing the complications that can occur during and after Vamana (therapeutic emesis) and Virechana (therapeutic purgation) therapies. It provides comprehensive information on complication prevention, diagnosis, and management.",
+          "keyConcepts": [
+            "Vamana complications",
+            "Virechana complications",
+            "Emetic therapy complications",
+            "Purgative therapy complications",
+            "Excessive therapy complications",
+            "Inadequate therapy complications",
+            "Improper therapy complications",
+            "Complication symptoms",
+            "Complication diagnosis",
+            "Complication management",
+            "Vata aggravation treatment",
+            "Pitta aggravation treatment",
+            "Kapha aggravation treatment",
+            "Dehydration management",
+            "Electrolyte imbalance treatment",
+            "Spontaneous vomiting",
+            "Spontaneous purgation",
+            "Uncontrolled emesis",
+            "Uncontrolled purgation",
+            "Injury during therapy",
+            "Trauma management",
+            "Bleeding management",
+            "Infection prevention",
+            "Post-therapy complications",
+            "Treatment protocols",
+            "Emergency management"
+          ],
+          "summary": "Vamana Virechana Vyapat Siddhi is an extensive chapter covering complications of therapeutic emesis (Vamana) and purgation (Virechana). It provides comprehensive details about various complications that can occur during and after these therapies, their diagnosis, and management protocols. The chapter covers complications from excessive, inadequate, and improper administration, along with emergency management protocols.",
+          "importantVerses": [
+            {
+              "verseNumber": 1,
+              "sanskrit": "अथातो वमनविरेचनव्यापत्सिद्धिं व्याख्यास्यामः",
+              "translation": "Now we shall expound the chapter on management of complications of improper therapeutic emesis and purgation."
+            }
+          ]
+        },
+        {
+          "chapterNumber": 7,
+          "sanskritName": "बस्तिव्यापत्सिद्धिः",
+          "englishName": "Bastivyapat Siddhi",
+          "alternateEnglishName": "Basti Complications",
+          "totalVerses": 66,
+          "abstract": "This chapter describes the complications that can occur during Basti (therapeutic enema) therapy and their management. It provides detailed information about various complications and their treatment protocols.",
+          "keyConcepts": [
+            "Basti complications",
+            "Enema therapy complications",
+            "Niruha Basti complications",
+            "Anuvasana Basti complications",
+            "Improper Basti administration",
+            "Excessive Basti complications",
+            "Inadequate Basti complications",
+            "Complication symptoms",
+            "Complication diagnosis",
+            "Complication management",
+            "Intestinal injury",
+            "Rectal injury",
+            "Perforation management",
+            "Infection management",
+            "Vata aggravation treatment",
+            "Spontaneous evacuation",
+            "Retention problems",
+            "Pain management",
+            "Bloating management",
+            "Treatment protocols",
+            "Prevention methods"
+          ],
+          "summary": "Bastivyapat Siddhi covers complications that can occur during Basti (therapeutic enema) therapy. The chapter provides detailed information about various complications arising from improper administration, excessive or inadequate therapy, and their management protocols.",
+          "importantVerses": [
+            {
+              "verseNumber": 1,
+              "sanskrit": "अथातो बस्तिव्यापत्सिद्धिं व्याख्यास्यामः",
+              "translation": "Now we shall expound the chapter on management of complications of therapeutic enema."
+            }
+          ]
+        },
+        {
+          "chapterNumber": 8,
+          "sanskritName": "प्रासृतयोगीया सिद्धिः",
+          "englishName": "Prasrita Yogiyam Siddhi",
+          "alternateEnglishName": "Special Basti Formulations",
+          "totalVerses": 46,
+          "abstract": "This chapter describes specialized Basti formulations prepared using the Prasrita (specific dose unit) method. It provides detailed information about various specialized enema preparations and their therapeutic applications.",
+          "keyConcepts": [
+            "Prasrita - specific dose unit",
+            "Specialized Basti formulations",
+            "Yogic Basti preparations",
+            "Specific dose enemas",
+            "Medicated enema variations",
+            "Formulation ingredients",
+            "Preparation methods",
+            "Therapeutic applications",
+            "Vata disorders treatment",
+            "Pitta disorders treatment",
+            "Kapha disorders treatment",
+            "Combination formulations",
+            "Dosage considerations",
+            "Administration techniques"
+          ],
+          "summary": "Prasrita Yogiyam Siddhi describes specialized Basti formulations prepared using the Prasrita method. These are specific dose enema preparations used for various therapeutic purposes. The chapter provides detailed information about the formulations, preparation methods, and their specific applications.",
+          "importantVerses": [
+            {
+              "verseNumber": 1,
+              "sanskrit": "अथातः प्रासृतयोगीया सिद्धिं व्याख्यास्यामः",
+              "translation": "Now we shall expound the chapter on standardized therapeutic enema formulations in a dose of Prasrita Unit."
+            }
+          ]
+        },
+        {
+          "chapterNumber": 9,
+          "sanskritName": "त्रिमर्मीया सिद्धिः",
+          "englishName": "Trimarmiya Siddhi",
+          "alternateEnglishName": "Three Vital Organs",
+          "totalVerses": 119,
+          "abstract": "This is the largest chapter in Siddhi Sthana, describing the management of diseases affecting the three vital organs - Hridaya (heart), Shiras (head), and Basti (bladder/kidney). It provides comprehensive information about diseases of these organs and their treatment.",
+          "keyConcepts": [
+            "Trimarma - three vital organs",
+            "Hridaya - heart",
+            "Shiras - head",
+            "Basti - bladder/kidney",
+            "Hridaya roga - cardiac disorders",
+            "Shira roga - head disorders",
+            "Basti roga - urinary disorders",
+            "Hridaya disorders treatment",
+            "Shira disorders treatment",
+            "Basti disorders treatment",
+            "Marma - vital points",
+            "Hridaya marma - cardiac marma",
+            "Shira marma - cranial marmas",
+            "Basti marma - pelvic marmas",
+            "Vata disorders of vital organs",
+            "Pitta disorders of vital organs",
+            "Kapha disorders of vital organs",
+            "Sannipata disorders",
+            "Treatment protocols",
+            "Emergency management",
+            "Palliative care",
+            "Contraindications",
+            "Prognosis assessment"
+          ],
+          "summary": "Trimarmiya Siddhi is the largest chapter in Siddhi Sthana, dealing with diseases of the three vital organs - Hridaya (heart), Shiras (head), and Basti (bladder/kidney). The chapter provides comprehensive information about various disorders affecting these organs, their diagnosis, and treatment protocols.",
+          "importantVerses": [
+            {
+              "verseNumber": 1,
+              "sanskrit": "अथातस्त्रिमर्मीयां सिद्धिं व्याख्यास्यामः",
+              "translation": "Now we shall expound the chapter on management of diseases of three vital organs."
+            }
+          ]
+        },
+        {
+          "chapterNumber": 10,
+          "sanskritName": "बस्तिसिद्धिः",
+          "englishName": "Basti Siddhi",
+          "alternateEnglishName": "Basti Success",
+          "totalVerses": 48,
+          "abstract": "This chapter describes the criteria for successful Basti therapy and the outcomes expected from properly administered enema treatment. It provides guidance on achieving optimal therapeutic results.",
+          "keyConcepts": [
+            "Basti success criteria",
+            "Therapeutic enema outcomes",
+            "Proper Basti administration",
+            "Optimal results",
+            "Samyak Basti - proper enema",
+            "Basti yoga - enema success",
+            "Vata pacification signs",
+            "Doshahara - dosha elimination",
+            "Srotoshodhana - channel purification",
+            "Therapeutic benefits",
+            "Patient assessment",
+            "Outcome evaluation",
+            "Success indicators",
+            "Post-therapy results"
+          ],
+          "summary": "Basti Siddhi describes the criteria for successful Basti therapy. The chapter explains the signs and outcomes that indicate proper administration and successful therapeutic results from enema treatment.",
+          "importantVerses": [
+            {
+              "verseNumber": 1,
+              "sanskrit": "अथातो बस्तिसिद्धिं व्याख्यास्यामः",
+              "translation": "Now we shall expound the chapter on successful administration of therapeutic enema."
+            }
+          ]
+        },
+        {
+          "chapterNumber": 11,
+          "sanskritName": "फलमात्रासिद्धिः",
+          "englishName": "Phalamatra Siddhi",
+          "alternateEnglishName": "Fruit-based Formulations",
+          "totalVerses": 37,
+          "abstract": "This chapter describes the utility of medicinal fruits and other factors in therapeutic enema formulations. It provides information about fruit-based Basti preparations and their therapeutic applications.",
+          "keyConcepts": [
+            "Phala - medicinal fruits",
+            "Fruit-based Basti",
+            "Phala Basti formulations",
+            "Fruit therapeutics",
+            "Anupana - supporting substances",
+            "Therapeutic applications",
+            "Vata disorders treatment",
+            "Pitta disorders treatment",
+            "Formulation methods",
+            "Preparation techniques",
+            "Dosage considerations"
+          ],
+          "summary": "Phalamatra Siddhi discusses the utility of medicinal fruits in therapeutic enema formulations. The chapter provides information about various fruit-based Basti preparations and their specific therapeutic applications.",
+          "importantVerses": [
+            {
+              "verseNumber": 1,
+              "sanskrit": "अथातः फलमात्रासिद्धिं व्याख्यास्यामः",
+              "translation": "Now we shall expound the chapter on utility of medicinal fruits and other factors in standard therapeutic enema."
+            }
+          ]
+        },
+        {
+          "chapterNumber": 12,
+          "sanskritName": "उत्तरबस्तिसिद्धिः",
+          "englishName": "Uttar Basti Siddhi",
+          "alternateEnglishName": "Uttar Basti - Local Enema",
+          "totalVerses": 55,
+          "abstract": "This chapter describes Uttar Basti - a specialized local enema therapy administered through the urethra in males or vagina in females. It provides detailed information about this therapy, its indications, procedures, and applications.",
+          "keyConcepts": [
+            "Uttar Basti - local enema",
+            "Urethral administration",
+            "Vaginal administration",
+            "Local Basti therapy",
+            "Mutra Basti - urethral enema",
+            "Yoni Basti - vaginal enema",
+            "Indications for Uttar Basti",
+            "Uterine disorders",
+            "Urinary disorders",
+            "Genital disorders",
+            "Female reproductive health",
+            "Male urinary health",
+            "Procedure description",
+            "Administration techniques",
+            "Formulation considerations",
+            "Complications management",
+            "Safety considerations"
+          ],
+          "summary": "Uttar Basti Siddhi describes Uttar Basti - a specialized local enema therapy. This therapy is administered through the urethra in males or vagina in females for local treatment of disorders in these areas. The chapter provides comprehensive information about the procedure, indications, formulations, and safety considerations.",
+          "importantVerses": [
+            {
+              "verseNumber": 1,
+              "sanskrit": "अथात उत्तरबस्तिसिद्धिं व्याख्यास्यामः",
+              "translation": "Now we shall expound the chapter on standard administration of best effective therapeutic enema."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

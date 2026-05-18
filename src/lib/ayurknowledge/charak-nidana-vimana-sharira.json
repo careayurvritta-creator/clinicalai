@@ -1,0 +1,596 @@
+{
+  "metadata": {
+    "title": "Charaka Samhita - Nidana Sthana, Vimana Sthana, Sharira Sthana",
+    "source": "carakasamhitaonline.com",
+    "description": "Comprehensive knowledge base of Charaka Samhita's diagnostic principles, specific medical principles, and human constitution chapters",
+    "totalChapters": 24,
+    "sections": 3
+  },
+  "sthanas": [
+    {
+      "sthanaName": "Nidana Sthana",
+      "sthanaNameEnglish": "Diagnostic Principles",
+      "description": "The second section within Charak Samhita, dealing with guidelines for diagnosing disease on the basis of detailed history and clinical examination. The term Nidana literally means primary cause and diagnosis.",
+      "totalChapters": 8,
+      "chapters": [
+        {
+          "chapterNumber": 1,
+          "sanskritName": "Jwara Nidana",
+          "englishName": "Fever",
+          "summary": "The first chapter introduces fundamental principles of diagnosis and fever (jwara). The first part deals with necessary tools for acquiring comprehensive knowledge of any disease - Nidana Panchaka (five diagnostic tools): etiology (hetu), premonitory signs (purvarupa), clinical features (rupa), pacifying factors (upashaya), and pathogenesis (samprapti). The second part applies these tools to explain fever and its types (endogenous and exogenous). Jwara is caused by accumulation of vitiated dosha at the site of digestion and further affliction of digestion and thermal regulation. It is considered both an independent ailment and a secondary condition of other diseases, and also an etiology responsible for various diseases.",
+          "keyConcepts": [
+            "Nidana Panchaka - five diagnostic tools",
+            "Hetu (causative factors)",
+            "Purvarupa (premonitory signs)",
+            "Rupa (clinical features)",
+            "Upashaya (pacifying factors)",
+            "Samprapti (pathogenesis)",
+            "Jwara (fever) - types and classification",
+            "Nija Jwara (endogenous fever)",
+            "Agantu Jwara (exogenous fever)",
+            "Sannipataja Jwara (tridosha fever)",
+            "Dhatugata Jwara (fever affecting tissues)",
+            "Rasa dhatu involvement in fever",
+            "Amashaya (stomach) as common site",
+            "Nava Jwara (acute fever)",
+            "Jeerna Jwara (chronic fever)",
+            "Vishama Jwara (irregular fever)",
+            "Treatment principles of Jwara",
+            "Dietary management in fever",
+            "Ghee in fever therapy",
+            "Fever of Unknown Origin (FUO)"
+          ],
+          "importantVerses": [
+            "Jwara afflicts the body, senses and the mind, is the first disease to be manifested, and is the principal and the most powerful disease.",
+            "Amashaya (stomach) is common to all types of jwara.",
+            "Pathogenetic dosha combined with heat located in amashaya and accompanying rasa obstructs the passage of rasa and sweda, causing them to spread all over the body."
+          ]
+        },
+        {
+          "chapterNumber": 2,
+          "sanskritName": "Raktapitta Nidana",
+          "englishName": "Bleeding Disorders",
+          "summary": "This chapter deals with diagnosis of bleeding disorders (raktapitta) caused by excess of pitta dosha vitiating blood tissue (rakta dhatu). This leads to capillary breakdown causing hemorrhage from external openings like mouth, per rectum, nose, eyes, ears, urethra. Contributing factors include consumption of incompatible food, certain meats with alcohol, butter milk with meat. Vitiated pitta has same color and smell as rakta dhatu and blends seamlessly with it. The pathogenesis differs based on associated dosha - if associated with kapha, bleeding occurs from upper orifices; if with vata, from lower orifices.",
+          "keyConcepts": [
+            "Raktapitta (bleeding disorders)",
+            "Pitta dosha and rakta dhatu relationship",
+            "Upper orifices bleeding (urdhva)",
+            "Lower orifices bleeding (adhah)",
+            "Sannipatika Raktapitta",
+            "Kaphaja Raktapitta",
+            "Vataja Raktapitta",
+            "Curability and prognosis",
+            "Nidanarthakara roga (disease causing another disease)",
+            "Emesis therapy (vamana)",
+            "Purgation therapy (virechana)",
+            "Hemorrhagic disorders management",
+            "Prodromal symptoms of Raktapitta",
+            "Complications of bleeding disorders"
+          ],
+          "importantVerses": [
+            "Raktapitta manifests through two broadly divided routes - upper tract and lower tract.",
+            "Raktapitta from upper orifices is curable, while from lower orifices is palliative.",
+            "Manifestation of bleeding from both tracts is said to be incurable."
+          ]
+        },
+        {
+          "chapterNumber": 3,
+          "sanskritName": "Gulma Nidana",
+          "englishName": "Abdominal Tumors",
+          "summary": "The third chapter describes etiology, pathogenesis, clinical features and therapeutics of lumps in abdomen. Gulma is a growth that could occur anywhere in the body, primarily caused by vitiated vata. The description denotes localized intra-abdominal swellings of multiple origin. In patients weakened by diseases or cleansing therapies, or suffering from stressful conditions, vata gets vitiated and enters mahasrotas causing formation of gulma. There are five types: four common to both males and females, and one (raktaja gulma) limited to females in uterine region.",
+          "keyConcepts": [
+            "Gulma (abdominal lumps/tumors)",
+            "Vata as primary causative factor",
+            "Mahastrotas involvement",
+            "Five types of Gulma",
+            "Vata Gulma",
+            "Pitta Gulma",
+            "Kapha Gulma",
+            "Sannipatika Gulma",
+            "Raktaja Gulma (women only)",
+            "Mamsa dhatu involvement",
+            "Siragranthi (glandular/tumorous)",
+            "Srotodushti (vitiation of channels)",
+            "Prognosis - Sannipatika incurable",
+            "Management based on dosha predominance"
+          ],
+          "importantVerses": [
+            "Gulma is a disease of mahasrotas caused due to predominance of vata.",
+            "Sannipatika gulma is incurable, rest four are curable when treated timely.",
+            "Vata gets vitiated by two basic means - dhatukshaya (tissue wasting) and margavarana (obstruction)."
+          ]
+        },
+        {
+          "chapterNumber": 4,
+          "sanskritName": "Prameha Nidana",
+          "englishName": "Urinary Disorders",
+          "summary": "This chapter describes Prameha (obstinate urinary disorders including diabetes), its etiopathogenesis, types, clinical features, prognosis, prodromal symptoms, complications and line of treatment. Though predominantly a kapha dosha disorder, there are variants involving all three doshas and ten dushya. Excessive and turbid urination are cardinal signs. The chapter explains interaction of exogenous factors, endogenous and tissue response factors in disease manifestation. Twenty types are described: ten curable kaphaja, six palliative, and four incurable vataja.",
+          "keyConcepts": [
+            "Prameha (urinary disorders including diabetes)",
+            "Kapha dosha predominance",
+            "Meda dhatu involvement",
+            "Mutra (urine) vitiation",
+            "Ten dushya in Prameha",
+            "Kleda (moisture/excess discharge)",
+            "Twenty types of Prameha",
+            "Kaphaja Prameha (10 types - curable)",
+            "Pittaja Prameha (6 types - palliative)",
+            "Vataja Prameha (4 types - incurable)",
+            "Madhumeha (diabetes mellitus)",
+            "Sahaja (hereditary) Prameha",
+            "Apathyanimittaja (acquired) Prameha",
+            "Prodromal symptoms",
+            "Genetic susceptibility concept",
+            "Obesity and diabetes correlation"
+          ],
+          "importantVerses": [
+            "Excessive and turbid urination are the cardinal signs of all prameha.",
+            "Vitiated kapha affects ten fluid-predominant body tissues, resulting in production of excessive kleda.",
+            "Manifestation of disease depends upon interaction between causative factors, dosha, dushya and defense mechanism."
+          ]
+        },
+        {
+          "chapterNumber": 5,
+          "sanskritName": "Kushtha Nidana",
+          "englishName": "Skin Diseases",
+          "summary": "This chapter deals with diagnosis of skin disease termed Kushtha. The disease has variable manifestations on skin depending upon degree of involvement of three vitiated dosha and their effect on four vitiated factors (rasa, rakta, mamsa, lasika). On basis of clinical manifestations and severity, Kushtha is classified into seven major types, eleven minor types or innumerable types. The chapter covers etiopathology, prodromal symptoms, symptomatology of seven major types, dosha predominance, prognosis, complications and significance of early treatment.",
+          "keyConcepts": [
+            "Kushtha (skin diseases)",
+            "Tridosha involvement",
+            "Four vitiated dhatus (tvak, rakta, mamsa, lasika)",
+            "Seven major types (maha kushtha)",
+            "Eleven minor types (kshudra kushtha)",
+            "Kapala Kushtha",
+            "Udumbara Kushtha",
+            "Mandala Kushtha",
+            "Rishyajihva Kushtha",
+            "Pundarika Kushtha",
+            "Sidhma Kushtha",
+            "Kakanaka Kushtha",
+            "Saptaka dravya (seven factors)",
+            "Prodromal symptoms (purvarupa)",
+            "Doshapredominance in skin lesions",
+            "Color, texture, margins of lesions"
+          ],
+          "importantVerses": [
+            "Pathology of skin diseases originates from deranged physiology of seven factors - vata, pitta, kapha doshas and tvak, mamsa, shonita, lasika.",
+            "Kushtha is result of combined and simultaneous involvement of all three dosha and vitiation of four body constituents.",
+            "Seven mahakushtha and eleven kshudrakushtha are described."
+          ]
+        },
+        {
+          "chapterNumber": 6,
+          "sanskritName": "Shosha Nidana",
+          "englishName": "Wasting/Emaciation",
+          "summary": "This chapter describes basics of etiopathogenesis of progressive wasting disease termed Shosha and its culmination in Rajayakshma (pulmonary tuberculosis). Shosha is characterized by severe depletion of tissues (phthisis). Four primary causes: overexertion (sahasa), suppression of natural urges (vegavidharana), pre-existing emaciation (kshaya), and wrong dietary habits (vishamashana). These lead to progressive loss of strength, vitiating three doshas and culminating in Rajayakshma.",
+          "keyConcepts": [
+            "Shosha (wasting/emaciation)",
+            "Rajayakshma (pulmonary tuberculosis)",
+            "Four causes of Shosha",
+            "Sahara (overexertion)",
+            "Vegavidharana (suppression of urges)",
+            "Kshaya (pre-existing emaciation)",
+            "Vishamashana (dietary errors)",
+            "Dhatukshaya (tissue depletion)",
+            "Ojakshaya (loss of immunity)",
+            "Nidanarthakara roga",
+            "Chronic wasting diseases",
+            "Immune defense mechanism",
+            "Rasayana (rejuvenation)",
+            "Phthisis correlation"
+          ],
+          "importantVerses": [
+            "There are four causes of shosha: overexertion, suppression of urges, wasting, and irregular consumption of improper food articles.",
+            "Shosha is different from kshataksheena - a post-treatment stage of localized or generalized emaciation.",
+            "Shosha and kshaya can be considered as independent clinical entities warranting independent strategies."
+          ]
+        },
+        {
+          "chapterNumber": 7,
+          "sanskritName": "Unmada Nidana",
+          "englishName": "Mental Disorders",
+          "summary": "This chapter describes detailed etiopathogenesis and types of major mental disorders named Unmada. The word literally means frenzy, madness or mental derangement. Characterized by disordered mental state in faculties of mind and intellect, leading to perverted thought processes, decision making, intellectual functioning, orientation, responsiveness, memory, desires, habits, character, psychomotor activity, conduct and behaviour. Unmada is classified into two broad categories: nija (endogenous - vata, pitta, kapha, sannipataja) and agantu (exogenous).",
+          "keyConcepts": [
+            "Unmada (mental disorders/psychosis)",
+            "Manas (mind)",
+            "Buddhi (intellect)",
+            "Ahamkara (ego)",
+            "Endogenous Unmada (nija)",
+            "Exogenous Unmada (agantu)",
+            "Vataja Unmada",
+            "Pittaja Unmada",
+            "Kaphaja Unmada",
+            "Sannipatika Unmada",
+            "Prajnaparadha (intellectual error)",
+            "Thought disturbances",
+            "Memory impairment (smriti nasa)",
+            "Behavioral disturbances",
+            "Psychomotor disturbances",
+            "Correlation with schizophrenia",
+            "Correlation with manic psychosis",
+            "Correlation with psychotic depression"
+          ],
+          "importantVerses": [
+            "Unmada covers a wide range of major mental disorders and is synonymous with madness and mental derangement.",
+            "Patient develops derangement of all activities of manas, buddhi, ahamkara and indriyas.",
+            "When doshas move upwards into the head, they cause aberrations in functioning of manas producing mada."
+          ]
+        },
+        {
+          "chapterNumber": 8,
+          "sanskritName": "Apasmara Nidana",
+          "englishName": "Epilepsy",
+          "summary": "This chapter deals with psychiatric disorder leading to transient loss of consciousness termed Apasmara. It describes causative factors, predisposing conditions, pathogenesis, signs, types and prognosis. The clinical presentation simulates seizure disorders. Apasmara is a neuropsychiatric disorder characterized by intermittent loss of consciousness, memory, abnormal movements and blackouts. The chapter explores principles of psychiatric disorders involving memory, mind, consciousness and intellect. It also deals with Nidanarthakara roga - how one disease triggers another.",
+          "keyConcepts": [
+            "Apasmara (epilepsy/seizure disorders)",
+            "Transient loss of consciousness",
+            "Memory loss (smara)",
+            "Abnormal movements",
+            "Blackouts",
+            "Four types of Apasmara",
+            "Vataja Apasmara",
+            "Pittaja Apasmara",
+            "Kaphaja Apasmara",
+            "Sannipatika Apasmara",
+            "Mahagada (most dreadful disease)",
+            "Nidanarthakara roga",
+            "Mind-brain connection",
+            "Mind-heart connection",
+            "Exogenous factors",
+            "Prognosis based on type"
+          ],
+          "importantVerses": [
+            "Apasmara simulates epilepsy in its features.",
+            "Ayurveda emphasizes heart as core pathological site while covering diseases of memory, intellect and psyche.",
+            "Vitiated doshas get through vessels of heart and move upwards to brain, afflicting senses and altering memory."
+          ]
+        }
+      ]
+    },
+    {
+      "sthanaName": "Vimana Sthana",
+      "sthanaNameEnglish": "Specific Medical Principles",
+      "description": "Vimana Sthana is about quantification of vitiation of dosha and other specific factors responsible for causing disease or impairing health. It describes dietary regulations, causes of epidemics, basic body systems, acquiring knowledge of disease and patient, and medical education.",
+      "totalChapters": 8,
+      "chapters": [
+        {
+          "chapterNumber": 1,
+          "sanskritName": "Rasa Vimana",
+          "englishName": "Taste and Food",
+          "summary": "The chapter deals with taste (rasa) and its importance in diet related to health. There are six rasas: madhura (sweet), amla (sour), lavana (saline), katu (pungent), tikta (bitter), and kashaya (astringent). These have pacifying and provoking effects on physiological status of dosha due to conjunction of rasas and dosha by virtue of their similar and dissimilar properties. Eight specific factors of dieting and twelve guidelines about eating food are described.",
+          "keyConcepts": [
+            "Six Rasas (tastes)",
+            "Madhura (sweet) - aggravates kapha, pacifies vata and pitta",
+            "Amla (sour) - aggravates pitta and kapha, pacifies vata",
+            "Lavana (salty) - similar to amla",
+            "Katu (pungent) - aggravates vata and pitta, pacifies kapha",
+            "Tikta (bitter) - similar to katu",
+            "Kashaya (astringent) - similar to katu",
+            "Mahabhuta composition of rasas",
+            "Prakriti (nature of food)",
+            "Karana (processing)",
+            "Samyoga (combination)",
+            "Rashi (quantity)",
+            "Desha (place)",
+            "Kala (time/stage of disease)",
+            "Upayoga samstha (rules for use)",
+            "Upayoktra (consumer)",
+            "Ashta ahara vishesha ayatana"
+          ],
+          "importantVerses": [
+            "Rasas are six - sweet, sour, saline, pungent, bitter and astringent.",
+            "Three rasa aggravate one dosha, whereas others pacify it.",
+            "Proportionate use of all six rasas in diet is considered healthy practice."
+          ]
+        },
+        {
+          "chapterNumber": 2,
+          "sanskritName": "Trividhakukshiya Vimana",
+          "englishName": "Three Types of Abdomen",
+          "summary": "This chapter deals with classification of individuals based on the type of abdomen (kukshi) and their digestive capacity. The three types help in determining dietary and therapeutic approaches. It provides knowledge about different body constitutions and their response to treatment.",
+          "keyConcepts": [
+            "Trividha Kukshi (three types of abdomen)",
+            "Digestive capacity assessment",
+            "Body constitution types",
+            "Therapeutic considerations based on type",
+            "Dietary guidelines according to type"
+          ]
+        },
+        {
+          "chapterNumber": 3,
+          "sanskritName": "Janapadodhvansaniya Vimana",
+          "englishName": "Epidemics",
+          "summary": "This chapter deals with prevention of various epidemic disorders caused due to polluted air, water, soil and season. The contamination of these four factors is basic cause of higher mortality rate in an area. The four main environmental factors: vayu (air), jala (water), desha (land) and kaala (season) cause epidemic situations. Root cause of vitiation is adharma (unrighteousness) and prajnaparadha (intellectual error).",
+          "keyConcepts": [
+            "Janapadodhvansa (epidemics/pandemics)",
+            "Vayu (vitiated air)",
+            "Jala (vitiated water)",
+            "Desha (vitiated land)",
+            "Kaala (vitiated season)",
+            "Sadharana hetu (common causative factors)",
+            "Asadharana hetu (specific factors)",
+            "Prajnaparadha (intellectual error)",
+            "Adharma (unrighteousness)",
+            "Epidemiological triad",
+            "Social hygiene",
+            "Environmental management",
+            "Preventive measures for epidemics",
+            "Lifespan and era changes"
+          ],
+          "importantVerses": [
+            "The common factors which affect mass population are vayu, jala, desha and kaala.",
+            "Root cause of vitiation of these factors is adharma and prajnaparadha.",
+            "When righteous acts disappear, seasons get impaired, air does not blow properly, land is afflicted, water reservoirs dry up."
+          ]
+        },
+        {
+          "chapterNumber": 4,
+          "sanskritName": "Trividha Roga Vishesha Vijnaniya Vimana",
+          "englishName": "Three Types of Disease Knowledge",
+          "summary": "This chapter describes three methods for knowledge of disease - Trividha Pariksha. The three methods are: Aptopadesha (authoritative knowledge from scriptures), Pratyaksha (direct observation), and Anumana (inference). These methods are essential for proper clinical examination of patient and disease diagnosis.",
+          "keyConcepts": [
+            "Trividha Pariksha (three-fold examination)",
+            "Aptopadesha (authoritative knowledge)",
+            "Pratyaksha (direct observation)",
+            "Anumana (inference)",
+            "Yukti (logic based interpretation)",
+            "Rogapariksha (examination of disease)",
+            "Rogi Pariksha (examination of patient)",
+            "Six types of examination (shadvidha)",
+            "Eight types of examination (ashtavidha)",
+            "Clinical examination methods",
+            "Prognosis assessment",
+            "Arishta (signs of imminent death)"
+          ],
+          "importantVerses": [
+            "One should examine various aspects of diseases by employing all three pramanas.",
+            "Observations made on nature of disease thereafter are infallible.",
+            "All three methods of examination are always to be used in sequence."
+          ]
+        },
+        {
+          "chapterNumber": 5,
+          "sanskritName": "Sroto Vimana",
+          "englishName": "Channels of Circulation",
+          "summary": "This chapter provides detailed description of srotas (transportation and perfusion channels) in the body. Thirteen gross channels are clinically approachable: three channels for intake (pranavaha, udakavaha, annavaha), three for excretion (purishavaha, mutravaha, swedavaha), and seven for dhatu sustenance (rasavaha, raktavaha, mamsavaha, medovaha, asthivaha, majjavaha, shukravaha). Each channel has pair of base organs. Ama is most common cause of srotodushti.",
+          "keyConcepts": [
+            "Srotas (channels of circulation)",
+            "Thirteen gross channels",
+            "Pranavaha srotas - respiratory",
+            "Udakavaha srotas - water",
+            "Annavaha srotas - food",
+            "Purishavaha srotas - feces",
+            "Mutravaha srotas - urine",
+            "Swedavaha srotas - sweat",
+            "Seven dhatu vaha srotas",
+            "Srotas root (mula)",
+            "Srotodushti (vitiation of channels)",
+            "Sroto Vimarsha - common features of vitiation",
+            "Hyperactivity of srotas",
+            "Hypoactivity of srotas",
+            "Distortions and swellings",
+            "Diversions of pathway",
+            "Ama as cause of srotas disorders"
+          ],
+          "importantVerses": [
+            "Srotas are innumerable, but 13 gross channels are clinically approachable.",
+            "Each of these channels has been described to possess a pair of base organs called mula.",
+            "Ama, the by-product of diminished agni, is the most common cause of srotodushti."
+          ]
+        },
+        {
+          "chapterNumber": 6,
+          "sanskritName": "Roganika Vimana",
+          "englishName": "Disease Categories",
+          "summary": "This chapter deals with classification and categorization of diseases. It provides knowledge about different disease families, their characteristics and specific features. The chapter helps in understanding disease patterns and their management.",
+          "keyConcepts": [
+            "Disease classification",
+            "Roga vishesha (specific diseases)",
+            "Disease families",
+            "Doshaja diseases",
+            "Dhatuja diseases",
+            "Categories of diseases",
+            "Specific disease features"
+          ]
+        },
+        {
+          "chapterNumber": 7,
+          "sanskritName": "Vyadhita Rupiya Vimana",
+          "englishName": "Patient Presentation",
+          "summary": "This chapter deals with examination of the diseased patient (Vyadhita). It provides detailed guidelines for patient assessment including physical examination, understanding patient's condition, and determining appropriate treatment approach based on the presentation of disease.",
+          "keyConcepts": [
+            "Vyadhita (diseased patient)",
+            "Patient examination",
+            "Rogi pariksha (patient assessment)",
+            "Disease presentation",
+            "Clinical examination",
+            "Treatment planning based on presentation"
+          ]
+        },
+        {
+          "chapterNumber": 8,
+          "sanskritName": "Rogabhishagjitiya Vimana",
+          "englishName": "Medical Education",
+          "summary": "This chapter describes the qualities of an ideal teacher, medical student, and how to acquire medical knowledge. It provides guidelines for medical education including means to evaluate a medical treatise and ways to enhance medical knowledge by organizing medical conferences, group discussions and debates.",
+          "keyConcepts": [
+            "Qualities of ideal teacher",
+            "Qualities of medical student",
+            "Medical education methods",
+            "Medical treatise evaluation",
+            "Medical conferences",
+            "Group discussions",
+            "Debates for knowledge enhancement",
+            "Clinical training",
+            "Academic excellence"
+          ]
+        }
+      ]
+    },
+    {
+      "sthanaName": "Sharira Sthana",
+      "sthanaNameEnglish": "Human Being and Genesis",
+      "description": "Sharira Sthana deals with various aspects of human being - from origin of human beings to embryology, physiology, obstetrics, and neonatology, before delving into study of human anatomy.",
+      "totalChapters": 8,
+      "chapters": [
+        {
+          "chapterNumber": 1,
+          "sanskritName": "Katidhapurusha Sharira",
+          "englishName": "Dimensions of Human Body",
+          "summary": "This chapter describes purusha (human being) in context of samyoga purusha (logical body of six constituents - shad-dhatuja), of twenty-four constituents (chaturvimshati-tattvatmak), or that which is ideal for treatment (chikitsya purusha). It deals with types of purusha, origin, constituents, details about mind and soul, process of knowledge, theory of evolution and destruction, types of diseases, treatment, and salvation.",
+          "keyConcepts": [
+            "Purusha (human being)",
+            "Shad-dhatuja purusha (six constituents)",
+            "Chaturvimshati-tattvatmak purusha (24 constituents)",
+            "Chikitsya purusha (treatment-worthy)",
+            "Ativahika purusha (subtle body)",
+            "Soul (Atma)",
+            "Mind (Manas)",
+            "Intellect (Buddhi)",
+            "Ego (Ahamkara)",
+            "Five Mahabhuta",
+            "Consciousness",
+            "Theory of evolution",
+            "Theory of destruction",
+            "Types of miseries",
+            "Causes of misery",
+            "Yoga for salvation",
+            "Spiritual health"
+          ],
+          "importantVerses": [
+            "Purusha comprises of six dhatu - five mahabhuta in subtle form and consciousness.",
+            "Purusha comprises of twenty-four dhatu - mind, ten indriya, five objects of sense organs and prakriti.",
+            "Ultimate reason for all kinds of pain is that human beings do not realize body and soul to be distinct."
+          ]
+        },
+        {
+          "chapterNumber": 2,
+          "sanskritName": "Atulyagotriya Sharira",
+          "englishName": "Units of Reproduction",
+          "summary": "This chapter deals with units of reproduction and genetic principles. It covers aspects of beeja (seed/sperm), shonita (ovum), factors determining progeny, hereditary characteristics, and concepts of genetic inheritance in Ayurveda.",
+          "keyConcepts": [
+            "Atulyagotriya (units of reproduction)",
+            "Beeja (sperm/seed)",
+            "Shonita (ovum)",
+            "Genetic principles",
+            "Hereditary characteristics",
+            "Factors determining progeny",
+            "Beeja shuddhi (purification of seed)",
+            "Inheritance of traits"
+          ]
+        },
+        {
+          "chapterNumber": 3,
+          "sanskritName": "Khuddika Garbhavakranti Sharira",
+          "englishName": "Embryogenesis - Minor",
+          "summary": "This chapter describes minor embryogenesis - the initial stages of fetal development. It covers month-wise development of embryo, formation of various body parts, and developmental milestones during pregnancy.",
+          "keyConcepts": [
+            "Minor embryogenesis",
+            "Garbha (embryo)",
+            "Month-wise development",
+            "Organ formation",
+            "Fetal development stages",
+            "Garbhini paricharya (pregnancy care)",
+            "Monthly regimen for pregnant woman"
+          ]
+        },
+        {
+          "chapterNumber": 4,
+          "sanskritName": "Mahatigarbhavakranti Sharira",
+          "englishName": "Embryogenesis - Major",
+          "summary": "This chapter deals with major embryogenesis - detailed study of fetal development including formation of all body systems, organs, and tissues. It covers comprehensive month-wise development and factors affecting fetal growth.",
+          "keyConcepts": [
+            "Major embryogenesis",
+            "Detailed fetal development",
+            "Organogenesis",
+            "Dhatu formation",
+            "Month-wise growth",
+            "Fetal nutrition",
+            "Factors affecting development",
+            "Garbha poshana (fetal nutrition)"
+          ]
+        },
+        {
+          "chapterNumber": 5,
+          "sanskritName": "Purusha Vichaya Sharira",
+          "englishName": "Study of Human",
+          "summary": "This chapter provides comprehensive study of human being - physical, physiological and psychological aspects. It deals with detailed analysis of human body, mind, and their interrelationships.",
+          "keyConcepts": [
+            "Comprehensive study of human",
+            "Physical body analysis",
+            "Physiological functions",
+            "Psychological aspects",
+            "Body-mind relationship",
+            "Holistic human understanding"
+          ]
+        },
+        {
+          "chapterNumber": 6,
+          "sanskritName": "Sharira Vichaya Sharira",
+          "englishName": "Analytical Study of Body",
+          "summary": "This chapter deals with analytical study of body - definition of body, main factors for good health, equilibrium state, lifestyle and diet for maintenance. It includes discussion on which organ appears first during intra-uterine life and lifespan assessment.",
+          "keyConcepts": [
+            "Analytical study of body",
+            "Definition of Sharira",
+            "State of equilibrium",
+            "Factors for good health",
+            "Healthy lifestyle",
+            "Dietary guidelines",
+            "Organ development sequence",
+            "Lifespan assessment (100 years)",
+            "Micro-level understanding of body"
+          ]
+        },
+        {
+          "chapterNumber": 7,
+          "sanskritName": "Sharira Sankhya Sharira",
+          "englishName": "Anthropometry",
+          "summary": "This chapter covers anthropometry - number and measurements of body organs and structures. It includes description of skin (twak), six sections of body (shadanga), bones (asthi), sense organs (indriya), viscera (koshthanga), and various measurements including anguli pramana and anjali pramana.",
+          "keyConcepts": [
+            "Anthropometry",
+            "Sharira Sankhya (body counts)",
+            "Twak Sharira (skin)",
+            "Shadanga Sharira (six body parts)",
+            "Asthi Sharira (osteology)",
+            "Indriya Sharira (neurology)",
+            "Koshthanga (viscera)",
+            "Pratyangas (specific body regions)",
+            "Nine major openings",
+            "Anguli pramana (finger measurements)",
+            "Anjali pramana (palm measurements)",
+            "Paramanubhediya Sharira (microscopic anatomy)",
+            "360 bones in body",
+            "Dhatu measurements in anjali"
+          ],
+          "importantVerses": [
+            "Including teeth, teeth sockets and nails, human bones are 360 in number.",
+            "Quantity of rasa dhatu is nine anjalis, rakta is eight, mamsa is seven.",
+            "Water within whole body is equal to ten anjalis."
+          ]
+        },
+        {
+          "chapterNumber": 8,
+          "sanskritName": "Jatisutriya Sharira",
+          "englishName": "Progeny and Delivery",
+          "summary": "This chapter deals with progeny and delivery - aspects of conception, pregnancy, childbirth and neonatal care. It covers garbhini paricharya (pregnancy care), prasuta paricharya (postpartum care), and jatamatra paricharya (newborn care).",
+          "keyConcepts": [
+            "Jatisutriya (progeny and delivery)",
+            "Conception",
+            "Garbhini paricharya (pregnancy care)",
+            "Prasuta paricharya (postpartum care)",
+            "Jatamatra paricharya (newborn care)",
+            "Safe birth practices",
+            "Neonatal care",
+            "Prenatal care",
+            "Postnatal care"
+          ]
+        }
+      ]
+    }
+  ],
+  "references": [
+    {
+      "source": "Charak Samhita - Carakasamhitaonline.com",
+      "description": "Online edition of Charak Samhita with translations and commentaries"
+    }
+  ]
+}

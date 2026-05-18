@@ -7,6 +7,10 @@ export * from './allopathy'
 export * from './charak-samhita'
 
 import charakAllChapters from './charak-all-chapters.json'
+import charakSutraSthana from './charak-sutra-sthana.json'
+import charakNidanaVimanaSharira from './charak-nidana-vimana-sharira.json'
+import charakIndriyaChikitsa from './charak-indriya-chikitsa.json'
+import charakKalpaSiddhi from './charak-kalpa-siddhi.json'
 import whoTerminology from './who-terminology.json'
 
 import { FUNDAMENTALS, ASHTANGAS } from './fundamentals'
@@ -19,6 +23,12 @@ import { CHARAK_SAMHITA, KEY_CONCEPTS, CHAPTER_SUMMARY } from './charak-samhita'
 
 const { metadata: charakMetadata, sthanas } = charakAllChapters as { metadata: any, sthanas: any[] }
 const whoData = whoTerminology as { metadata: any, categories: any[], termsIndex: Record<string, any> }
+
+// Parse all comprehensive chapter data
+const sutraSthanaData = charakSutraSthana as any
+const nidanaVimanaShariraData = charakNidanaVimanaSharira as any
+const indriyaChikitsaData = charakIndriyaChikitsa as any
+const kalpaSiddhiData = charakKalpaSiddhi as any
 
 export const AYURVEDA_KNOWLEDGE = {
   fundamentals: FUNDAMENTALS,
@@ -48,7 +58,16 @@ export const AYURVEDA_KNOWLEDGE = {
   charakMetadata: charakMetadata,
   whoTerminology: whoData.categories,
   whoTermsIndex: whoData.termsIndex,
-  whoMetadata: whoData.metadata
+  whoMetadata: whoData.metadata,
+  // Comprehensive Charak Samhita with 50-60+ concepts per chapter
+  charakSutraSthana: sutraSthanaData.chapters,
+  charakNidanaSthana: nidanaVimanaShariraData.nidanaSthana,
+  charakVimanaSthana: nidanaVimanaShariraData.vimanaSthana,
+  charakShariraSthana: nidanaVimanaShariraData.shariraSthana,
+  charakIndriyaSthana: indriyaChikitsaData.indriyaSthana,
+  charakChikitsaSthana: indriyaChikitsaData.chikitsaSthana,
+  charakKalpaSthana: kalpaSiddhiData.kalpaSthana,
+  charakSiddhiSthana: kalpaSiddhiData.siddhiSthana
 }
 
 export function searchKnowledge(query: string): string {
