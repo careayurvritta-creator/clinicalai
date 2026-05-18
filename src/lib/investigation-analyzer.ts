@@ -238,7 +238,7 @@ export function formatFindingsForChat(findings: InvestigationFinding[]): string 
       const statusEmoji = finding.status === 'critical' ? '🔴' : '🟡'
       lines.push(`${statusEmoji} **${finding.parameter}**: ${finding.value} ${finding.unit}`)
       lines.push(`   - Normal Range: ${finding.normalRange}`)
-      lines.push(`   - ${finding.ayurvedicCorrelation || 'Clinical significance to be assessed'}`)
+      lines.push(`   - ${finding.clinicalCorrelation || 'Clinical significance to be assessed'}`)
       lines.push('')
     }
   }

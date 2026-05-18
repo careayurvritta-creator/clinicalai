@@ -16,8 +16,8 @@ const intakeRequestSchema = z.object({
     chiefComplaints: z.array(z.object({
       id: z.string(),
       complaint: z.string(),
-      duration: z.string().optional(),
-      severity: z.number().optional(),
+      duration: z.string().default(''),
+      severity: z.number().default(5),
       location: z.string().optional(),
       onset: z.string().optional(),
       aggravatingFactors: z.array(z.string()).optional(),
@@ -259,7 +259,7 @@ export async function POST(req: NextRequest) {
         } else if (currentStep === 5) {
           const newComplaint: ChiefComplaint = {
             id: `complaint_${Date.now()}`,
-            complaint: answer,
+            complaint: answer ?? '',
             duration: '',
             severity: 5,
           }

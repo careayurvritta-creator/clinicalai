@@ -48,10 +48,10 @@ function generateProtocol(patientInfo: PatientInfo, treatmentSelection: Treatmen
 
   if (selectedDisease) {
     protocol += `## Disease Understanding\n`
-    protocol += `- **Description:** ${selectedDisease.description}\n`
+    protocol += `- **Description:** ${selectedDisease.modernCorrelation}\n`
     protocol += `- **Samprapti:** ${selectedDisease.samprapti || 'Traditional pathogenesis'}\n`
-    protocol += `- **Affected Doshas:** ${selectedDisease.doshas?.join(', ') || 'V, P, K'}\n`
-    protocol += `- **Affected Dhatus:** ${selectedDisease.dhatus?.join(', ') || 'All'}\n\n`
+    protocol += `- **Affected Doshas:** ${selectedDisease.doshaInvolvement?.join(', ') || 'V, P, K'}\n`
+    protocol += `- **Clinical Features:** ${selectedDisease.clinicalFeatures?.join(', ') || 'As per classical texts'}\n\n`
   }
 
   if (selectedPurvakarma.length > 0) {
@@ -99,12 +99,12 @@ function generateProtocol(patientInfo: PatientInfo, treatmentSelection: Treatmen
     protocol += `## Phase 3: Adjuvant Herbs & Formulations\n`
     selectedHerbs.forEach((h, index) => {
       protocol += `### ${selectedPurvakarma.length + selectedTreatments.length + index + 1}. ${h.name}\n`
-      protocol += `- **Botanical:** ${h.botanical}\n`
+      protocol += `- **Botanical:** ${h.botanicalName}\n`
       protocol += `- **Rasa:** ${h.rasa?.join(', ') || 'Madhura (Sweet)'}\n`
       protocol += `- **Virya:** ${h.virya || 'Sheeta (Cooling)'}\n`
       protocol += `- **Vipaka:** ${h.vipaka || 'Madhura (Sweet)'}\n`
-      protocol += `- **Indications:** ${h.primaryIndications?.join(', ') || 'General tonic'}\n`
-      protocol += `- **Dosage:** ${h.classicalFormulations?.[0]?.dosage || '3-5 grams daily'}\n`
+      protocol += `- **Indications:** ${h.indications?.join(', ') || 'General tonic'}\n`
+      protocol += `- **Dosage:** ${h.dosage || '3-5 grams daily'}\n`
       if (h.contraindications && h.contraindications.length > 0) {
         protocol += `- **Cautions:** ${h.contraindications.join(', ')}\n`
       }

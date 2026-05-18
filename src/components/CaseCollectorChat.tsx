@@ -53,6 +53,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
         role: 'assistant',
         content: data.message,
         timestamp: Date.now(),
+        status: 'complete',
       })
 
       if (data.progress) {
@@ -64,6 +65,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
         role: 'assistant',
         content: 'Sorry, I encountered an error. Please try again.',
         timestamp: Date.now(),
+        status: 'error',
       })
     } finally {
       setIsLoading(false)
@@ -80,6 +82,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
       role: 'user',
       content: answer,
       timestamp: Date.now(),
+      status: 'complete',
     })
 
     const updatedCaseData = { ...caseData }
@@ -121,8 +124,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
           role: 'assistant',
           content: data.question.question,
           timestamp: Date.now(),
-          isQuestion: true,
-          questionData: data.question,
+          status: 'complete',
         })
         setCurrentStep(currentStep + 1)
       }
@@ -136,6 +138,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
         role: 'assistant',
         content: 'Error processing answer. Please try again.',
         timestamp: Date.now(),
+        status: 'error',
       })
     } finally {
       setIsLoading(false)
@@ -164,6 +167,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
           role: 'assistant',
           content: data.diagnosis,
           timestamp: Date.now(),
+          status: 'complete',
         })
         setCanvasContent(data.diagnosis)
       }
@@ -177,6 +181,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
         role: 'assistant',
         content: 'Error generating diagnosis. Please try again.',
         timestamp: Date.now(),
+        status: 'error',
       })
     } finally {
       setIsLoading(false)

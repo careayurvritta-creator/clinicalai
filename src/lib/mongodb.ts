@@ -17,7 +17,7 @@ export async function connectToDatabase(): Promise<any> {
   }
   
   try {
-    const { MongoClient } = await import('mongodb')
+    const { MongoClient } = await import('mongodb' as string)
     const client = new MongoClient(MONGODB_URI)
     await client.connect()
     isConnected = true

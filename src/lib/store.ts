@@ -3,10 +3,11 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import type { ChatState, Message, Attachment, CaseData, IntakeState, StoredCase } from './types'
 import { DEFAULT_MODEL } from './types'
 
-const defaultState: Omit<ChatState, 'isStreaming'> = {
+const defaultState: Omit<ChatState, 'isStreaming' | 'intakeState'> = {
   messages: [],
   selectedModel: DEFAULT_MODEL,
   canvasContent: '',
+  activeModule: 'chat',
 }
 
 const initialCaseData: CaseData = {
@@ -128,17 +129,17 @@ export const useChatStore = create<ChatState & ChatActions>()(
 
       setActiveModule: (module) => set({ activeModule: module }),
 
-      setIntakeState: (state) =>
+      setIntakeState: (stateUpdate) =>
         set((prev) => ({
-          intakeState: { ...prev.intakeState, ...state },
+          intakeState: { ...prev.intakeState, ...stateUpdate } as IntakeState,
         })),
 
       updateCaseData: (data) =>
         set((state) => ({
           intakeState: {
             ...state.intakeState,
-            caseData: { ...state.intakeState.caseData, ...data },
-          },
+            caseData: { ...(state.intakeState?.caseData ?? initialCaseData), ...data },
+          } as IntakeState,
         })),
 
       addChiefComplaint: (complaint) =>
@@ -146,10 +147,10 @@ export const useChatStore = create<ChatState & ChatActions>()(
           intakeState: {
             ...state.intakeState,
             caseData: {
-              ...state.intakeState.caseData,
-              chiefComplaints: [...state.intakeState.caseData.chiefComplaints, complaint],
+              ...(state.intakeState?.caseData ?? initialCaseData),
+              chiefComplaints: [...(state.intakeState?.caseData.chiefComplaints ?? []), complaint],
             },
-          },
+          } as IntakeState,
         })),
 
       updateProvisionalDiagnosis: (diagnosis, reasoning) =>
@@ -157,12 +158,12 @@ export const useChatStore = create<ChatState & ChatActions>()(
           intakeState: {
             ...state.intakeState,
             caseData: {
-              ...state.intakeState.caseData,
+              ...(state.intakeState?.caseData ?? initialCaseData),
               provisionalDiagnosis: diagnosis,
               provisionalReasoning: reasoning,
             },
             showProvisionalDiagnosis: true,
-          },
+          } as IntakeState,
         })),
 
       resetIntake: () =>
@@ -178,7 +179,7 @@ export const useChatStore = create<ChatState & ChatActions>()(
           intakeState: {
             ...state.intakeState,
             showProvisionalDiagnosis: show,
-          },
+          } as IntakeState,
         })),
     }),
     {
