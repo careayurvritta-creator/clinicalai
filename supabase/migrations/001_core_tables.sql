@@ -1,5 +1,6 @@
 -- Migration 001: Core tables (profiles, patients, cases)
 -- Created: 2026-05-18
+-- Updated: 2026-05-18
 -- Description: Foundation tables for the Ayurvedic Clinical AI system
 
 -- Enable required extensions
