@@ -348,7 +348,7 @@ export const DRUG_INTERACTIONS: Array<{
   { herb: 'Ginkgo', drugClass: 'Anticoagulants', mechanism: 'Strong antiplatelet', effect: 'Bleeding risk', severity: 'high', recommendation: 'Avoid combination' },
   { herb: 'Shatavari', drugClass: 'Diuretics', mechanism: 'May cause electrolyte imbalance', effect: 'Potassium loss', severity: 'moderate', recommendation: 'Monitor electrolytes' },
   { herb: 'Shatavari', drugClass: 'Digoxin', mechanism: 'May increase potassium', effect: 'Arrhythmia risk', severity: 'moderate', recommendation: 'Monitor levels' },
-  { herb: 'St. John\\'s Wort', drugClass: 'Many drugs', mechanism: 'Cytochrome P450 induction', effect: 'Reduced drug levels', severity: 'high', recommendation: 'Avoid most combinations' }
+  { herb: 'St. Johns Wort', drugClass: 'Many drugs', mechanism: 'Cytochrome P450 induction', effect: 'Reduced drug levels', severity: 'high', recommendation: 'Avoid most combinations' }
 ]
 
 export const RASAS = [
