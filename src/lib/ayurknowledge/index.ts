@@ -4,6 +4,9 @@ export * from './diseases'
 export * from './herbs'
 export * from './treatments'
 export * from './allopathy'
+export * from './charak-samhita'
+
+import charakAllChapters from './charak-all-chapters.json'
 
 import { FUNDAMENTALS, ASHTANGAS } from './fundamentals'
 import { DIAGNOSTIC_METHODS } from './diagnostics'
@@ -11,6 +14,9 @@ import { DISEASES } from './diseases'
 import { HERBS, DRUG_INTERACTIONS, RASAS, GUNAS, VIRYAS, VIPAKAS } from './herbs'
 import { TREATMENTS, PURVAKARMA, RASAYANA_THERAPIES, PATHYA_APATHYA, DINACHARYA, RITUCHARYA } from './treatments'
 import { ALLOPATHY_INTEGRATION, DRUG_INTERACTION_DATABASE, PRESCRIBING_GUIDELINES, SAFETY_WARNINGS } from './allopathy'
+import { CHARAK_SAMHITA, KEY_CONCEPTS, CHAPTER_SUMMARY } from './charak-samhita'
+
+const { metadata, sthanas } = charakAllChapters as { metadata: any, sthanas: any[] }
 
 export const AYURVEDA_KNOWLEDGE = {
   fundamentals: FUNDAMENTALS,
@@ -32,7 +38,12 @@ export const AYURVEDA_KNOWLEDGE = {
   rasas: RASAS,
   gunas: GUNAS,
   viryas: VIRYAS,
-  vipakas: VIPAKAS
+  vipakas: VIPAKAS,
+  charakSamhita: CHARAK_SAMHITA,
+  keyConcepts: KEY_CONCEPTS,
+  chapterSummary: CHAPTER_SUMMARY,
+  charakAllChapters: sthanas,
+  charakMetadata: metadata
 }
 
 export function searchKnowledge(query: string): string {
@@ -215,4 +226,49 @@ Kapha Prakriti Guidance:
   }
   
   return 'Please specify Vata, Pitta, or Kapha prakriti'
+}
+
+export function getCharakChapter(sthanaId: string, chapterNumber?: number): string | null {
+  const sthana = sthanas.find(s => s.id === sthanaId)
+  if (!sthana) return null
+  
+  if (chapterNumber) {
+    const chapter = sthana.chapters.find((c: any) => c.number === chapterNumber)
+    if (!chapter) return null
+    return `
+=== ${sthana.name} (${sthana.english}) ===
+Chapter ${chapter.number}: ${chapter.sanskritName}
+English: ${chapter.englishName}
+
+Key Concepts:
+- ${chapter.keyConcepts.join('\n- ')}
+
+Summary: ${chapter.summary}
+    `.trim()
+  }
+  
+  return `
+=== ${sthana.name} (${sthana.english}) ===
+Total Chapters: ${sthana.chapters}
+
+${sthana.chapters.map((c: any) => `Ch ${c.number}: ${c.sanskritName} - ${c.englishName}`).join('\n')}
+  `.trim()
+}
+
+export function searchCharakChapters(query: string): string {
+  const lowerQuery = query.toLowerCase()
+  let results: string[] = []
+  
+  for (const sthana of sthanas) {
+    for (const chapter of sthana.chapters) {
+      const searchText = `${chapter.sanskritName} ${chapter.englishName} ${chapter.keyConcepts.join(' ')} ${chapter.summary}`.toLowerCase()
+      if (searchText.includes(lowerQuery)) {
+        results.push(`[${sthana.name}] Ch${chapter.number}: ${chapter.sanskritName} - ${chapter.englishName}`)
+      }
+    }
+  }
+  
+  return results.length > 0 
+    ? results.slice(0, 20).join('\n') 
+    : 'No chapters found matching your query.'
 }

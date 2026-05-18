@@ -1,0 +1,1553 @@
+{
+  "metadata": {
+    "title": "Charak Samhita - Complete Chapter Data",
+    "source": "carakasamhitaonline.com",
+    "license": "CC BY-NC-SA 4.0",
+    "totalSthanas": 8,
+    "totalChapters": 120,
+    "description": "Comprehensive structured data of all 120 chapters from Charak Samhita with key concepts, topics, and summaries"
+  },
+  "sthanas": [
+    {
+      "id": "sutrasthana",
+      "name": "Sutra Sthana",
+      "english": "Section on Fundamental Principles",
+      "chapters": 30,
+      "chatushkas": [
+        "Bheshaja Chatushka (Medicines) - Chapters 1-4",
+        "Swastha Chatushka (Health Preservation) - Chapters 5-8",
+        "Nirdesha Chatushka (Guidelines) - Chapters 9-12",
+        "Kalpana Chatushka (Purification) - Chapters 13-16",
+        "Roga Chatushka (Diseases) - Chapters 17-20",
+        "Yojana Chatushka (Treatment) - Chapters 21-24",
+        "Annapana Chatushka (Food) - Chapters 25-28",
+        "Sangraha (Summary) - Chapters 29-30"
+      ],
+      "chapters": [
+        {
+          "number": 1,
+          "sanskritName": "Deerghanjiviteeya Adhyaya",
+          "englishName": "Longevity",
+          "chatushka": "Bheshaja Chatushka",
+          "keyConcepts": [
+            "Origin and definition of Ayurveda",
+            "Tridosha (Vata, Pitta, Kapha) - three bodily doshas",
+            "Two Manas dosha (Raja, Tama)",
+            "Six basic principles (Shad Padartha)",
+            "Samanya-Vishesha theory (similarity and dissimilarity)",
+            "Classification of drugs (herbal, animal, mineral)",
+            "Four objectives of life (Purushartha Chatushtaya)",
+            "Medical ethics and qualities of physician",
+            "Mahasneha (four major unctuous substances)",
+            "Six tastes (Rasa) and their effects on dosha"
+          ],
+          "summary": "The first chapter establishes foundational concepts of Ayurveda including the definition of life (Ayu), the three doshas, six principles of knowledge, and the theory of similarity/dissimilarity. It describes the origin of Ayurvedic knowledge from Brahma through Indra toBharadwaja and then to Atreya's disciples. Includes detailed classification of drugs, herbs, salts, urine therapies, and milk varieties. Emphasizes the importance of complete knowledge of medicines and ethical medical practice."
+        },
+        {
+          "number": 2,
+          "sanskritName": "Apamarga Tanduliya Adhyaya",
+          "englishName": "Potherbs (Apamarga) and Grains",
+          "chatushka": "Bheshaja Chatushka",
+          "keyConcepts": [
+            "Herbs for purification therapy (Shodhana)",
+            "Emetic herbs (Vamana)",
+            "Purgative herbs (Virechana)",
+            "Fruits used in Panchakarma",
+            "Twelve roots for purification"
+          ],
+          "summary": "Describes various herbs and medicines used during and after Panchakarma (bio-purification) procedures. Covers emetic and purgative drugs, their preparations, and indications."
+        },
+        {
+          "number": 3,
+          "sanskritName": "Aragvadhiya Adhyaya",
+          "englishName": "External Applications",
+          "chatushka": "Bheshaja Chatushka",
+          "keyConcepts": [
+            "Topical medications (Lepa)",
+            "External applications",
+            "Poultices and pastes",
+            "Oil preparations for external use"
+          ],
+          "summary": "Describes topical medications and external applications including pastes, poultices, and medicated oils for various diseases."
+        },
+        {
+          "number": 4,
+          "sanskritName": "Shadvirechanashatashritiya Adhyaya",
+          "englishName": "Sixtyfour Types of Evacuatives",
+          "chatushka": "Bheshaja Chatushka",
+          "keyConcepts": [
+            "Mahakashaya (groups of ten medicines)",
+            "Fifty categories of therapeutic agents",
+            "Six hundred evacuatives",
+            "Classification of purgatives"
+          ],
+          "summary": "Provides details of fifty Mahakashaya (groups of ten medicines) and six hundred evacuatives to be used in various diseases."
+        },
+        {
+          "number": 5,
+          "sanskritName": "Matrashiteeya Adhyaya",
+          "englishName": "Proper Quantity of Food and Daily Regimen",
+          "chatushka": "Swastha Chatushka",
+          "keyConcepts": [
+            "Quantity of diet (Matra)",
+            "Daily regimen (Dinacharya)",
+            "Abhyanga (therapeutic massage)",
+            "Nasya (nasal therapy)",
+            "Dhumapana (medicated smoking)",
+            "Gandusha and Kavala (mouth gargling)",
+            "Anjana (collyrium)",
+            "Oral hygiene - Danta Dhavana",
+            "Karnapurana (ear oiling)",
+            "Bath (Snana) and proper attire"
+          ],
+          "summary": "Describes proper quantity of food based on digestive power (Agni), heavy and light to digest foods, and daily health maintenance procedures including massage, nasal therapy, eye care, oral hygiene, and personal care."
+        },
+        {
+          "number": 6,
+          "sanskritName": "Tasyashiteeya Adhyaya",
+          "englishName": "Seasonal Regimen",
+          "chatushka": "Swastha Chatushka",
+          "keyConcepts": [
+            "Seasonal regimen (Ritucharya)",
+            "Six seasons and their characteristics",
+            "Diet and lifestyle modifications by season",
+            "Seasonal purification procedures",
+            "Dosha accumulation and alleviation by season"
+          ],
+          "summary": "Explains modifications in diet and lifestyle according to six seasons (Ritu) to maintain health and prevent seasonal diseases."
+        },
+        {
+          "number": 7,
+          "sanskritName": "Naveganadharaniya Adhyaya",
+          "englishName": "Management of Natural Urges",
+          "chatushka": "Swastha Chatushka",
+          "keyConcepts": [
+            "Suppressible urges (Nishevana)",
+            "Non-suppressible urges (Dharaniya)",
+            "Diseases due to suppression of urges",
+            "Treatment for suppression disorders"
+          ],
+          "summary": "Explains importance of suppressible and non-suppressible natural urges, diseases caused by their suppression, and their management."
+        },
+        {
+          "number": 8,
+          "sanskritName": "Indriyopakramaniya Adhyaya",
+          "englishName": "Care of Sense Organs",
+          "chatushka": "Swastha Chatushka",
+          "keyConcepts": [
+            "Sadvritta (ethical conduct)",
+            "Code of behavior for health",
+            "Social conduct and hygiene",
+            "Mental health and spiritual well-being"
+          ],
+          "summary": "Describes Sadvritta (general code of conduct) for maintaining health and healthy relations with society."
+        },
+        {
+          "number": 9,
+          "sanskritName": "Khuddakachatushpada Adhyaya",
+          "englishName": "Four Aspects of Therapeutics",
+          "chatushka": "Nirdesha Chatushka",
+          "keyConcepts": [
+            "Four aspects: Vaidya, Dravya, Upasthata, Rogi",
+            "Qualities of physician",
+            "Qualities of medicine",
+            "Qualities of patient",
+            "Qualities of caretaker"
+          ],
+          "summary": "Describes four aspects of therapeutics - physician, medicine, patient, and caretaker with their essential qualities."
+        },
+        {
+          "number": 10,
+          "sanskritName": "Mahachatushpada Adhyaya",
+          "englishName": "Four Great Aspects",
+          "chatushka": "Nirdesha Chatushka",
+          "keyConcepts": [
+            "Classification of diseases by prognosis",
+            "Curable diseases (Sadhya)",
+            "Incurable diseases (Asadhya)",
+            "Palliable diseases (Yapya)",
+            "Diagnosis before treatment"
+          ],
+          "summary": "Explains classification of diseases based on prognosis and emphasizes thorough diagnosis before initiating treatment."
+        },
+        {
+          "number": 11,
+          "sanskritName": "Tistraishaniya Adhyaya",
+          "englishName": "Three Desires, Strength, Causes",
+          "chatushka": "Nirdesha Chatushka",
+          "keyConcepts": [
+            "Three types of desires",
+            "Strength (Bala) - types and assessment",
+            "Causes of diseases",
+            "Types of diseases",
+            "Pathways of disease",
+            "Physicians and therapies"
+          ],
+          "summary": "Deals with three types of desires, strength, causes of diseases, their types, pathways, physicians, and therapies."
+        },
+        {
+          "number": 12,
+          "sanskritName": "Vatakalakaliya Adhyaya",
+          "englishName": "Study of Vata Dosha",
+          "chatushka": "Nirdesha Chatushka",
+          "keyConcepts": [
+            "Qualities and functions of Vata",
+            "Qualities and functions of Pitta",
+            "Qualities and functions of Kapha",
+            "Effects of dosha vitiation",
+            "Physician's knowledge of dosha"
+          ],
+          "summary": "Describes good and bad qualities/functions of Vata, Pitta, and Kapha doshas."
+        },
+        {
+          "number": 13,
+          "sanskritName": "Snehadhyaya",
+          "englishName": "Oleation Therapy",
+          "chatushka": "Kalpana Chatushka",
+          "keyConcepts": [
+            "Snehana (oleation therapy)",
+            "Types of sneha (ghee, oil, fat, marrow)",
+            "Indications and contra-indications",
+            "Shamana and Shodhana oleation",
+            "Methods of administration"
+          ],
+          "summary": "Provides guidelines for proper use of sneha (lipids) for Shodhana (purification) or Shamana (pacification) purposes."
+        },
+        {
+          "number": 14,
+          "sanskritName": "Swedadhyaya",
+          "englishName": "Fomentation Therapy",
+          "chatushka": "Kalpana Chatushka",
+          "keyConcepts": [
+            "Swedana (fomentation)",
+            "Types of fomentation",
+            "Indications for different diseases",
+            "Preparation for Panchakarma"
+          ],
+          "summary": "Explains various types of swedana (fomentation) recommended for various diseases as preparation for purification."
+        },
+        {
+          "number": 15,
+          "sanskritName": "Upakalpaniya Adhyaya",
+          "englishName": "Management of Panchakarma",
+          "chatushka": "Kalpana Chatushka",
+          "keyConcepts": [
+            "Equipment for hospital",
+            "Panchakarma procedures",
+            "Vamana and Virechana protocols",
+            "Patient preparation"
+          ],
+          "summary": "Emphasizes how a physician should be well equipped before administering Shodhana procedures. Provides outline for hospital and standard procedures."
+        },
+        {
+          "number": 16,
+          "sanskritName": "Chikitsaprabhritiya Adhyaya",
+          "englishName": "Treatment Guidelines",
+          "chatushka": "Kalpana Chatushka",
+          "keyConcepts": [
+            "Shodhana vs Shamana therapy",
+            "Properly vs improperly administered procedures",
+            "Swabhavoparamavada (natural destruction theory)",
+            "Treatment outcomes"
+          ],
+          "summary": "Depicts importance of Shodhana over Shamana therapy, details of properly/improperly administered procedures, and theory of natural destruction."
+        },
+        {
+          "number": 17,
+          "sanskritName": "Kiyanta Shiraseeya Adhyaya",
+          "englishName": "Diseases of Head and Neck",
+          "chatushka": "Roga Chatushka",
+          "keyConcepts": [
+            "Shiroroga (head diseases)",
+            "Hridroga (cardiac diseases)",
+            "Eighteen types of Kshaya",
+            "Vidradhi (abscess)",
+            "Madhumeha (diabetes)"
+          ],
+          "summary": "Provides details of diseases like shiroroga, hridroga, eighteen types of kshaya, vidradhi, and madhumeha."
+        },
+        {
+          "number": 18,
+          "sanskritName": "Trishothiya Adhyaya",
+          "englishName": "Edema",
+          "chatushka": "Roga Chatushka",
+          "keyConcepts": [
+            "Types of edema (Shotha)",
+            "Classification of swelling",
+            "Vataja, Pittaja, Kaphaja edema"
+          ],
+          "summary": "Elucidates various types of edema and their classification."
+        },
+        {
+          "number": 19,
+          "sanskritName": "Ashtodariya Adhyaya",
+          "englishName": "Eighteen Diseases",
+          "chatushka": "Roga Chatushka",
+          "keyConcepts": [
+            "Forty-eight diseases caused by dosha combination",
+            "Mixed dosha disorders",
+            "Pathogenesis of complex diseases"
+          ],
+          "summary": "Reveals types of about 48 diseases caused by combination of doshas."
+        },
+        {
+          "number": 20,
+          "sanskritName": "Maharoga Adhyaya",
+          "englishName": "Major Diseases",
+          "chatushka": "Roga Chatushka",
+          "keyConcepts": [
+            "Single dosha diseases",
+            "Vataja disorders",
+            "Pittaja disorders",
+            "Kaphaja disorders"
+          ],
+          "summary": "Dedicated to diseases caused by single dosha - Vata, Pitta, or Kapha."
+        },
+        {
+          "number": 21,
+          "sanskritName": "Ashtauninditiya Adhyaya",
+          "englishName": "Eight Marginalized People",
+          "chatushka": "Yojana Chatushka",
+          "keyConcepts": [
+            "Eight types of marginalized people",
+            "Atisthoola (morbid obesity)",
+            "Atikrisha (emaciation)",
+            "Clinical significance and treatment"
+          ],
+          "summary": "Describes eight types of marginalized people with clinical significance, focusing on obesity and emaciation."
+        },
+        {
+          "number": 22,
+          "sanskritName": "Langhanabrimhaniya Adhyaya",
+          "englishName": "Fasting and Nourishing Therapy",
+          "chatushka": "Yojana Chatushka",
+          "keyConcepts": [
+            "Six treatment modalities",
+            "Langhana (fasting)",
+            "Brimhana (nourishing)",
+            "Snehana, Swedana, Rukshana, Stambhana"
+          ],
+          "summary": "Describes six types of treatment - Langhana, Brimhana, Snehana, Swedana, Rukshana, and Stambhana."
+        },
+        {
+          "number": 23,
+          "sanskritName": "Santarpaniya Adhyaya",
+          "englishName": "Over-nourishment and Under-nourishment",
+          "chatushka": "Yojana Chatushka",
+          "keyConcepts": [
+            "Santarpana (over-nourishment)",
+            "Apatarpana (under-nourishment)",
+            "Dietary disorders",
+            "Treatment of nutritional disorders"
+          ],
+          "summary": "Deals with diseases caused due to over-nourishment or under-nourishment along with their treatment."
+        },
+        {
+          "number": 24,
+          "sanskritName": "Vidhishonitiya Adhyaya",
+          "englishName": "Blood Disorders",
+          "chatushka": "Yojana Chatushka",
+          "keyConcepts": [
+            "Rakta dosha (blood)",
+            "Blood disorders",
+            "Raktapitta",
+            "Skin diseases due to rakta"
+          ],
+          "summary": "Deals with diseases not cured by above-mentioned therapies and diseases due to vitiation of rakta (blood)."
+        },
+        {
+          "number": 25,
+          "sanskritName": "Yajjah Purushiya Adhyaya",
+          "englishName": "Origin of Human Beings",
+          "chatushka": "Annapana Chatushka",
+          "keyConcepts": [
+            "Origin of human beings",
+            "Origin of diseases",
+            "Agrya (155 best entities)",
+            "Best drugs, food articles, procedures"
+          ],
+          "summary": "Brings forth perspective of origin of human beings and diseases. Describes 155 Agrya entities."
+        },
+        {
+          "number": 26,
+          "sanskritName": "Atreyabhadrakapyiya Adhyaya",
+          "englishName": "Pharmacology",
+          "chatushka": "Annapana Chatushka",
+          "keyConcepts": [
+            "Rasa (taste)",
+            "Veerya (potency)",
+            "Vipaka (post-digestive effect)",
+            "Viruddha Ahara (incompatible diet)",
+            "Jatharagni (digestive fire)"
+          ],
+          "summary": "Describes Ayurvedic pharmacology - rasa, veerya, vipaka, prabhava, and concept of incompatible diet."
+        },
+        {
+          "number": 27,
+          "sanskritName": "Annapanavidhi Adhyaya",
+          "englishName": "Dietetics",
+          "chatushka": "Annapana Chatushka",
+          "keyConcepts": [
+            "Food and beverages",
+            "Medicinal values of foods",
+            "Dietary preparations",
+            "Food combinations"
+          ],
+          "summary": "Provides details of Ayurvedic dietetics, wide variety of food and beverages with medicinal values."
+        },
+        {
+          "number": 28,
+          "sanskritName": "Vividhashitapitiya Adhyaya",
+          "englishName": "Various Food Items",
+          "chatushka": "Annapana Chatushka",
+          "keyConcepts": [
+            "Formation of body tissues from diet",
+            "Immunity (Ojas)",
+            "Dosha movement (Shakha to Koshtha)",
+            "Dhatu formation"
+          ],
+          "summary": "Deals with formation of body tissues from diet, immunity, diseases originated from various dhatus, and dosha migration."
+        },
+        {
+          "number": 29,
+          "sanskritName": "Dashapranayataneeya Adhyaya",
+          "englishName": "Ten Vital Points",
+          "chatushka": "Sangraha",
+          "keyConcepts": [
+            "Ten locations of Prana",
+            "Pranabhisaravaidya qualities",
+            "Rogabhisaravaidya qualities",
+            "Life preservation"
+          ],
+          "summary": "Deals with ten locations in human body where Prana resides, attributes of life-saving and disease-causing physicians."
+        },
+        {
+          "number": 30,
+          "sanskritName": "Arthedashmahamooliya Adhyaya",
+          "englishName": "Eleven Fundamental Roots",
+          "chatushka": "Sangraha",
+          "keyConcepts": [
+            "Artha (heart) importance",
+            "Ten major blood vessels",
+            "Definition of Ayu (life)",
+            "Four types of Ayu",
+            "Aim of Ayurvedic science"
+          ],
+          "summary": "Deals with importance of heart, ten major blood vessels, definition of life, and aim of Ayurvedic science."
+        }
+      ]
+    },
+    {
+      "id": "nidanasthana",
+      "name": "Nidana Sthana",
+      "english": "Section on Diagnostic Principles",
+      "chapters": 8,
+      "chapters": [
+        {
+          "number": 1,
+          "sanskritName": "Jwara Nidana",
+          "englishName": "Fever - Diagnosis",
+          "keyConcepts": [
+            "Nidana Panchaka (five diagnostic tools)",
+            "Hetu (causative factors)",
+            "Purvarupa (premonitory signs)",
+            "Rupa (clinical features)",
+            "Samprapti (pathogenesis)",
+            "Upashaya (pacifying factors)",
+            "Fever types and diagnosis"
+          ],
+          "summary": "Introduces basic principles of diagnosis and disease fever with involvement of rasa dhatu as dushya. Discusses disorders of hyper-pyrexia and various types of fever."
+        },
+        {
+          "number": 2,
+          "sanskritName": "Raktapitta Nidana",
+          "englishName": "Bleeding Disorders - Diagnosis",
+          "keyConcepts": [
+            "Rakta dhatu disorders",
+            "Upper channel bleeding",
+            "Lower channel bleeding",
+            "Pathogenesis of bleeding"
+          ],
+          "summary": "Deals with various pathologies related to rakta dhatu. Details diagnosis of bleeding disorders."
+        },
+        {
+          "number": 3,
+          "sanskritName": "Gulma Nidana",
+          "englishName": "Abdominal Tumors - Diagnosis",
+          "keyConcepts": [
+            "Gulma (abdominal lump/tumor)",
+            "Mamsa dhatu involvement",
+            "Five types of gulma",
+            "Diagnosis and pathogenesis"
+          ],
+          "summary": "Deals with mamsa dhatu predominantly. Describes diagnosis of lumps in abdomen and tumors."
+        },
+        {
+          "number": 4,
+          "sanskritName": "Prameha Nidana",
+          "englishName": "Urinary Disorders - Diagnosis",
+          "keyConcepts": [
+            "Meda dhatu involvement",
+            "Twenty types of Prameha",
+            "Kaphaja, Pittaja, Vataja types",
+            "Pathogenesis of diabetes"
+          ],
+          "summary": "Involves meda dhatu predominantly. Describes diagnosis of disorders of lipid metabolism including diabetes."
+        },
+        {
+          "number": 5,
+          "sanskritName": "Kushtha Nidana",
+          "englishName": "Skin Diseases - Diagnosis",
+          "keyConcepts": [
+            "Seven dushya involvement",
+            "Eighteen types of Kushtha",
+            "Kshudra and Mahakushtha",
+            "Skin disorder pathogenesis"
+          ],
+          "summary": "Involves seven dushya. Deals with diagnosis of skin disorders including leprosy and other skin conditions."
+        },
+        {
+          "number": 6,
+          "sanskritName": "Shosha Nidana",
+          "englishName": "Wasting/Emaciation - Diagnosis",
+          "keyConcepts": [
+            "Dhatu kshaya (tissue depletion)",
+            "Rajayakshma (tuberculosis)",
+            "Pathogenesis of emaciation",
+            "Degenerative disorders"
+          ],
+          "summary": "Deals with pathology of emaciation. Describes diagnosis of degenerative disorders involving depletion of body tissues."
+        },
+        {
+          "number": 7,
+          "sanskritName": "Unmada Nidana",
+          "englishName": "Mental Disorders - Diagnosis",
+          "keyConcepts": [
+            "Manasika dosha",
+            "Psychotic disorders",
+            "Bhuta-vidya (psychiatry)",
+            "Mental disease pathogenesis"
+          ],
+          "summary": "Explains insanity and psychotic disorders. Covers diagnosis of mental health conditions."
+        },
+        {
+          "number": 8,
+          "sanskritName": "Apasmara Nidana",
+          "englishName": "Epilepsy - Diagnosis",
+          "keyConcepts": [
+            "Apasmara (epilepsy)",
+            "Seizure disorders",
+            "Four types of epilepsy",
+            "Diagnosis and classification"
+          ],
+          "summary": "Deals with epilepsy and seizure disorders. Describes diagnosis and classification of epileptic conditions."
+        }
+      ]
+    },
+    {
+      "id": "vimanasthana",
+      "name": "Vimana Sthana",
+      "english": "Section on Specific Medical Principles",
+      "chapters": 8,
+      "chapters": [
+        {
+          "number": 1,
+          "sanskritName": "Rasa Vimana",
+          "englishName": "Taste and Food",
+          "keyConcepts": [
+            "Role of rasa in dosha vitiation",
+            "Ghee, oil, honey in therapy",
+            "Ashta ahara vishesha ayatana",
+            "Food processing factors"
+          ],
+          "summary": "Explains role of rasa, ghee, oil, and honey in dosha vitiation and pacification. Describes eight specific factors for food processing."
+        },
+        {
+          "number": 2,
+          "sanskritName": "Trividhakukshiya Vimana",
+          "englishName": "Three Types of Abdomen",
+          "keyConcepts": [
+            "Dietary regulations",
+            "Disorders due to ama",
+            "Digestive disorders",
+            "Food consequences"
+          ],
+          "summary": "Further guides dietary regulations and consequences if not followed properly. Describes disorders due to ama."
+        },
+        {
+          "number": 3,
+          "sanskritName": "Janapadodhvansaniya Vimana",
+          "englishName": "Epidemics and Environment",
+          "keyConcepts": [
+            "Epidemic disorders",
+            "Polluted air, water, soil",
+            "Social hygiene",
+            "Era predictions"
+          ],
+          "summary": "Deals with prevention of epidemic disorders caused by polluted environment. Covers social hygiene aspects."
+        },
+        {
+          "number": 4,
+          "sanskritName": "Trividha Roga Vishesha Vijnaniya Vimana",
+          "englishName": "Three Types of Disease Knowledge",
+          "keyConcepts": [
+            "Aaptopadesha (scriptural knowledge)",
+            "Pratyaksha (direct perception)",
+            "Anumana (logical reasoning)",
+            "Psychological assessment"
+          ],
+          "summary": "Explains three ways to acquire knowledge of diseases based on authority, perception, and reasoning."
+        },
+        {
+          "number": 5,
+          "sanskritName": "Sroto Vimana",
+          "englishName": "Channels of Circulation",
+          "keyConcepts": [
+            "Srotas (body channels)",
+            "Root of each srotas",
+            "Signs of srotas vitiation",
+            "Channel disorders"
+          ],
+          "summary": "Deals with detailed description of srotas (transportation channels) in the body, their roots, and vitiation signs."
+        },
+        {
+          "number": 6,
+          "sanskritName": "Roganika Vimana",
+          "englishName": "Disease Categories",
+          "keyConcepts": [
+            "Five categories of diseases",
+            "Prognosis classification",
+            "Anubandhya and Anubandha",
+            "Dosha predominance"
+          ],
+          "summary": "Details five categories of diseases based on prognosis, severity, origin, and site of origin."
+        },
+        {
+          "number": 7,
+          "sanskritName": "Vyadhita Rupiya Vimana",
+          "englishName": "Patient Presentation",
+          "keyConcepts": [
+            "Patient presentation vs actual disease",
+            "Krimi (microorganisms/parasites)",
+            "Clinical examination importance",
+            "Diagnostic errors"
+          ],
+          "summary": "Describes how patient presentation can mislead physician. Covers krmi (microorganisms) and their management."
+        },
+        {
+          "number": 8,
+          "sanskritName": "Rogabhishagjitiya Vimana",
+          "englishName": "Medical Education",
+          "keyConcepts": [
+            "Medical student education",
+            "Ideal teacher characteristics",
+            "Tenfold patient examination",
+            "Prakriti and Sara assessment"
+          ],
+          "summary": "Deals with how medical student can achieve comprehensive knowledge. Explains selection of treatise, teacher, and patient examination."
+        }
+      ]
+    },
+    {
+      "id": "sharirathana",
+      "name": "Sharira Sthana",
+      "english": "Section on Human Being and Genesis",
+      "chapters": 8,
+      "chapters": [
+        {
+          "number": 1,
+          "sanskritName": "Katidhapurusha Sharira",
+          "englishName": "Dimensions of Human Body",
+          "keyConcepts": [
+            "Evolution of body from imperceptible",
+            "Association of mind and consciousness",
+            "Life characteristics",
+            "Yoga for body-mind health"
+          ],
+          "summary": "Describes evolution of body from imperceptible entities to association of mind, sense organs, consciousness. Unique concepts of living vs non-living."
+        },
+        {
+          "number": 2,
+          "sanskritName": "Atulyagotriya Sharira",
+          "englishName": "Units of Reproduction",
+          "keyConcepts": [
+            "Shukra and Shonita (reproductive units)",
+            "Formation of healthy child",
+            "Genetic factors",
+            "Hereditary traits"
+          ],
+          "summary": "Micro composition of basic units of reproduction and their role in formation of healthy offspring."
+        },
+        {
+          "number": 3,
+          "sanskritName": "Khuddika Garbhavakranti Sharira",
+          "englishName": "Embryogenesis - Minor",
+          "keyConcepts": [
+            "Fetal development initial stage",
+            "Congenital deformities prevention",
+            "Genetic disorders prevention",
+            "Sleep vs unconsciousness"
+          ],
+          "summary": "Extended part of second chapter. Deals with factors causing congenital deformities and their prevention."
+        },
+        {
+          "number": 4,
+          "sanskritName": "Mahatigarbhavakranti Sharira",
+          "englishName": "Embryogenesis - Major",
+          "keyConcepts": [
+            "Month-wise fetal development",
+            "Intellect manifestation in 6th month",
+            "Three types of psyche",
+            "Sixteen psychological personalities"
+          ],
+          "summary": "Dedicated to month-wise fetal development. Interesting fact about intellect during 6th month. Describes psychological development."
+        },
+        {
+          "number": 5,
+          "sanskritName": "Purusha Vichaya Sharira",
+          "englishName": "Study of Human",
+          "keyConcepts": [
+            "Universe represented in person",
+            "Psychological health",
+            "Learning and intellect",
+            "Cognitive functions"
+          ],
+          "summary": "Whatever is in universe is represented in a person. Provides tips for mental health and cognitive functions."
+        },
+        {
+          "number": 6,
+          "sanskritName": "Sharira Vichaya Sharira",
+          "englishName": "Analytical Study of Body",
+          "keyConcepts": [
+            "Definition of body",
+            "Equilibrium for health",
+            "Physical properties of body parts",
+            "Body constituent linkage with food"
+          ],
+          "summary": "Deals with knowledge of human body, definition, equilibrium for health, lifestyle, diet for maintenance."
+        },
+        {
+          "number": 7,
+          "sanskritName": "Sharira Sankhya Sharira",
+          "englishName": "Anthropometry",
+          "keyConcepts": [
+            "Number of body organs",
+            "Body measurements",
+            "Anthropometric standards"
+          ],
+          "summary": "Anthropometry is core subject. Counts number of body organs/parts and their measurements."
+        },
+        {
+          "number": 8,
+          "sanskritName": "Jatisutriya Sharira",
+          "englishName": "Progeny and Delivery",
+          "keyConcepts": [
+            "Process for better progeny",
+            "Monthly regimen for pregnant",
+            "Delivery procedures",
+            "Neonatal care",
+            "Assessment of span of life"
+          ],
+          "summary": "Overview of process for better progeny. Details monthly regimen for pregnant, delivery, postpartum care, neonatal care."
+        }
+      ]
+    },
+    {
+      "id": "indriyasthana",
+      "name": "Indriya Sthana",
+      "english": "Section on Sensorial Prognosis",
+      "chapters": 12,
+      "chapters": [
+        {
+          "number": 1,
+          "sanskritName": "Varnasvariyam Indriyam Adhyaya",
+          "englishName": "Color Signs",
+          "keyConcepts": [
+            "Arishta (signs of imminent death)",
+            "Color changes (Varna)",
+            "Sensory prognosis",
+            "Prana assessment"
+          ],
+          "summary": "Signs and symptoms of imminent death perceived by specific changes in color (Varna)."
+        },
+        {
+          "number": 2,
+          "sanskritName": "Pushpitakam Indriyam Adhyaya",
+          "englishName": "Floral Signs",
+          "keyConcepts": [
+            "Swara (voice) changes",
+            "Prognostic signs",
+            "Death indicators"
+          ],
+          "summary": "Signs of imminent death through changes in voice (Swara)."
+        },
+        {
+          "number": 3,
+          "sanskritName": "Parimarshaneeyam Indriyam Adhyaya",
+          "englishName": "Touch Prognosis",
+          "keyConcepts": [
+            "Sparsha (touch) assessment",
+            "Skin temperature signs",
+            "Tactile prognosis"
+          ],
+          "summary": "Prognosis based on touch (Sparsha) and skin examination."
+        },
+        {
+          "number": 4,
+          "sanskritName": "Indriyaneekam Indriyam Adhyaya",
+          "englishName": "Sense Organ Assessment",
+          "keyConcepts": [
+            "Multiple sensory assessments",
+            "Comprehensive prognosis",
+            "Indriya pariksha"
+          ],
+          "summary": "Multiple sense organ assessments for prognosis."
+        },
+        {
+          "number": 5,
+          "sanskritName": "Purvarupeeyam Indriyam Adhyaya",
+          "englishName": "Premonitory Signs",
+          "keyConcepts": [
+            "Purvarupa (premonitory signs)",
+            "Early warning indicators",
+            "Disease progression signs"
+          ],
+          "summary": "Clinically useful early warning signs (Purvarupa) for various conditions."
+        },
+        {
+          "number": 6,
+          "sanskritName": "Katamanisharireeyam Indriyam Adhyaya",
+          "englishName": "Physical Prognosis",
+          "keyConcepts": [
+            "Bahyakarana (physical signs)",
+            "Physical death indicators",
+            "Body examination for prognosis"
+          ],
+          "summary": "Physical signs (Bahyakarana) for death prediction."
+        },
+        {
+          "number": 7,
+          "sanskritName": "Pannarupiyam Indriyam Adhyaya",
+          "englishName": "Complexion Signs",
+          "keyConcepts": [
+            "Chhaya (complexion)",
+            "Prabha (radiance)",
+            "Color and complexion prognosis"
+          ],
+          "summary": "Prognosis based on complexion (Chhaya) and radiance (Prabha)."
+        },
+        {
+          "number": 8,
+          "sanskritName": "Avakshiraseeyam Indriyam Adhyaya",
+          "englishName": "Neck Region Signs",
+          "keyConcepts": [
+            "Neck region prognosis",
+            "Upper body death signs",
+            "Shakuna (auspicious signs)"
+          ],
+          "summary": "Signs in neck region indicating death or survival."
+        },
+        {
+          "number": 9,
+          "sanskritName": "Yasyashyavanimittiyam Indriyam Adhyaya",
+          "englishName": "Cause-related Signs",
+          "keyConcepts": [
+            "Gandha (smell) assessment",
+            "Causal relationship signs",
+            "Death causes prediction"
+          ],
+          "summary": "Prognostic signs related to smell (Gandha) and causal factors."
+        },
+        {
+          "number": 10,
+          "sanskritName": "Sadyomaraneeyam Indriyam Adhyaya",
+          "englishName": "Sudden Death Signs",
+          "keyConcepts": [
+            "Immediate death signs",
+            "Sadyo marana indicators",
+            "Acute terminal signs"
+          ],
+          "summary": "Signs indicating immediate/sudden death."
+        },
+        {
+          "number": 11,
+          "sanskritName": "Anujyotiyam Indriyam Adhyaya",
+          "englishName": "Lesser Death Signs",
+          "keyConcepts": [
+            "Gradual death signs",
+            "Chronic prognosis",
+            "Less severe indicators"
+          ],
+          "summary": "Signs of less immediate death and gradual prognosis."
+        },
+        {
+          "number": 12,
+          "sanskritName": "Gomayachurniyam Indriyam Adhyaya",
+          "englishName": "Miscellaneous Signs",
+          "keyConcepts": [
+            "Dreams (Swapna) prognosis",
+            "Doota (messenger) signs",
+            "Occult sciences in prognosis"
+          ],
+          "summary": "Miscellaneous prognostic signs including dreams, messengers, and occult indicators."
+        }
+      ]
+    },
+    {
+      "id": "chikitsasthana",
+      "name": "Chikitsa Sthana",
+      "english": "Section on Therapeutic Principles",
+      "chapters": 30,
+      "chapters": [
+        {
+          "number": 1,
+          "sanskritName": "Rasayana Chikitsa",
+          "englishName": "Rejuvenation Therapy",
+          "keyConcepts": [
+            "Rasayana (rejuvenation)",
+            "Four sub-chapters",
+            "Anti-aging measures",
+            "Immunity promotion",
+            "Physical-mental health"
+          ],
+          "summary": "Describes measures that promote physical and mental health and provide general immunity. Prevents and retards aging, promotes longevity."
+        },
+        {
+          "number": 2,
+          "sanskritName": "Vajikarana Chikitsa",
+          "englishName": "Aphrodisiac Therapy",
+          "keyConcepts": [
+            "Vajikarana (aphrodisiacs)",
+            "Sexual health enhancement",
+            "Healthy progeny",
+            "Infertility treatment"
+          ],
+          "summary": "Deals with enhancing sexual health in healthy persons, leading to healthy progeny. Principles of aphrodisiac medicines."
+        },
+        {
+          "number": 3,
+          "sanskritName": "Jwara Chikitsa",
+          "englishName": "Fever Treatment",
+          "keyConcepts": [
+            "Santata Jwara (continuous)",
+            "Sannipatik Jwara (intermittent)",
+            "Khudira Jwara (malarial)",
+            "Tridoshaja Jwara",
+            "Ama Jwara and Purna Jwara"
+          ],
+          "summary": "Management of fever - acute and chronic, continuous, intermittent, malarial, with or without ama. Includes therapeutic measures for various fever types."
+        },
+        {
+          "number": 4,
+          "sanskritName": "Raktapitta Chikitsa",
+          "englishName": "Bleeding Disorders Treatment",
+          "keyConcepts": [
+            "Upper channel bleeding",
+            "Lower channel bleeding",
+            "Raktapitta management",
+            "Hemostatic measures"
+          ],
+          "summary": "Management of bleeding disorders - two types i.e. bleeding from upper and lower channels."
+        },
+        {
+          "number": 5,
+          "sanskritName": "Gulma Chikitsa",
+          "englishName": "Abdominal Tumors Treatment",
+          "keyConcepts": [
+            "Five types of Gulma",
+            "Local vs generalized",
+            "Gas phantom to new growth",
+            "Treatment of abdominal lumps"
+          ],
+          "summary": "Describes protuberance of abdomen - local and generalized. Local lumps termed gulma with five types."
+        },
+        {
+          "number": 6,
+          "sanskritName": "Prameha Chikitsa",
+          "englishName": "Urinary Disorders Treatment",
+          "keyConcepts": [
+            "Twenty types of Prameha",
+            "Kaphaja (10 types)",
+            "Pittaja (6 types)",
+            "Vataja (4 types)",
+            "Madhumeha (diabetes)",
+            "Treatment protocols"
+          ],
+          "summary": "Urinary diseases with excessive urine. Twenty types including madhumeha (diabetes mellitus). Principles of treatment for disorders due to impaired fat metabolism."
+        },
+        {
+          "number": 7,
+          "sanskritName": "Kushtha Chikitsa",
+          "englishName": "Skin Diseases Treatment",
+          "keyConcepts": [
+            "Eighteen types of Kushtha",
+            "Kshudra Kushtha (11 types)",
+            "Mahakushtha (7 types)",
+            "Skin disorder management"
+          ],
+          "summary": "Management of eighteen types of Kushtha (skin diseases including leprosy). Chronic non-purulent bacterial, fungal and allergic skin disorders."
+        },
+        {
+          "number": 8,
+          "sanskritName": "Rajayakshma Chikitsa",
+          "englishName": "Tuberculosis Treatment",
+          "keyConcepts": [
+            "Rajayakshma (tuberculosis)",
+            "Four types by pathogenesis",
+            "Immunity impairment",
+            "Respiratory disorders"
+          ],
+          "summary": "Rajayakshma (Syndrome like Tuberculosis). Classified into four types with detailed treatment. Treatment of various diseases due to impaired immunity."
+        },
+        {
+          "number": 9,
+          "sanskritName": "Unmada Chikitsa",
+          "englishName": "Mental Disorders Treatment",
+          "keyConcepts": [
+            "Unmada (insanity)",
+            "Psychotic disorders",
+            "Bhuta-vidya (psychiatry)",
+            "Mental health management"
+          ],
+          "summary": "Management of insanity and various psychotic disorders. Part of Bhuta-vidya (psychiatric disorders)."
+        },
+        {
+          "number": 10,
+          "sanskritName": "Apasmara Chikitsa",
+          "englishName": "Epilepsy Treatment",
+          "keyConcepts": [
+            "Apasmara (epilepsy)",
+            "Seizure disorders",
+            "Memory disorders",
+            "Convulsive disorders"
+          ],
+          "summary": "Management of epilepsy, seizures and memory disorders. Psychiatric disorder management."
+        },
+        {
+          "number": 11,
+          "sanskritName": "Kshatakshina Chikitsa",
+          "englishName": "Chest Injury Treatment",
+          "keyConcepts": [
+            "Kshata-kshina (chest injuries)",
+            "Bull fighting injuries",
+            "Bleeding and cachexia",
+            "Occupational hazards"
+          ],
+          "summary": "Management of conditions due to activities beyond one's strength leading to chest injuries, bleeding and cachexia."
+        },
+        {
+          "number": 12,
+          "sanskritName": "Shvayathu Chikitsa",
+          "englishName": "Swelling Treatment",
+          "keyConcepts": [
+            "Swelling (Shvayathu)",
+            "Edema types",
+            "Inflammation management"
+          ],
+          "summary": "Three groups of diseases with swelling, edema and inflammation at various sites."
+        },
+        {
+          "number": 13,
+          "sanskritName": "Udara Chikitsa",
+          "englishName": "Abdomen Enlargement Treatment",
+          "keyConcepts": [
+            "Udara (abdomen enlargement)",
+            "Ascites",
+            "Hepatomegaly",
+            "Splenomegaly"
+          ],
+          "summary": "Conditions leading to generalized enlargement of abdomen - ascites, hepatomegaly and splenomegaly."
+        },
+        {
+          "number": 14,
+          "sanskritName": "Arsha Chikitsa",
+          "englishName": "Piles Treatment",
+          "keyConcepts": [
+            "Arsha (piles/hemorrhoids)",
+            "Warts",
+            "Conservative management"
+          ],
+          "summary": "Types of hemorrhoids and warts along with their treatment. Medical management of haemorrhoids."
+        },
+        {
+          "number": 15,
+          "sanskritName": "Grahani Chikitsa",
+          "englishName": "GI Disorders Treatment",
+          "keyConcepts": [
+            "Grahani (GI disorders)",
+            "Agni (digestion and metabolism)",
+            "Dhatu formation",
+            "Malabsorption"
+          ],
+          "summary": "Elaborates physiological principles of Agni at various levels. Various processes of digestion and metabolism. Comprehensive management of GI disorders."
+        },
+        {
+          "number": 16,
+          "sanskritName": "Pandu Chikitsa",
+          "englishName": "Anemia and Jaundice Treatment",
+          "keyConcepts": [
+            "Pandu Roga (anemia)",
+            "Kamala (jaundice)",
+            "Hepatic disorders",
+            "Hematological disorders"
+          ],
+          "summary": "Two diseases caused mainly by vitiation of rakta - pandu roga (anemia) and kamala (jaundice). Management of hematological disorders."
+        },
+        {
+          "number": 17,
+          "sanskritName": "Hikka Shwasa Chikitsa",
+          "englishName": "Respiratory Disorders Treatment",
+          "keyConcepts": [
+            "Hikka (hiccups)",
+            "Shwasa (dyspnea)",
+            "Five types of each",
+            "Respiratory management"
+          ],
+          "summary": "Disorders of respiratory system. Clinical presentations and management of five types of hiccups and dyspnoea."
+        },
+        {
+          "number": 18,
+          "sanskritName": "Kasa Chikitsa",
+          "englishName": "Cough Treatment",
+          "keyConcepts": [
+            "Kasa (cough)",
+            "Various origins",
+            "Cough management"
+          ],
+          "summary": "Cough of various origin and its management."
+        },
+        {
+          "number": 19,
+          "sanskritName": "Atisara Chikitsa",
+          "englishName": "Diarrhea Treatment",
+          "keyConcepts": [
+            "Atisara (diarrhea)",
+            "Types of diarrhea",
+            "IBS management",
+            "Intestinal disorders"
+          ],
+          "summary": "Management of various types of diarrhea and irritable bowel syndrome."
+        },
+        {
+          "number": 20,
+          "sanskritName": "Chhardi Chikitsa",
+          "englishName": "Vomiting Treatment",
+          "keyConcepts": [
+            "Chhardi (vomiting)",
+            "Somatic and psychological causes",
+            "Anti-emetic therapy"
+          ],
+          "summary": "Management of Vomiting due to various somatic and psychological origin."
+        },
+        {
+          "number": 21,
+          "sanskritName": "Visarpa Chikitsa",
+          "englishName": "Skin Inflammation Treatment",
+          "keyConcepts": [
+            "Visarpa (erysipelas)",
+            "Acute inflammatory conditions",
+            "Skin inflammation types"
+          ],
+          "summary": "Types of acute inflammatory dermatological conditions such as erysipelas."
+        },
+        {
+          "number": 22,
+          "sanskritName": "Trishna Chikitsa",
+          "englishName": "Thirst Treatment",
+          "keyConcepts": [
+            "Trishna (thirst)",
+            "Excessive thirst disorders",
+            "Fluid imbalance"
+          ],
+          "summary": "Conditions manifested in form of excessive thirst."
+        },
+        {
+          "number": 23,
+          "sanskritName": "Visha Chikitsa",
+          "englishName": "Poisoning Treatment",
+          "keyConcepts": [
+            "Visha (poisoning)",
+            "Agada-tantra (toxicology)",
+            "Acute and slow poisoning"
+          ],
+          "summary": "Management of acute and slow poisoning relating with agada-tantra (toxicology)."
+        },
+        {
+          "number": 24,
+          "sanskritName": "Madatyaya Chikitsa",
+          "englishName": "Alcoholism Treatment",
+          "keyConcepts": [
+            "Madatyaya (alcohol intoxication)",
+            "Substance abuse",
+            "Addiction management"
+          ],
+          "summary": "Management of various acute and chronic stages of alcoholic intoxication and its complications."
+        },
+        {
+          "number": 25,
+          "sanskritName": "Dwivraniya Chikitsa",
+          "englishName": "Wound Treatment",
+          "keyConcepts": [
+            "Wound management",
+            "Surgical procedures",
+            "Shalya (surgery)"
+          ],
+          "summary": "Wound management and surgical procedures (shalya)."
+        },
+        {
+          "number": 26,
+          "sanskritName": "Trimarmiya Chikitsa",
+          "englishName": "Three Vital Organs Treatment",
+          "keyConcepts": [
+            "Vata obstruction disorders",
+            "Three vital organs (heart, brain, kidney)",
+            "Gastrointestinal diseases",
+            "Hair, ENT, eye disorders"
+          ],
+          "summary": "Disorders due to obstruction to free movement of Vata. Disorders of three vital organs - heart, brain, kidney. Brief description of hair, ear, nose, throat and eye diseases."
+        },
+        {
+          "number": 27,
+          "sanskritName": "Urustambha Chikitsa",
+          "englishName": "Thigh and Hip Treatment",
+          "keyConcepts": [
+            "Spinal-neuro-muscular degeneration",
+            "Hip and thigh disorders",
+            "Leg stiffness"
+          ],
+          "summary": "Disorders of spinal-neuro-muscular degeneration in thigh and hip joint."
+        },
+        {
+          "number": 28,
+          "sanskritName": "Vatavyadhi Chikitsa",
+          "englishName": "Vata Disorders Treatment",
+          "keyConcepts": [
+            "Vata dosha disorders",
+            "Neurological disorders",
+            "Musculoskeletal disorders",
+            "Five types of Vata",
+            "Pakshaghata (paralysis)",
+            "Ardita (facial paralysis)",
+            "Gridhrasi (sciatica)"
+          ],
+          "summary": "Vata dosha is key initiating factor for all physiological and psychological mechanisms. Disorders of digestive, nervous, musculo-skeletal systems. Extensive coverage of neurological conditions including paralysis, sciatica, etc."
+        },
+        {
+          "number": 29,
+          "sanskritName": "Vatarakta Chikitsa",
+          "englishName": "Gout Treatment",
+          "keyConcepts": [
+            "Vata and rakta disorders",
+            "Joint deformities",
+            "Vascular system disorders",
+            "Gouty arthritis"
+          ],
+          "summary": "Disorders due to vitiation of Vata dosha and rakta dhatu. Conditions involving deformities in small joints and vascular system."
+        },
+        {
+          "number": 30,
+          "sanskritName": "Yonivyapat Chikitsa",
+          "englishName": "Gynecological Disorders",
+          "keyConcepts": [
+            "Male reproductive disorders",
+            "Female reproductive disorders",
+            "Infertility",
+            "Gynecological disorders",
+            "Pediatric diseases",
+            "Chrono-pharmacology",
+            "Posology"
+          ],
+          "summary": "Disorders related to male and female reproductive system, infertility and gynecological disorders. Diseases in children mentioned. Principles of time of administration and dose."
+        }
+      ]
+    },
+    {
+      "id": "kalpasthana",
+      "name": "Kalpa Sthana",
+      "english": "Section on Pharmaceutical Preparations",
+      "chapters": 12,
+      "chapters": [
+        {
+          "number": 1,
+          "sanskritName": "Madanakalpa Adhyaya",
+          "englishName": "MadanaPhala Preparations",
+          "keyConcepts": [
+            "Madanaphala (Randia dumetorum)",
+            "133 recipes",
+            "Vamana dravya (emetic)",
+            "Pharmaceutical preparations"
+          ],
+          "summary": "First chapter of Kalpa Sthana. Describes Madanaphala - main emetic drug with 133 recipes for therapeutic emesis."
+        },
+        {
+          "number": 2,
+          "sanskritName": "Jimutaka Kalpa Adhyaya",
+          "englishName": "Jimutaka Preparations",
+          "keyConcepts": [
+            "Jimutaka (Luffa echinata)",
+            "39 recipes",
+            "Emetic formulations"
+          ],
+          "summary": "Second emetic drug Jimutaka with 39 recipes."
+        },
+        {
+          "number": 3,
+          "sanskritName": "Ikshvaku Kalpa Adhyaya",
+          "englishName": "Ikshvaku Preparations",
+          "keyConcepts": [
+            "Ikshvaku (Lagenaria siceraria)",
+            "45 recipes",
+            "Emetic formulations"
+          ],
+          "summary": "Third emetic drug Ikshvaku with 45 recipes. Leaf, fruit, seed used."
+        },
+        {
+          "number": 4,
+          "sanskritName": "Dhamargava Kalpa Adhyaya",
+          "englishName": "Dhamargava Preparations",
+          "keyConcepts": [
+            "Dhamargava (Luffa cylindrica)",
+            "60 recipes",
+            "Emetic formulations"
+          ],
+          "summary": "Fourth emetic drug Dhamargava with 60 recipes. Fruit, flower, tender leaves used."
+        },
+        {
+          "number": 5,
+          "sanskritName": "Vatsaka Kalpa Adhyaya",
+          "englishName": "Vatsaka Preparations",
+          "keyConcepts": [
+            "Vatsaka (Holarrhena antidysenterica)",
+            "18 recipes",
+            "Emetic formulations"
+          ],
+          "summary": "Fifth emetic drug Vatsaka with 18 recipes. Kutaja plant used."
+        },
+        {
+          "number": 6,
+          "sanskritName": "Kritavedhana Kalpa Adhyaya",
+          "englishName": "Kritavedhana Preparations",
+          "keyConcepts": [
+            "Kritavedhana (Luffa acutangula)",
+            "60 recipes",
+            "Emetic formulations"
+          ],
+          "summary": "Sixth emetic drug Kritavedhana with 60 recipes."
+        },
+        {
+          "number": 7,
+          "sanskritName": "Shyamatrivrita Kalpa Adhyaya",
+          "englishName": "Shyama-Trivrita Preparations",
+          "keyConcepts": [
+            "Shyama, Trivrita (Ipomoea petaloidea)",
+            "110 recipes",
+            "Purgative formulations"
+          ],
+          "summary": "First purgative drug Shyama-Trivrita with 110 recipes. Root used."
+        },
+        {
+          "number": 8,
+          "sanskritName": "Chaturangula Kalpa Adhyaya",
+          "englishName": "Aragwadha Preparations",
+          "keyConcepts": [
+            "Aragwadha (Cassia fistula)",
+            "12 recipes",
+            "Purgative formulations"
+          ],
+          "summary": "Purgative drug Aragwadha with 12 recipes. Fruit used."
+        },
+        {
+          "number": 9,
+          "sanskritName": "Tilvaka Kalpa Adhyaya",
+          "englishName": "Tilvaka Preparations",
+          "keyConcepts": [
+            "Tilvaka (Viburnum nervosum)",
+            "16 recipes",
+            "Purgative formulations"
+          ],
+          "summary": "Purgative drug Tilvaka with 16 recipes. Root and bark used."
+        },
+        {
+          "number": 10,
+          "sanskritName": "Sudha Kalpa Adhyaya",
+          "englishName": "Sudha Preparations",
+          "keyConcepts": [
+            "Sudha (Euphorbia neriifolia)",
+            "20 recipes",
+            "Purgative formulations"
+          ],
+          "summary": "Purgative drug Sudha with 20 recipes. Milky latex used."
+        },
+        {
+          "number": 11,
+          "sanskritName": "Saptalashankhini Kalpa Adhyaya",
+          "englishName": "Saptala-Shankhini Preparations",
+          "keyConcepts": [
+            "Saptala, Shankhini",
+            "36 recipes",
+            "Purgative formulations"
+          ],
+          "summary": "Purgative drug Saptala-Shankhini with 36 recipes."
+        },
+        {
+          "number": 12,
+          "sanskritName": "Dantidravanti Kalpa Adhyaya",
+          "englishName": "Danti-Dravanti Preparations",
+          "keyConcepts": [
+            "Danti, Dravanti (Baliospermum montanum)",
+            "49 recipes",
+            "Purgative formulations",
+            "Drug purification"
+          ],
+          "summary": "Last chapter with Danti-Dravanti (49 recipes). Includes process for purification to reduce toxicity."
+        }
+      ]
+    },
+    {
+      "id": "siddhisthana",
+      "name": "Siddhi Sthana",
+      "english": "Section on Therapeutic Procedures",
+      "chapters": 12,
+      "chapters": [
+        {
+          "number": 1,
+          "sanskritName": "Kalpana Siddhi",
+          "englishName": "Panchakarma Summary",
+          "keyConcepts": [
+            "Overall Panchakarma procedures",
+            "Samyak Lakshanas (optimal indicators)",
+            "Spacing between procedures",
+            "Wrong posology consequences"
+          ],
+          "summary": "Gives brief overall content of all Panchakarma procedures. Highlights optimal indicators of each procedure and importance of judicious selection."
+        },
+        {
+          "number": 2,
+          "sanskritName": "Panchakarmiya Siddhi",
+          "englishName": "Panchakarma Overview",
+          "keyConcepts": [
+            "Panchakarma procedures",
+            "Contraindications",
+            "Indications for different patients"
+          ],
+          "summary": "Describes Panchakarma procedures with contraindications and indications for suitable patients."
+        },
+        {
+          "number": 3,
+          "sanskritName": "Bastisutriyam Siddhi",
+          "englishName": "Basti Procedure",
+          "keyConcepts": [
+            "Basti (medicated enema)",
+            "Types of Basti",
+            "Niruha and Anuvasana",
+            "Basti yogas"
+          ],
+          "summary": "Explains procedure of Basti in detail - decoction enema (Niruha) and oil enema (Anuvasana)."
+        },
+        {
+          "number": 4,
+          "sanskritName": "Snehavyapat Siddhi",
+          "englishName": "Oleation Complications",
+          "keyConcepts": [
+            "Unctuous enema complications",
+            "Sneha-related problems",
+            "Management of complications"
+          ],
+          "summary": "Complications of unctuous enema and their management."
+        },
+        {
+          "number": 5,
+          "sanskritName": "Netrabastivyapat Siddhi",
+          "englishName": "Instrumental Complications",
+          "keyConcepts": [
+            "Instrumental defects",
+            "Basti nozzle issues",
+            "Equipment-related problems"
+          ],
+          "summary": "Instrumental defects in Basti administration and related complications."
+        },
+        {
+          "number": 6,
+          "sanskritName": "Vamana Virechana Vyapat Siddhi",
+          "englishName": "Emesis-Purgation Complications",
+          "keyConcepts": [
+            "Vamana complications",
+            "Virechana complications",
+            "Management of procedure complications"
+          ],
+          "summary": "Complications of therapeutic emesis (Vamana) and purgation (Virechana) with management."
+        },
+        {
+          "number": 7,
+          "sanskritName": "Bastivyapat Siddhi",
+          "englishName": "Basti Complications",
+          "keyConcepts": [
+            "Decoction enema complications",
+            "Basti procedure problems",
+            "Complication management"
+          ],
+          "summary": "Complications associated with decoction enema (Basti) procedure."
+        },
+        {
+          "number": 8,
+          "sanskritName": "Prasrita Yogiyam Siddhi",
+          "englishName": "Special Basti Formulations",
+          "keyConcepts": [
+            "Special Basti formulations",
+            "Virility enhancers",
+            "Complexion promoters",
+            "Semenotropics",
+            "Diarrhea management"
+          ],
+          "summary": "Enlists number of special Basti formulations with specific actions like virility enhancers, complexion promoters, etc. Also details diarrhea management."
+        },
+        {
+          "number": 9,
+          "sanskritName": "Trimarmiya Siddhi",
+          "englishName": "Three Vital Organs",
+          "keyConcepts": [
+            "Three Marma (vital organs)",
+            "Basti, Hridayam, Shiras",
+            "Vital organ protection",
+            "Uttarabasti"
+          ],
+          "summary": "Highlights clinician's concern over three vital organs (Basti-urinary bladder/kidneys, Hridayam-heart, Shiras-head). Describes medicated enema for protection of Marma."
+        },
+        {
+          "number": 10,
+          "sanskritName": "Basti Siddhi",
+          "englishName": "Basti Success",
+          "keyConcepts": [
+            "Special Basti recipes",
+            "Dosha-specific formulations",
+            "Condition-specific Basti"
+          ],
+          "summary": "Enlists special enema recipes indicated as per dosha predominance and specific clinical situations."
+        },
+        {
+          "number": 11,
+          "sanskritName": "Phalamatra Siddhi",
+          "englishName": "Fruit-based Formulations",
+          "keyConcepts": [
+            "Fruits useful for enema",
+            "Fruit-based Basti",
+            "Veterinary Basti"
+          ],
+          "summary": "Details various fruits useful for enema. Includes discussion on enema therapy for animals."
+        },
+        {
+          "number": 12,
+          "sanskritName": "Uttar Basti Siddhi",
+          "englishName": "Uttar Basti (Local Enema)",
+          "keyConcepts": [
+            "Uttarabasti (local enema)",
+            "Excellent enema recipes",
+            "Yapana Basti",
+            "Eight impediments to avoid"
+          ],
+          "summary": "Highlights excellent enema recipes superior in efficacy. Details Yapana Basti and eight factors to avoid during Panchakarma."
+        }
+      ]
+    }
+  ]
+}
