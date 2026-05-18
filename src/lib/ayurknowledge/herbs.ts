@@ -156,7 +156,7 @@ export const HERBS: Herb[] = [
     doshaKarma: { vata: 'Pacifies', pitta: 'Pacifies', kapha: 'Increases in excess' },
     indications: ['Female reproductive health', 'Lactation', 'Menopause', 'Digestion', 'Immunity', 'Stress'],
     dosage: '3-6g powder',
-    contraindications: 'None significant',
+    contraindications: ['None significant'],
     interactions: ['May affect estrogen levels', 'May interact with diuretics (electrolyte imbalance)'],
     partUsed: ['Root'],
     preparation: ['Churna', 'Kwath', 'Ghrita', 'Asava']
@@ -216,7 +216,7 @@ export const HERBS: Herb[] = [
     doshaKarma: { vata: 'Pacifies', pitta: 'Pacifies', kapha: 'Pacifies' },
     indications: ['Immunity', 'Digestion', 'Hair health', 'Skin', 'Liver', 'Vision', 'Rejuvenation'],
     dosage: '3-6g powder, 10-20ml juice',
-    contraindications: 'None significant',
+    contraindications: ['None significant'],
     interactions: ['May enhance iron absorption', 'May affect blood sugar'],
     partUsed: ['Fruit'],
     preparation: ['Churna', 'Rasayana', 'Chyawanprash', 'Triphala']
@@ -236,7 +236,7 @@ export const HERBS: Herb[] = [
     doshaKarma: { vata: 'Pacifies', pitta: 'Pacifies', kapha: 'Pacifies' },
     indications: ['Heart disease', 'High blood pressure', 'Chest pain', 'Heart failure', 'Wound healing'],
     dosage: '3-6g powder, 20-40ml decoction',
-    contraindications: 'None significant',
+    contraindications: ['None significant'],
     interactions: ['May potentiate beta-blockers', 'May potentiate anticoagulants'],
     partUsed: ['Bark'],
     preparation: ['Churna', 'Kwath', 'Arishta']
@@ -256,7 +256,7 @@ export const HERBS: Herb[] = [
     doshaKarma: { vata: 'Pacifies', pitta: 'Pacifies', kapha: 'Pacifies' },
     indications: ['Fever', 'Immunity', 'Diabetes', 'Digestion', 'Skin diseases', 'Autoimmune'],
     dosage: '3-6g powder, 10-20ml juice',
-    contraindications: 'None significant',
+    contraindications: ['None significant'],
     interactions: ['May affect autoimmune conditions', 'May interact with immunosuppressants'],
     partUsed: ['Stem'],
     preparation: ['Churna', 'Kwath', 'Ghrita', 'Taila']
@@ -276,7 +276,7 @@ export const HERBS: Herb[] = [
     doshaKarma: { vata: 'Pacifies', pitta: 'Pacifies', kapha: 'Increases' },
     indications: ['Muscle weakness', 'Fatigue', 'Nervous system', 'Fertility', 'Urinary disorders'],
     dosage: '3-6g powder',
-    contraindications: 'None significant',
+    contraindications: ['None significant'],
     interactions: ['May have CNS depressant effects'],
     partUsed: ['Root', 'Whole plant'],
     preparation: ['Churna', 'Kwath', 'Ghrita']
@@ -296,7 +296,7 @@ export const HERBS: Herb[] = [
     doshaKarma: { vata: 'Pacifies', pitta: 'Pacifies', kapha: 'Pacifies' },
     indications: ['Diarrhea', 'Digestion', 'Fever', 'Menstrual disorders', 'Skin diseases'],
     dosage: '3-6g powder',
-    contraindications: 'None significant',
+    contraindications: ['None significant'],
     interactions: ['None known'],
     partUsed: ['Tuber'],
     preparation: ['Churna', 'Kwath']
@@ -316,7 +316,7 @@ export const HERBS: Herb[] = [
     doshaKarma: { vata: 'Pacifies', pitta: 'Pacifies', kapha: 'Increases slightly' },
     indications: ['Skin diseases', 'Fever', 'Burns', 'Inflammation', 'Anxiety'],
     dosage: '1-3g powder',
-    contraindications: 'None significant',
+    contraindications: ['None significant'],
     interactions: ['None significant'],
     partUsed: ['Heartwood'],
     preparation: ['Churna', 'Taila', 'Ghrita', 'Paste']
