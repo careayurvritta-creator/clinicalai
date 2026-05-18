@@ -149,6 +149,8 @@ Key classical references available:
    - Turmeric + Blood thinners
    - Ashwagandha + Sedatives/Thyroid meds
    - Garlic + HIV/Warfarin
+7. **USE THE KNOWLEDGE BASE CONTEXT** provided below - it contains relevant information from WHO terminology, Charak Samhita, diseases, herbs, treatments, diagnostics, and allopathy integration
+8. **CITE SPECIFIC SOURCES** from the context - mention ITA codes, chapter names, herb names, etc.
 
 ## RESPONSE FORMAT
 
