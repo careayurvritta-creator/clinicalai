@@ -175,26 +175,26 @@ src/
 
 ## Implementation Phases
 
-### Phase 1: Core Infrastructure
-- [ ] Update store with intake state management
-- [ ] Create Question Bank (`intake-questions.ts`)
-- [ ] Create Diagnosis Engine (`diagnosis-engine.ts`)
-- [ ] Create Investigation Analyzer (`investigation-analyzer.ts`)
+### Phase 1: Core Infrastructure ✅ COMPLETED
+- [x] Update store with intake state management
+- [x] Create Question Bank (`intake-questions.ts`)
+- [x] Create Diagnosis Engine (`diagnosis-engine.ts`)
+- [x] Create Investigation Analyzer (`investigation-analyzer.ts`)
 
-### Phase 2: API Endpoints
-- [ ] `/api/intake` - Process Q&A, return next question
-- [ ] `/api/analyze-investigation` - Analyze PDF findings
-- [ ] `/api/case-presentation` - Generate formatted output
+### Phase 2: API Endpoints ✅ COMPLETED
+- [x] `/api/intake` - Process Q&A, return next question
+- [x] `/api/analyze-investigation` - Analyze PDF findings
+- [ ] `/api/case-presentation` - Generate formatted output (use existing treatment protocol API)
 - [ ] `/api/feedback` - Store outcome feedback
 
-### Phase 3: UI Components
-- [ ] `QuickReplies.tsx` - Suggestion chips
-- [ ] `CaseCollectorChat.tsx` - Conversational Q&A interface
-- [ ] Update `ChatPanel.tsx` - Route to Q&A mode
-- [ ] Update `CanvasPanel.tsx` - Display case presentation
+### Phase 3: UI Components ✅ COMPLETED
+- [x] `QuickReplies.tsx` - Suggestion chips
+- [x] `CaseCollectorChat.tsx` - Conversational Q&A interface
+- [x] Update `ChatPanel.tsx` - Route to Q&A mode
+- [x] Update `CanvasPanel.tsx` - Display case presentation
 
 ### Phase 4: Learning System
-- [ ] Case storage in localStorage
+- [ ] Case storage in localStorage (partially done)
 - [ ] Outcome tracking interface
 - [ ] Pattern learning from corrections
 - [ ] Export functionality
