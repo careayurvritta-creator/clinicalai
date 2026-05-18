@@ -38,7 +38,7 @@ const intakeRequestSchema = z.object({
     comorbidities: z.array(z.string()).optional(),
     investigations: z.array(z.any()).optional(),
     ongoingMedications: z.string().optional(),
-  })).optional(),
+  }).optional(),
   pendingComplaints: z.array(z.string()).optional(),
 })
 
