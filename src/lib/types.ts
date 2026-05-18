@@ -30,27 +30,39 @@ export interface ModelOption {
 
 export const MODELS: ModelOption[] = [
   {
-    id: 'meta/llama-3.3-70b-instruct',
-    name: 'Llama 3.3 70B',
-    description: 'Best for clinical reasoning',
+    id: 'meta/llama-3.1-405b-instruct',
+    name: 'Llama 3.1 405B',
+    description: 'Most powerful for clinical reasoning',
     context: '128K',
   },
   {
-    id: 'nvidia/nemotron-3-super-120b-a12b',
-    name: 'Nemotron 3 Super 120B',
-    description: 'Long context (1M tokens)',
-    context: '1M',
+    id: 'nvidia/nemotron-4-340b-instruct',
+    name: 'Nemotron-4 340B',
+    description: 'NVIDIA flagship, balanced performance',
+    context: '128K',
+  },
+  {
+    id: 'meta/llama-3.3-70b-instruct',
+    name: 'Llama 3.3 70B',
+    description: 'Fast, strong clinical reasoning',
+    context: '128K',
+  },
+  {
+    id: 'mistralai/mistral-large-2',
+    name: 'Mistral Large 2',
+    description: 'Strong reasoning alternative',
+    context: '128K',
   },
   {
     id: 'meta/llama-3.2-90b-vision-instruct',
     name: 'Llama 3.2 90B Vision',
-    description: 'Image analysis',
+    description: 'Image analysis + text',
     context: '128K',
   },
   {
-    id: 'nvidia/nemotron-nano-9b-v2',
-    name: 'Nemotron Nano 9B',
-    description: 'Fast, low cost',
+    id: 'meta/llama-3.3-8b-instruct',
+    name: 'Llama 3.3 8B',
+    description: 'Ultra-fast, low cost',
     context: '128K',
   },
 ]
