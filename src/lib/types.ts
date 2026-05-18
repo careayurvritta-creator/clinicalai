@@ -20,6 +20,7 @@ export interface ChatState {
   selectedModel: string
   canvasContent: string
   activeModule: string
+  intakeState?: IntakeState
 }
 
 export interface ModelOption {
@@ -180,4 +181,91 @@ export interface UserProfile {
   vikriti?: string
   conditions?: string[]
   currentMedications?: string[]
+}
+
+export interface ChiefComplaint {
+  id: string
+  complaint: string
+  duration: string
+  severity: number
+  location?: string
+  onset?: string
+  aggravatingFactors?: string[]
+  relievingFactors?: string[]
+  associatedSymptoms?: string[]
+}
+
+export interface InvestigationFinding {
+  parameter: string
+  value: string
+  unit: string
+  normalRange: string
+  status: 'normal' | 'abnormal' | 'critical'
+  clinicalCorrelation?: string
+}
+
+export interface CaseData {
+  name: string
+  age: string
+  gender: string
+  occupation: string
+  area: string
+  prakriti: string
+  chiefComplaints: ChiefComplaint[]
+  comorbidities: string[]
+  investigations: InvestigationFinding[]
+  investigationText: string
+  ongoingMedications: string
+  medicalHistory: string
+  allergies: string
+  familyHistory: string
+  nadi: string
+  mootra: string
+  mala: string
+  jivha: string
+  drik: string
+  sparSh: string
+  shabda: string
+  aakriti: string
+  prakritiDetail: string
+  saara: string
+  samhanana: string
+  satva: string
+  aharaShakti: string
+  vyayamaShakti: string
+  desha: string
+  provisionalDiagnosis: string
+  provisionalReasoning: string
+}
+
+export interface IntakeState {
+  isCollecting: boolean
+  currentStep: number
+  totalSteps: number
+  caseData: CaseData
+  questionHistory: string[]
+  showProvisionalDiagnosis: boolean
+  pendingComplaints: string[]
+  currentComplaintIndex: number
+}
+
+export interface StoredCase {
+  id: string
+  date: string
+  caseData: CaseData
+  aiDiagnosis: string
+  doctorCorrection?: string
+  treatmentPlan?: string
+  outcome?: {
+    followUpDate: string
+    outcomeRating: 1 | 2 | 3 | 4 | 5
+    doctorNotes: string
+    whatWorked: string[]
+    whatDidntWork: string[]
+  }
+  learnings?: {
+    patternCorrected: string
+    correctionReason: string
+    frequency: number
+  }[]
 }

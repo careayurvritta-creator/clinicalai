@@ -4,8 +4,9 @@ import { useChatStore } from '@/lib/store'
 import { MessageBubble } from './MessageBubble'
 import { ChatInput } from './ChatInput'
 import { ModuleSidebar } from './ModuleSidebar'
-import { TreatmentProtocolMaker } from './TreatmentProtocolMaker'
+import { CaseCollectorChat } from './CaseCollectorChat'
 import { useEffect, useRef } from 'react'
+import type { CaseData } from '@/lib/types'
 
 function ChatView() {
   const messages = useChatStore((state) => state.messages)
@@ -59,23 +60,69 @@ function ChatView() {
 
 export function ChatPanel() {
   const activeModule = useChatStore((state) => state.activeModule)
+  const canvasContent = useChatStore((state) => state.canvasContent)
+  const setCanvasContent = useChatStore((state) => state.setCanvasContent)
+  const appendToCanvas = useChatStore((state) => state.appendToCanvas)
+  const clearMessages = useChatStore((state) => state.clearMessages)
+
+  const handleIntakeComplete = (caseData: CaseData) => {
+    console.log('Intake complete:', caseData)
+  }
+
+  const handleShowDiagnosis = (caseData: CaseData) => {
+    setCanvasContent(caseData.provisionalDiagnosis || 'Diagnosis pending...')
+  }
+
+  const getModuleTitle = () => {
+    switch (activeModule) {
+      case 'chat':
+        return 'Chat'
+      case 'treatment-protocol':
+        return 'Treatment Protocol Maker'
+      default:
+        return activeModule.charAt(0).toUpperCase() + activeModule.slice(1).replace(/-/g, ' ')
+    }
+  }
+
+  const getModuleSubtitle = () => {
+    switch (activeModule) {
+      case 'chat':
+        return 'Clinical AI'
+      case 'treatment-protocol':
+        return 'AI-Guided Case Collection'
+      default:
+        return 'Module'
+    }
+  }
 
   return (
     <div className="flex h-full w-full">
       <ModuleSidebar />
       <div className="flex flex-col flex-1 h-full bg-panel-chat">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
-          <h2 className="text-sm font-semibold text-foreground">
-            {activeModule === 'chat' ? 'Chat' : activeModule === 'treatment-protocol' ? 'Treatment Protocol Maker' : activeModule}
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-foreground">
+              {getModuleTitle()}
+            </h2>
+            {activeModule === 'treatment-protocol' && (
+              <span className="px-2 py-0.5 text-xs bg-primary/10 text-primary rounded-full">
+                AI-Assisted
+              </span>
+            )}
+          </div>
           <span className="text-xs text-muted-foreground">
-            {activeModule === 'chat' ? 'Clinical AI' : 'Module'}
+            {getModuleSubtitle()}
           </span>
         </div>
 
         <div className="flex-1 min-h-0 overflow-hidden">
           {activeModule === 'chat' && <ChatView />}
-          {activeModule === 'treatment-protocol' && <TreatmentProtocolMaker />}
+          {activeModule === 'treatment-protocol' && (
+            <CaseCollectorChat
+              onComplete={handleIntakeComplete}
+              onShowDiagnosis={handleShowDiagnosis}
+            />
+          )}
           {activeModule !== 'chat' && activeModule !== 'treatment-protocol' && (
             <div className="flex flex-col items-center justify-center h-full text-center px-4">
               <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
@@ -85,7 +132,7 @@ export function ChatPanel() {
                 </svg>
               </div>
               <p className="text-sm text-muted-foreground">
-                {activeModule.charAt(0).toUpperCase() + activeModule.slice(1).replace(/-/g, ' ')}
+                {getModuleTitle()}
               </p>
               <p className="text-xs text-muted-foreground/60 mt-1">
                 Module coming soon
