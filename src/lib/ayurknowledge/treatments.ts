@@ -203,8 +203,8 @@ export const TREATMENTS: Treatment[] = [
     indications: ['Skin diseases', 'Inflammation', 'Pain', 'Swelling'],
     contraindications: ['Allergy to ingredients', 'Open wounds'],
     duration: 'As needed',
-    preparation: 'Fresh paste',
-    postTreatment: 'Clean affected area'
+    preparation: ['Fresh paste'],
+    postTreatment: ['Clean affected area']
   }
 ]
 
