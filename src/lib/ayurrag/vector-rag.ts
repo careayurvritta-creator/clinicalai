@@ -99,11 +99,13 @@ export async function vectorSearch(
     // Search concepts from fundamentals
     const fundamentals = AYURVEDA_KNOWLEDGE.fundamentals || {}
     const concepts = [
-      ...(fundamentals.tridosha ? Object.entries(fundamentals.tridosha).map(([k, v]: [string, any]) => ({ conceptName: k, ...v })) : []),
+      ...(fundamentals.tridosha || []),
       ...(fundamentals.saptadhatu || []),
+      ...(fundamentals.agni || []),
+      ...(fundamentals.srotas || []),
     ]
     for (const concept of concepts) {
-      const conceptName = (concept as any).conceptName || (concept as any).name || ''
+      const conceptName = (concept as any).name || ''
       const searchText = `${conceptName} ${JSON.stringify(concept)}`.toLowerCase()
       if (searchText.includes(lowerQuery)) {
         const id = conceptName.toLowerCase()
