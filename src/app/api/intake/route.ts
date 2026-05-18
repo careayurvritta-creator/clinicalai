@@ -103,7 +103,7 @@ Shall we begin?
   }
 }
 
-function getNextQuestionForStep(step: number, caseData: Partial<CaseData>): IntakeResponse['question'] {
+function getNextQuestionForStep(step: number, caseData: Partial<CaseData>): IntakeResponse['question'] | null {
   const basicQuestions = [
     { id: 'name', field: 'name', question: "What is the patient's name?", type: 'text' },
     { id: 'age', field: 'age', question: 'How old is the patient?', type: 'number' },
@@ -185,7 +185,7 @@ function getNextQuestionForStep(step: number, caseData: Partial<CaseData>): Inta
     }
   }
 
-  return null
+  return undefined
 }
 
 function analyzeProvisionalDiagnosis(caseData: Partial<CaseData>): string {
