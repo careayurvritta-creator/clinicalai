@@ -97,21 +97,23 @@ export async function vectorSearch(
     }
 
     // Search concepts from fundamentals
+    const fundamentals = AYURVEDA_KNOWLEDGE.fundamentals || {}
     const concepts = [
-      ...(AYURVEDA_KNOWLEDGE.fundamentals?.tridosha ? Object.entries(AYURVEDA_KNOWLEDGE.fundamentals.tridosha).map(([k, v]) => ({ name: k, ...v })) : []),
-      ...(AYURVEDA_KNOWLEDGE.fundamentals?.saptadhatu || []),
+      ...(fundamentals.tridosha ? Object.entries(fundamentals.tridosha).map(([k, v]: [string, any]) => ({ conceptName: k, ...v })) : []),
+      ...(fundamentals.saptadhatu || []),
     ]
     for (const concept of concepts) {
-      const searchText = `${concept.name} ${JSON.stringify(concept)}`.toLowerCase()
+      const conceptName = (concept as any).conceptName || (concept as any).name || ''
+      const searchText = `${conceptName} ${JSON.stringify(concept)}`.toLowerCase()
       if (searchText.includes(lowerQuery)) {
-        const id = concept.name.toLowerCase()
+        const id = conceptName.toLowerCase()
         if (!seen.has(id)) {
           seen.add(id)
           results.push({
             id,
             type: 'ayur_knowledge',
-            content: `${concept.name}: ${JSON.stringify(concept)}`,
-            source: concept.name,
+            content: `${conceptName}: ${JSON.stringify(concept)}`,
+            source: conceptName,
             category: 'Concept',
             relevance: searchText.split(lowerQuery).length,
             metadata: concept
