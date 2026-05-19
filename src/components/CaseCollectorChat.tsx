@@ -91,15 +91,27 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
     addMessage({
       id: `msg_${Date.now()}`,
       role: 'assistant',
-      content: 'Generating comprehensive treatment protocol using AI knowledge base...',
+      content: 'Searching PubMed for relevant research papers based on complaints and diagnosis...',
       timestamp: Date.now(),
       status: 'complete',
     })
 
     try {
       const complaints = caseData.chiefComplaints || []
+      const complaintsText = complaints.map(c => c.complaint).join(', ')
       const duration = complaints[0]?.duration || ''
       const associatedSymptoms = complaints.flatMap(c => c.associatedSymptoms || []).join(', ')
+
+      const progressMsgId = `msg_progress_${Date.now()}`
+      setTimeout(() => {
+        addMessage({
+          id: progressMsgId,
+          role: 'assistant',
+          content: 'Analyzing research papers with AI... This may take a moment.',
+          timestamp: Date.now(),
+          status: 'complete',
+        })
+      }, 3000)
 
       const response = await fetch('/api/treatment-protocol', {
         method: 'POST',
@@ -110,11 +122,15 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
             age: caseData.age || '',
             gender: caseData.gender || '',
             prakriti: caseData.prakritiDetail || caseData.prakriti || '',
-            chiefComplaints: complaints.map(c => c.complaint).join(', '),
+            chiefComplaints: complaintsText,
             diagnosis: 'Based on clinical assessment',
             duration,
             associatedSymptoms,
             investigation: caseData.investigationText || '',
+            nadi: caseData.nadi || '',
+            mootra: caseData.mootra || '',
+            mala: caseData.mala || '',
+            jivha: caseData.jivha || '',
           },
           treatmentSelection: {
             selectedPanchakarma: [],
@@ -130,10 +146,16 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
 
       if (data.protocol) {
         appendToCanvas(data.protocol)
+
+        const paperCount = data.paperCount || 0
+        const researchMsg = paperCount > 0
+          ? `Treatment protocol generated with ${paperCount} research papers analyzed from PubMed.`
+          : 'Treatment protocol generated. Limited research papers found for this condition.'
+
         addMessage({
           id: `msg_${Date.now()}`,
           role: 'assistant',
-          content: 'Treatment protocol has been generated and displayed in the Canvas panel.',
+          content: researchMsg,
           timestamp: Date.now(),
           status: 'complete',
         })
@@ -354,7 +376,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
               disabled={isLoading}
               className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
-              Confirm & Generate Treatment Protocol
+              Confirm & Generate Research-Backed Protocol
             </button>
             <button
               onClick={() => {
