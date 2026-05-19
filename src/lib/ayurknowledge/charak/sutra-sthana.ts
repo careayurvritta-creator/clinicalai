@@ -4,6 +4,11 @@
 
 import type { CharakChapter } from './types'
 
+// Helper to create shloka with defaults for missing fields
+function shloka(number: string, translation: string, sanskrit = '', commentary = '') {
+  return { number, sanskrit, translation, commentary }
+}
+
 export const SUTRA_STHANA: CharakChapter[] = [
   {
     id: 'sutra_ch1',

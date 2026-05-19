@@ -5,6 +5,7 @@ export * from './herbs'
 export * from './treatments'
 export * from './allopathy'
 export * from './charak-samhita'
+export * from './charak'
 
 import { FUNDAMENTALS, ASHTANGAS } from './fundamentals'
 import { DIAGNOSTIC_METHODS } from './diagnostics'
@@ -13,6 +14,7 @@ import { HERBS, DRUG_INTERACTIONS, RASAS, GUNAS, VIRYAS, VIPAKAS } from './herbs
 import { TREATMENTS, PURVAKARMA, RASAYANA_THERAPIES, PATHYA_APATHYA, DINACHARYA, RITUCHARYA } from './treatments'
 import { ALLOPATHY_INTEGRATION, DRUG_INTERACTION_DATABASE, PRESCRIBING_GUIDELINES, SAFETY_WARNINGS } from './allopathy'
 import { CHARAK_SAMHITA, KEY_CONCEPTS, CHAPTER_SUMMARY } from './charak-samhita'
+import { CHARAK_SAMHITA_COMPLETE, searchCharakSamhita, getCharakTreatmentProtocols, getCharakDiseaseDescriptions } from './charak'
 
 export const AYURVEDA_KNOWLEDGE = {
   fundamentals: FUNDAMENTALS,
@@ -39,7 +41,11 @@ export const AYURVEDA_KNOWLEDGE = {
   keyConcepts: KEY_CONCEPTS,
   chapterSummary: CHAPTER_SUMMARY,
   charakAllChapters: CHARAK_SAMHITA,
-  charakMetadata: { totalChapters: 120 },
+  charakComplete: CHARAK_SAMHITA_COMPLETE,
+  charakSearch: searchCharakSamhita,
+  charakProtocols: getCharakTreatmentProtocols,
+  charakDiseases: getCharakDiseaseDescriptions,
+  charakMetadata: { totalChapters: 120, totalSthanas: 8 },
   whoMetadata: { totalTerms: 3545, source: 'WHO' }
 }
 

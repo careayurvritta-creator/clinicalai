@@ -1,4 +1,5 @@
 import { AYURVEDA_KNOWLEDGE } from '../ayurknowledge'
+import { CHARAK_SAMHITA_COMPLETE, searchCharakSamhita, getCharakTreatmentProtocols, getCharakDiseaseDescriptions } from '../ayurknowledge/charak'
 
 export interface VectorSearchResult {
   id: string
@@ -39,31 +40,35 @@ function computeRelevance(searchText: string, query: string): number {
   return matchedWords === queryWords.length ? totalOccurrences : 0
 }
 
-let charakSearchCache: string | null = null
+// Cache for Charak Samhita chapter search text
+let charakChapterCache: Map<string, string> | null = null
 
-function getCharakSearchText(): string {
-  if (charakSearchCache) return charakSearchCache
-  const d = AYURVEDA_KNOWLEDGE.charakSamhita as Record<string, unknown>
-  if (!d) return ''
-  const fields: string[] = []
-  const structure = d.structure as Record<string, unknown> | undefined
-  if (structure?.sections) {
-    for (const s of structure.sections as Array<Record<string, unknown>>) {
-      fields.push((s.name as string) || '', (s.english as string) || '')
-    }
+function getCharakChapterSearchText(chapter: Record<string, unknown>): string {
+  const fields: string[] = [
+    (chapter.name as string) || '',
+    (chapter.sanskrit as string) || '',
+    (chapter.english as string) || '',
+    (chapter.summary as string) || '',
+    ...((chapter.keyConcepts as string[]) || []),
+    ...((chapter.shlokas as Array<Record<string, unknown>>)?.map(s => `${s.number || ''} ${s.sanskrit || ''} ${s.translation || ''} ${s.commentary || ''}`) || []),
+    ...((chapter.topics as Array<Record<string, unknown>>)?.map(t => `${t.title || ''} ${t.content || ''} ${t.clinicalRelevance || ''}`) || []),
+    ...((chapter.doshaDiscussion as string[]) || []),
+    ...((chapter.treatmentProtocols as Array<Record<string, unknown>>)?.map(t => `${t.condition || ''} ${t.treatment || ''} ${(t.herbs as string[])?.join(' ') || ''} ${t.dosage || ''} ${t.duration || ''}`) || []),
+    ...((chapter.diseaseDescriptions as Array<Record<string, unknown>>)?.map(d => `${d.name || ''} ${d.sanskrit || ''} ${d.etiology || ''} ${(d.symptoms as string[])?.join(' ') || ''} ${d.prognosis || ''} ${d.treatment || ''}`) || []),
+    ...((chapter.importantVerses as string[]) || []),
+    ...((chapter.clinicalApplications as string[]) || []),
+  ]
+  return fields.join(' ').toLowerCase()
+}
+
+function buildCharakCache(): Map<string, string> {
+  if (charakChapterCache) return charakChapterCache
+  charakChapterCache = new Map()
+  for (const chapter of CHARAK_SAMHITA_COMPLETE) {
+    const key = `${chapter.sthana}-${chapter.chapterNumber}`
+    charakChapterCache.set(key, getCharakChapterSearchText(chapter as unknown as Record<string, unknown>))
   }
-  const prameha = d.prameha as Record<string, unknown> | undefined
-  if (prameha) {
-    fields.push((prameha.definition as string) || '')
-    const etiology = prameha.etiology as string[] | undefined
-    if (etiology) fields.push(...etiology)
-  }
-  const vataVyadhi = d.vataVyadhi as Record<string, unknown> | undefined
-  if (vataVyadhi) {
-    fields.push((vataVyadhi.name as string) || '', (vataVyadhi.english as string) || '', (vataVyadhi.definition as string) || '')
-  }
-  charakSearchCache = fields.join(' ').toLowerCase()
-  return charakSearchCache
+  return charakChapterCache
 }
 
 export async function vectorSearch(
@@ -248,20 +253,108 @@ export async function vectorSearch(
       }
     }
 
-    // Search Charak Samhita chapters (cached)
-    const charakSearchText = getCharakSearchText()
-    if (charakSearchText) {
-      const relevance = computeRelevance(charakSearchText, lowerQuery)
+    // Search Charak Samhita chapters (comprehensive - all 8 Sthanas, 120 chapters)
+    const charakCache = buildCharakCache()
+    for (const chapter of CHARAK_SAMHITA_COMPLETE) {
+      const key = `${chapter.sthana}-${chapter.chapterNumber}`
+      const searchText = charakCache.get(key) || ''
+      const relevance = computeRelevance(searchText, lowerQuery)
       if (relevance > 0) {
-        results.push({
-          id: 'charak-samhita',
-          type: 'ayur_knowledge',
-          content: `Charak Samhita: Complete text with 8 Sthanas, 120 chapters\nKey sections: Sutra, Nidana, Vimana, Sharira, Indriya, Chikitsa, Kalpa, Siddhi Sthanas`,
-          source: 'Charak Samhita',
-          category: 'Classical Text',
-          relevance,
-          metadata: AYURVEDA_KNOWLEDGE.charakSamhita as Record<string, unknown>
-        })
+        const id = `charak-${chapter.sthana.toLowerCase().replace(/\s+/g, '-')}-${chapter.chapterNumber}`
+        if (!seen.has(id)) {
+          seen.add(id)
+          // Build rich content from chapter
+          const chapterData = chapter as unknown as Record<string, unknown>
+          const shlokas = (chapterData.shlokas as Array<Record<string, unknown>>) || []
+          const treatments = (chapterData.treatmentProtocols as Array<Record<string, unknown>>) || []
+          const diseases = (chapterData.diseaseDescriptions as Array<Record<string, unknown>>) || []
+
+          let content = `Charak Samhita - ${chapter.sthana}, Chapter ${chapter.chapterNumber}: ${chapter.name}\n`
+          content += `English: ${chapter.english}\n`
+          content += `Summary: ${chapter.summary}\n`
+          content += `Key Concepts: ${chapter.keyConcepts.join(', ')}\n`
+
+          if (shlokas.length > 0) {
+            content += `\nImportant Verses:\n`
+            for (const s of shlokas.slice(0, 5)) {
+              content += `- [${s.number}] ${s.translation}\n`
+            }
+          }
+
+          if (treatments.length > 0) {
+            content += `\nTreatment Protocols:\n`
+            for (const t of treatments.slice(0, 3)) {
+              content += `- ${t.condition}: ${t.treatment} (Herbs: ${(t.herbs as string[])?.join(', ') || 'N/A'})\n`
+            }
+          }
+
+          if (diseases.length > 0) {
+            content += `\nDisease Descriptions:\n`
+            for (const d of diseases.slice(0, 3)) {
+              content += `- ${d.name} (${d.sanskrit}): ${d.etiology}\n`
+            }
+          }
+
+          const clinicalApps = (chapterData.clinicalApplications as string[]) || []
+          if (clinicalApps.length > 0) {
+            content += `\nClinical Applications: ${clinicalApps.slice(0, 3).join(', ')}`
+          }
+
+          results.push({
+            id,
+            type: 'ayur_knowledge',
+            content,
+            source: `Charak Samhita - ${chapter.sthana} Ch.${chapter.chapterNumber}`,
+            category: 'Classical Text',
+            relevance,
+            metadata: chapterData
+          })
+          if (results.length >= maxCollect) break
+        }
+      }
+    }
+
+    // Also search Charak treatment protocols directly
+    const charakProtocols = getCharakTreatmentProtocols()
+    for (const protocol of charakProtocols) {
+      const searchText = `${protocol.condition} ${protocol.treatment} ${protocol.herbs.join(' ')} ${protocol.dosage} ${protocol.duration}`.toLowerCase()
+      const relevance = computeRelevance(searchText, lowerQuery)
+      if (relevance > 0) {
+        const id = `charak-protocol-${protocol.condition.toLowerCase().replace(/\s+/g, '-')}`
+        if (!seen.has(id)) {
+          seen.add(id)
+          results.push({
+            id,
+            type: 'ayur_knowledge',
+            content: `Charak Treatment: ${protocol.condition}\nChapter: ${protocol.chapter} (${protocol.sthana})\nTreatment: ${protocol.treatment}\nHerbs: ${protocol.herbs.join(', ')}\nDosage: ${protocol.dosage}\nDuration: ${protocol.duration}\nPrecautions: ${protocol.precautions.join(', ')}`,
+            source: `${protocol.sthana} - ${protocol.chapter}`,
+            category: 'Charak Treatment Protocol',
+            relevance,
+          })
+          if (results.length >= maxCollect) break
+        }
+      }
+    }
+
+    // Search Charak disease descriptions
+    const charakDiseases = getCharakDiseaseDescriptions()
+    for (const desc of charakDiseases) {
+      const searchText = `${desc.name} ${desc.sanskrit} ${desc.etiology} ${desc.symptoms.join(' ')} ${desc.prognosis} ${desc.treatment}`.toLowerCase()
+      const relevance = computeRelevance(searchText, lowerQuery)
+      if (relevance > 0) {
+        const id = `charak-disease-${desc.name.toLowerCase().replace(/\s+/g, '-')}`
+        if (!seen.has(id)) {
+          seen.add(id)
+          results.push({
+            id,
+            type: 'ayur_knowledge',
+            content: `Charak Disease: ${desc.name} (${desc.sanskrit})\nChapter: ${desc.chapter} (${desc.sthana})\nEtiology: ${desc.etiology}\nSymptoms: ${desc.symptoms.join(', ')}\nPrognosis: ${desc.prognosis}\nTreatment: ${desc.treatment}`,
+            source: `${desc.sthana} - ${desc.chapter}`,
+            category: 'Charak Disease Description',
+            relevance,
+          })
+          if (results.length >= maxCollect) break
+        }
       }
     }
   }
