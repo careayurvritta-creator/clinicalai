@@ -4,46 +4,7 @@
  * Source: carakasamhitaonline.com (CC BY-NC-SA 4.0)
  */
 
-export interface CharakChapter {
-  id: string
-  sthana: string
-  chapterNumber: number
-  name: string
-  sanskrit: string
-  english: string
-  summary: string
-  keyConcepts: string[]
-  shlokas: Array<{
-    number: string
-    sanskrit: string
-    translation: string
-    commentary: string
-  }>
-  topics: Array<{
-    title: string
-    content: string
-    clinicalRelevance: string
-  }>
-  doshaDiscussion: string[]
-  treatmentProtocols: Array<{
-    condition: string
-    treatment: string
-    herbs: string[]
-    dosage: string
-    duration: string
-    precautions: string[]
-  }>
-  diseaseDescriptions: Array<{
-    name: string
-    sanskrit: string
-    etiology: string
-    symptoms: string[]
-    prognosis: string
-    treatment: string
-  }>
-  importantVerses: string[]
-  clinicalApplications: string[]
-}
+import type { CharakChapter } from './types'
 
 export const NIDANA_STHANA: CharakChapter[] = [
   {
@@ -922,7 +883,7 @@ export function searchNidanaSthana(query: string): CharakChapter[] {
       chapter.english,
       chapter.summary,
       ...chapter.keyConcepts,
-      ...chapter.diseaseDescriptions.map(d => `${d.name} ${d.sanskrit} ${d.etiology} ${d.symptoms.join(' ')}`),
+      ...(chapter.diseaseDescriptions || []).map(d => `${d.name} ${d.sanskrit} ${d.etiology} ${d.symptoms.join(' ')}`),
       ...chapter.shlokas.map(s => s.translation),
       ...chapter.topics.map(t => `${t.title} ${t.content}`)
     ].join(' ').toLowerCase()
@@ -933,7 +894,7 @@ export function searchNidanaSthana(query: string): CharakChapter[] {
 export function getDiseaseDiagnosis(diseaseName: string): CharakChapter | undefined {
   const lowerName = diseaseName.toLowerCase()
   return NIDANA_STHANA.find(chapter =>
-    chapter.diseaseDescriptions.some(d =>
+    (chapter.diseaseDescriptions || []).some(d =>
       d.name.toLowerCase().includes(lowerName) ||
       d.sanskrit.toLowerCase().includes(lowerName)
     )
