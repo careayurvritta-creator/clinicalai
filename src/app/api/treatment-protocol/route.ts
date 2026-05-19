@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { TREATMENTS, PURVAKARMA } from '@/lib/ayurknowledge/treatments'
 import { HERBS } from '@/lib/ayurknowledge/herbs'
 import { DISEASES } from '@/lib/ayurknowledge/diseases'
+import { getResearchContext, formatResearchForProtocol, type ResearchContext } from '@/lib/research-analyzer'
 
 interface PatientInfo {
   name: string
@@ -13,6 +14,11 @@ interface PatientInfo {
   duration: string
   associatedSymptoms: string
   investigation: string
+  nadi?: string
+  mootra?: string
+  mala?: string
+  jivha?: string
+  complaintsArray?: Array<{ complaint: string; duration: string; severity: number }>
 }
 
 interface TreatmentSelection {
@@ -28,7 +34,11 @@ interface RequestBody {
   treatmentSelection: TreatmentSelection
 }
 
-function generateProtocol(patientInfo: PatientInfo, treatmentSelection: TreatmentSelection): string {
+function generateProtocol(
+  patientInfo: PatientInfo,
+  treatmentSelection: TreatmentSelection,
+  researchContext: ResearchContext | null = null
+): string {
   const selectedTreatments = TREATMENTS.filter(t => treatmentSelection.selectedPanchakarma.includes(t.id))
   const selectedPurvakarma = PURVAKARMA.filter(p => treatmentSelection.selectedPurvakarma.includes(p.id))
   const selectedHerbs = HERBS.filter(h => treatmentSelection.selectedHerbs.includes(h.id))
@@ -41,9 +51,24 @@ function generateProtocol(patientInfo: PatientInfo, treatmentSelection: Treatmen
   protocol += `**Prakriti:** ${patientInfo.prakriti || 'To be assessed'}\n`
   protocol += `**Chief Complaints:** ${patientInfo.chiefComplaints || '-'}\n`
   protocol += `**Diagnosis:** ${patientInfo.diagnosis || '-'}\n`
-  protocol += `**Duration:** ${patientInfo.duration || '-'}\n\n`
+  protocol += `**Duration:** ${patientInfo.duration || '-'}\n`
 
-  protocol += `## Treatment Duration: ${treatmentSelection.treatmentDuration} days\n`
+  if (patientInfo.nadi || patientInfo.mootra || patientInfo.mala || patientInfo.jivha) {
+    protocol += `\n### Ashtavidha Pariksha\n`
+    if (patientInfo.nadi) protocol += `- **Nadi:** ${patientInfo.nadi}\n`
+    if (patientInfo.mootra) protocol += `- **Mootra:** ${patientInfo.mootra}\n`
+    if (patientInfo.mala) protocol += `- **Mala:** ${patientInfo.mala}\n`
+    if (patientInfo.jivha) protocol += `- **Jivha:** ${patientInfo.jivha}\n`
+  }
+
+  if (patientInfo.complaintsArray && patientInfo.complaintsArray.length > 0) {
+    protocol += `\n### Complaint Details\n`
+    patientInfo.complaintsArray.forEach((c, i) => {
+      protocol += `${i + 1}. **${c.complaint}** — Duration: ${c.duration || 'N/A'}, Severity: ${c.severity}/10\n`
+    })
+  }
+
+  protocol += `\n## Treatment Duration: ${treatmentSelection.treatmentDuration} days\n`
   protocol += `## Budget Category: ${treatmentSelection.budget}\n\n`
 
   if (selectedDisease) {
@@ -112,6 +137,23 @@ function generateProtocol(patientInfo: PatientInfo, treatmentSelection: Treatmen
     })
   }
 
+  // Add research evidence section
+  if (researchContext && researchContext.papers.length > 0) {
+    protocol += `\n${formatResearchForProtocol(researchContext)}\n`
+
+    protocol += `\n## Evidence-Based Recommendations\n\n`
+    protocol += `Based on analysis of ${researchContext.papers.length} research papers:\n\n`
+
+    const highRelevance = researchContext.papers.filter(p => p.relevanceScore >= 7)
+    if (highRelevance.length > 0) {
+      protocol += `### High-Relevance Evidence\n`
+      for (const paper of highRelevance) {
+        protocol += `- **${paper.title.slice(0, 80)}**: ${paper.keyFindings}\n`
+      }
+      protocol += `\n`
+    }
+  }
+
   protocol += `## Daily Regimen (Dinacharya)\n`
   protocol += `- **Morning (4-6 AM):** Wake up, drink warm water\n`
   protocol += `- **Morning (6-7 AM):** Abhyanga (self-massage) with sesame oil\n`
@@ -158,9 +200,28 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const protocol = generateProtocol(patientInfo, treatmentSelection)
+    // Extract complaints text for research
+    const complaintsText = patientInfo.chiefComplaints || 'General health'
+    const durationText = patientInfo.duration || 'Not specified'
+    const diagnosisText = patientInfo.diagnosis || 'Not specified'
 
-    return NextResponse.json({ protocol })
+    // Fetch research papers
+    let researchContext: ResearchContext | null = null
+    try {
+      researchContext = await getResearchContext(complaintsText, durationText, diagnosisText, patientInfo.prakriti)
+      console.log('[Treatment Protocol] Research context:', researchContext.papers.length, 'papers')
+    } catch (error) {
+      console.error('[Treatment Protocol] Research fetch failed:', error)
+    }
+
+    const protocol = generateProtocol(patientInfo, treatmentSelection, researchContext)
+
+    return NextResponse.json({
+      protocol,
+      researchPapers: researchContext?.papers || [],
+      researchSummary: researchContext?.summary || '',
+      paperCount: researchContext?.papers.length || 0,
+    })
   } catch (error) {
     return NextResponse.json(
       { error: 'Failed to generate protocol' },
