@@ -6,7 +6,7 @@ const DB_NAME = process.env.MONGODB_DB || 'ayurveda-clinical'
 
 let isConnected = false
 
-export async function connectToDatabase(): Promise<any> {
+export async function connectToDatabase(): Promise<Record<string, unknown> | null> {
   if (!MONGODB_URI) {
     console.log('[MongoDB] No URI configured - using local in-memory mode')
     return null

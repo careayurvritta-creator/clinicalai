@@ -65,8 +65,10 @@ const modules: ModuleItem[] = [
 
 export function ModuleSidebar() {
   const [isExpanded, setIsExpanded] = useState(true)
-  const activeModule = useChatStore((state) => state.activeModule)
   const setActiveModule = useChatStore((state) => state.setActiveModule)
+  const activeModule = useChatStore(
+    (state) => isExpanded ? state.activeModule : ''
+  )
 
   return (
     <div className="relative flex h-full">

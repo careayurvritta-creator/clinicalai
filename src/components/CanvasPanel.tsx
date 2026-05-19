@@ -8,7 +8,9 @@ import { useEffect, useRef } from 'react'
 
 export function CanvasPanel() {
   const canvasContent = useChatStore((state) => state.canvasContent)
-  const messages = useChatStore((state) => state.messages)
+  const completedAssistantCount = useChatStore(
+    (state) => state.messages.filter(m => m.role === 'assistant' && m.status === 'complete').length
+  )
   const isStreaming = useChatStore((state) => state.isStreaming)
   const contentEndRef = useRef<HTMLDivElement>(null)
 
@@ -29,7 +31,7 @@ export function CanvasPanel() {
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <h2 className="text-sm font-semibold text-foreground">Canvas</h2>
         <span className="text-xs text-muted-foreground">
-          {messages.filter((m) => m.role === 'assistant' && m.status === 'complete').length} response{messages.filter((m) => m.role === 'assistant' && m.status === 'complete').length !== 1 ? 's' : ''}
+          {completedAssistantCount} response{completedAssistantCount !== 1 ? 's' : ''}
         </span>
       </div>
 

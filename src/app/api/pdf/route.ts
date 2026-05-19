@@ -36,8 +36,8 @@ export async function POST(req: NextRequest) {
     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
       const page = await pdf.getPage(pageNum)
       const textContent = await page.getTextContent()
-      const pageText = (textContent.items as any[])
-        .map((item: any) => item.str)
+      const pageText = textContent.items
+        .map((item) => 'str' in item ? (item as { str: string }).str : '')
         .join(' ')
 
       if (pageText.trim().length > 10) hasText = true

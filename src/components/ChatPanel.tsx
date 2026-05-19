@@ -1,6 +1,7 @@
 'use client'
 
 import { useChatStore } from '@/lib/store'
+import { useShallow } from 'zustand/shallow'
 import { MessageBubble } from './MessageBubble'
 import { ChatInput } from './ChatInput'
 import { ModuleSidebar } from './ModuleSidebar'
@@ -59,11 +60,13 @@ function ChatView() {
 }
 
 export function ChatPanel() {
-  const activeModule = useChatStore((state) => state.activeModule)
-  const canvasContent = useChatStore((state) => state.canvasContent)
-  const setCanvasContent = useChatStore((state) => state.setCanvasContent)
-  const appendToCanvas = useChatStore((state) => state.appendToCanvas)
-  const clearMessages = useChatStore((state) => state.clearMessages)
+  const { activeModule, setCanvasContent, clearMessages } = useChatStore(
+    useShallow((state) => ({
+      activeModule: state.activeModule,
+      setCanvasContent: state.setCanvasContent,
+      clearMessages: state.clearMessages,
+    }))
+  )
 
   const handleIntakeComplete = (caseData: CaseData) => {
     console.log('Intake complete:', caseData)

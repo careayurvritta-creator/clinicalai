@@ -224,7 +224,7 @@ export interface CaseData {
   mala: string
   jivha: string
   drik: string
-  sparSh: string
+  sparsh: string
   shabda: string
   aakriti: string
   prakritiDetail: string

@@ -23,3 +23,11 @@ export function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text
   return text.substring(0, maxLength) + '...'
 }
+
+export function sanitizeInput(input: string): string {
+  return input
+    .replace(/[<>]/g, '')
+    .replace(/\x00/g, '')
+    .trim()
+    .substring(0, 5000)
+}

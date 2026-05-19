@@ -3,6 +3,7 @@
 import { ChatPanel } from '@/components/ChatPanel'
 import { CanvasPanel } from '@/components/CanvasPanel'
 import { ResizableLayout } from '@/components/ResizableLayout'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { useChatStore } from '@/lib/store'
 import { useEffect, useState } from 'react'
 

@@ -5,7 +5,7 @@ import { useDropzone } from 'react-dropzone'
 import { useChatStore } from '@/lib/store'
 import { generateId } from '@/lib/utils'
 import { MODELS } from '@/lib/types'
-import type { Attachment } from '@/lib/types'
+import type { Attachment, Message } from '@/lib/types'
 import { ModelSelector } from './ModelSelector'
 
 export function ChatInput() {
@@ -77,19 +77,18 @@ export function ChatInput() {
     const text = input.trim()
     if ((!text && attachments.length === 0) || isStreaming || isProcessing) return
 
-    const userMessage: any = {
+    const userMessage: Message = {
       id: generateId(),
       role: 'user' as const,
       content: text,
       timestamp: Date.now(),
       status: 'complete' as const,
-    }
-
-    if (attachments.length > 0) {
-      userMessage.attachments = attachments.map((a) => ({
-        type: a.type,
-        name: a.name,
-      }))
+      ...(attachments.length > 0 ? {
+        attachments: attachments.map((a) => ({
+          type: a.type as 'image' | 'pdf',
+          name: a.name,
+        })),
+      } : {}),
     }
 
     addMessage(userMessage)
@@ -107,8 +106,8 @@ export function ChatInput() {
     addMessage(assistantMessage)
 
     try {
-      const apiMessages = messages
-        .concat(userMessage)
+      const currentMessages = useChatStore.getState().messages
+      const apiMessages = currentMessages
         .map((m) => ({ role: m.role, content: m.content }))
 
       const body: any = { messages: apiMessages, model: selectedModel }

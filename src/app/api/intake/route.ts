@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import type { CaseData, ChiefComplaint } from '@/lib/types'
+import { sanitizeInput } from '@/lib/utils'
 
 const intakeRequestSchema = z.object({
   action: z.enum(['start', 'answer', 'getQuestion', 'showDiagnosis', 'reset']),
@@ -238,6 +239,7 @@ export async function POST(req: NextRequest) {
     const validated = intakeRequestSchema.parse(body)
 
     const { action, answer, currentStep = 0, caseData = {} } = validated
+    const sanitizedAnswer = answer ? sanitizeInput(answer) : answer
 
     switch (action) {
       case 'start':
@@ -247,19 +249,19 @@ export async function POST(req: NextRequest) {
         const updatedCaseData = { ...caseData }
 
         if (currentStep === 0) {
-          updatedCaseData.name = answer
+          updatedCaseData.name = sanitizedAnswer
         } else if (currentStep === 1) {
-          updatedCaseData.age = answer
+          updatedCaseData.age = sanitizedAnswer
         } else if (currentStep === 2) {
-          updatedCaseData.gender = answer
+          updatedCaseData.gender = sanitizedAnswer
         } else if (currentStep === 3) {
-          updatedCaseData.occupation = answer
+          updatedCaseData.occupation = sanitizedAnswer
         } else if (currentStep === 4) {
-          updatedCaseData.area = answer
+          updatedCaseData.area = sanitizedAnswer
         } else if (currentStep === 5) {
           const newComplaint: ChiefComplaint = {
             id: `complaint_${Date.now()}`,
-            complaint: answer ?? '',
+            complaint: sanitizedAnswer ?? '',
             duration: '',
             severity: 5,
           }

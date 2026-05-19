@@ -30,7 +30,7 @@ const initialCaseData: CaseData = {
   mala: '',
   jivha: '',
   drik: '',
-  sparSh: '',
+  sparsh: '',
   shabda: '',
   aakriti: '',
   prakritiDetail: '',

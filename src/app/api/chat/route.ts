@@ -8,7 +8,7 @@ const chatRequestSchema = z.object({
   messages: z.array(
     z.object({
       role: z.enum(['user', 'assistant', 'system']),
-      content: z.string(),
+      content: z.string().max(50000),
     })
   ),
   model: z.string().default('meta/llama-3.3-70b-instruct'),

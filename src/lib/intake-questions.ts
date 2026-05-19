@@ -692,7 +692,7 @@ export const ASHTAVIDHA_QUESTIONS: Question[] = [
   },
   {
     id: 'sparsh',
-    field: 'sparSh',
+    field: 'sparsh',
     question: 'Sparsh (Skin temperature): Preference for environment?',
     type: 'select',
     options: [
@@ -700,7 +700,7 @@ export const ASHTAVIDHA_QUESTIONS: Question[] = [
       { value: 'Prefers cool', label: 'Prefers cool environment' },
       { value: 'No preference', label: 'No particular preference' },
     ],
-    condition: (caseData) => !caseData.sparSh,
+    condition: (caseData) => !caseData.sparsh,
     suggestions: ['Warm environment', 'Cool environment', 'No preference'],
   },
   {
