@@ -114,11 +114,22 @@ export const useChatStore = create<ChatState & ChatActions>()(
       setCanvasContent: (content) => set({ canvasContent: content }),
 
       appendToCanvas: (content) =>
-        set((state) => ({
-          canvasContent: state.canvasContent
-            ? state.canvasContent + '\n\n' + content
-            : content,
-        })),
+        set((state) => {
+          const MAX_CANVAS_LENGTH = 50000
+          const combined = state.canvasContent
+            ? state.canvasContent + '\n\n---\n\n' + content
+            : content
+          if (combined.length > MAX_CANVAS_LENGTH) {
+            const keepFrom = combined.length - Math.floor(MAX_CANVAS_LENGTH * 0.8)
+            const nextSeparator = combined.indexOf('\n\n---\n\n', keepFrom)
+            return {
+              canvasContent: nextSeparator > 0
+                ? combined.slice(nextSeparator + 7)
+                : combined.slice(keepFrom)
+            }
+          }
+          return { canvasContent: combined }
+        }),
 
       clearMessages: () =>
         set({
@@ -192,7 +203,17 @@ export const useChatStore = create<ChatState & ChatActions>()(
         activeModule: state.activeModule,
         intakeState: state.intakeState,
       }),
-      version: 2,
+      version: 3,
+      migrate: (persistedState: any, version: number) => {
+        if (version < 3) {
+          const state = persistedState as any
+          if (state?.intakeState?.caseData?.sparSh !== undefined) {
+            state.intakeState.caseData.sparsh = state.intakeState.caseData.sparSh
+            delete state.intakeState.caseData.sparSh
+          }
+        }
+        return persistedState
+      },
     }
   )
 )

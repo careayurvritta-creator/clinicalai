@@ -40,10 +40,20 @@ export async function getPatient(patientId: string) {
     .single()
 }
 
+function calculateAndSetBMI(data: Record<string, unknown>): Record<string, unknown> {
+  const height = data.height_cm as number | undefined
+  const weight = data.weight_kg as number | undefined
+  if (height && weight && height > 0) {
+    const heightM = height / 100
+    data.bmi = Math.round((weight / (heightM * heightM)) * 10) / 10
+  }
+  return data
+}
+
 export async function createPatient(data: Record<string, unknown>) {
   return supabase
     .from('patients')
-    .insert(data)
+    .insert(calculateAndSetBMI(data))
     .select()
     .single()
 }
@@ -51,7 +61,7 @@ export async function createPatient(data: Record<string, unknown>) {
 export async function updatePatient(patientId: string, data: Record<string, unknown>) {
   return supabase
     .from('patients')
-    .update(data)
+    .update(calculateAndSetBMI(data))
     .eq('id', patientId)
     .select()
     .single()

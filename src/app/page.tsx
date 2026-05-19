@@ -49,10 +49,12 @@ export default function Home() {
       </header>
 
       <div className="flex-1 overflow-hidden">
-        <ResizableLayout
-          chatPanel={<ChatPanel />}
-          canvasPanel={<CanvasPanel />}
-        />
+        <ErrorBoundary>
+          <ResizableLayout
+            chatPanel={<ChatPanel />}
+            canvasPanel={<CanvasPanel />}
+          />
+        </ErrorBoundary>
       </div>
     </main>
   )

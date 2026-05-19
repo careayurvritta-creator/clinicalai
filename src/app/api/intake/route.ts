@@ -186,7 +186,7 @@ function getNextQuestionForStep(step: number, caseData: Partial<CaseData>): Inta
     }
   }
 
-  return undefined
+  return null
 }
 
 function analyzeProvisionalDiagnosis(caseData: Partial<CaseData>): string {
