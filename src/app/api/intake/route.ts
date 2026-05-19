@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import type { CaseData, ChiefComplaint } from '@/lib/types'
 import { sanitizeInput } from '@/lib/utils'
+import { searchKnowledge, AYURVEDA_KNOWLEDGE } from '@/lib/ayurknowledge'
+import { analyzeProvisionalDiagnosis, formatDiagnosisForDisplay } from '@/lib/diagnosis-engine'
 
 const intakeRequestSchema = z.object({
   action: z.enum(['start', 'answer', 'getQuestion', 'showDiagnosis', 'reset']),
@@ -28,6 +30,26 @@ const intakeRequestSchema = z.object({
     comorbidities: z.array(z.string()).optional(),
     investigations: z.array(z.any()).optional(),
     ongoingMedications: z.string().optional(),
+    medicalHistory: z.string().optional(),
+    allergies: z.string().optional(),
+    familyHistory: z.string().optional(),
+    nadi: z.string().optional(),
+    mootra: z.string().optional(),
+    mala: z.string().optional(),
+    jivha: z.string().optional(),
+    drik: z.string().optional(),
+    sparsh: z.string().optional(),
+    shabda: z.string().optional(),
+    aakriti: z.string().optional(),
+    prakritiDetail: z.string().optional(),
+    saara: z.string().optional(),
+    samhanana: z.string().optional(),
+    satva: z.string().optional(),
+    aharaShakti: z.string().optional(),
+    vyayamaShakti: z.string().optional(),
+    desha: z.string().optional(),
+    provisionalDiagnosis: z.string().optional(),
+    provisionalReasoning: z.string().optional(),
   }).optional(),
   pendingComplaints: z.array(z.string()).optional(),
 })
@@ -53,9 +75,11 @@ interface IntakeResponse {
   diagnosis?: string
 }
 
+const TOTAL_STEPS = 30
+
 function calculateProgress(caseData: Partial<CaseData>): { current: number; total: number; percentage: number } {
   let filled = 0
-  const total = 10
+  const total = TOTAL_STEPS
 
   if (caseData.name) filled++
   if (caseData.age) filled++
@@ -63,10 +87,35 @@ function calculateProgress(caseData: Partial<CaseData>): { current: number; tota
   if (caseData.occupation) filled++
   if (caseData.area) filled++
   if (caseData.chiefComplaints && caseData.chiefComplaints.length > 0) filled++
-  if (caseData.nadi || caseData.mala || caseData.jivha) filled++
-  if (caseData.prakritiDetail) filled++
+  // Complaint details (6-12)
+  const lastComplaint = caseData.chiefComplaints?.[caseData.chiefComplaints.length - 1]
+  if (lastComplaint?.duration) filled++
+  if (lastComplaint?.severity && lastComplaint.severity > 0) filled++
+  if (lastComplaint?.location) filled++
+  if (lastComplaint?.onset) filled++
+  if (lastComplaint?.aggravatingFactors && lastComplaint.aggravatingFactors.length > 0) filled++
+  if (lastComplaint?.relievingFactors && lastComplaint.relievingFactors.length > 0) filled++
+  if (lastComplaint?.associatedSymptoms && lastComplaint.associatedSymptoms.length > 0) filled++
+  // Medical history (13-15)
   if (caseData.comorbidities && caseData.comorbidities.length > 0) filled++
   if (caseData.ongoingMedications) filled++
+  if (caseData.allergies) filled++
+  // Ashtavidha (16-23)
+  if (caseData.nadi) filled++
+  if (caseData.mootra) filled++
+  if (caseData.mala) filled++
+  if (caseData.jivha) filled++
+  if (caseData.drik) filled++
+  if (caseData.shabda) filled++
+  if (caseData.sparsh) filled++
+  if (caseData.aakriti) filled++
+  // Dashavidha (24-29)
+  if (caseData.prakritiDetail) filled++
+  if (caseData.saara) filled++
+  if (caseData.samhanana) filled++
+  if (caseData.satva) filled++
+  if (caseData.aharaShakti) filled++
+  if (caseData.vyayamaShakti) filled++
 
   return {
     current: filled,
@@ -82,35 +131,99 @@ function getWelcomeMessage(): IntakeResponse {
 
 Welcome to the Clinical AI Intake System.
 
-I'll help you gather comprehensive patient information through a structured consultation process. This will help create a detailed treatment protocol.
+I'll help you gather comprehensive patient information through a structured Ayurvedic consultation process.
 
 **How this works:**
-1. I'll ask a series of questions about the patient
-2. We can address chief complaints in detail
-3. I'll perform Ashtavidha Pariksha (8-fold examination)
-4. We'll arrive at a provisional diagnosis
-5. Finally, generate a treatment plan
+1. Basic patient information
+2. Chief complaints with detailed analysis
+3. AI-powered symptom correlation using knowledge base
+4. Ashtavidha Pariksha (8-fold examination)
+5. Dashavidha Pariksha (10-fold examination)
+6. AI-generated provisional diagnosis
+7. Comprehensive treatment protocol
 
-**You can:**
-- Upload investigation PDFs for AI analysis
-- Type natural responses or use quick-select options
-- Correct the AI's provisional diagnosis at any point
-- Ask to skip or revisit questions
+**Features:**
+- RAG-powered intelligent follow-up questions
+- Disease correlation from Charak Samhita & knowledge base
+- Automatic dosha analysis
+- Drug interaction checks
 
 Shall we begin?
 
 **Please enter the patient's name to start:**`,
-    progress: { current: 0, total: 10, percentage: 0 },
+    progress: { current: 0, total: TOTAL_STEPS, percentage: 0 },
   }
 }
 
+function getRelatedDiseases(complaint: string): string[] {
+  const results = searchKnowledge(complaint)
+  const diseases: string[] = []
+  for (const line of results.split('\n')) {
+    if (line.startsWith('Disease:')) {
+      const nameMatch = line.match(/Disease:\s*([^(]+)/)
+      if (nameMatch) diseases.push(nameMatch[1].trim())
+    }
+  }
+  return [...new Set(diseases)].slice(0, 5)
+}
+
+function getRelatedSymptoms(complaint: string): string[] {
+  const lowerComplaint = complaint.toLowerCase()
+  const symptoms: string[] = []
+
+  for (const disease of AYURVEDA_KNOWLEDGE.diseases || []) {
+    const diseaseText = `${disease.name} ${disease.clinicalFeatures?.join(' ') || ''}`.toLowerCase()
+    if (diseaseText.includes(lowerComplaint) || lowerComplaint.includes(disease.name.toLowerCase())) {
+      for (const feature of disease.clinicalFeatures || []) {
+        if (!lowerComplaint.includes(feature.toLowerCase())) {
+          symptoms.push(feature)
+        }
+      }
+    }
+  }
+  return [...new Set(symptoms)].slice(0, 8)
+}
+
+function getAggravatingFactorSuggestions(complaint: string): string[] {
+  const lowerComplaint = complaint.toLowerCase()
+  const factors: string[] = []
+
+  for (const disease of AYURVEDA_KNOWLEDGE.diseases || []) {
+    const diseaseText = `${disease.name} ${disease.clinicalFeatures?.join(' ') || ''}`.toLowerCase()
+    if (diseaseText.includes(lowerComplaint) || lowerComplaint.includes(disease.name.toLowerCase())) {
+      for (const apathya of disease.apathya || []) {
+        factors.push(apathya)
+      }
+    }
+  }
+  return [...new Set(factors)].slice(0, 6)
+}
+
+function getRelievingFactorSuggestions(complaint: string): string[] {
+  const lowerComplaint = complaint.toLowerCase()
+  const factors: string[] = []
+
+  for (const disease of AYURVEDA_KNOWLEDGE.diseases || []) {
+    const diseaseText = `${disease.name} ${disease.clinicalFeatures?.join(' ') || ''}`.toLowerCase()
+    if (diseaseText.includes(lowerComplaint) || lowerComplaint.includes(disease.name.toLowerCase())) {
+      for (const pathya of disease.pathya || []) {
+        factors.push(pathya)
+      }
+    }
+  }
+  return [...new Set(factors)].slice(0, 6)
+}
+
 function getNextQuestionForStep(step: number, caseData: Partial<CaseData>): IntakeResponse['question'] | null {
-  const basicQuestions = [
-    { id: 'name', field: 'name', question: "What is the patient's name?", type: 'text' },
-    { id: 'age', field: 'age', question: 'How old is the patient?', type: 'number' },
-    { id: 'gender', field: 'gender', question: 'What is the patient\'s gender?', type: 'select', options: [{ value: 'Male', label: 'Male' }, { value: 'Female', label: 'Female' }, { value: 'Other', label: 'Other' }] },
-    { id: 'occupation', field: 'occupation', question: 'What is the patient\'s occupation?', type: 'text' },
-    { id: 'area', field: 'area', question: 'Which area/city does the patient live in?', type: 'text' },
+  const lastComplaint = caseData.chiefComplaints?.[caseData.chiefComplaints.length - 1]
+  const complaintText = lastComplaint?.complaint || ''
+
+  const basicQuestions: IntakeResponse['question'][] = [
+    { id: 'name', field: 'name', question: "What is the patient's name?", type: 'text', suggestions: ['Enter patient name'] },
+    { id: 'age', field: 'age', question: 'How old is the patient?', type: 'number', suggestions: ['Enter age in years'] },
+    { id: 'gender', field: 'gender', question: "What is the patient's gender?", type: 'select', options: [{ value: 'Male', label: 'Male' }, { value: 'Female', label: 'Female' }, { value: 'Other', label: 'Other' }] },
+    { id: 'occupation', field: 'occupation', question: "What is the patient's occupation?", type: 'text', suggestions: ['Business', 'Service', 'Student', 'Homemaker', 'Retired', 'Farmer', 'Laborer'] },
+    { id: 'area', field: 'area', question: 'Which area/city does the patient live in?', type: 'text', suggestions: ['Enter city or region'] },
   ]
 
   if (step < basicQuestions.length) {
@@ -121,16 +234,22 @@ function getNextQuestionForStep(step: number, caseData: Partial<CaseData>): Inta
     return {
       id: 'chiefComplaints',
       field: 'chiefComplaints',
-      question: 'What brings the patient here today? Please describe all the main concerns.',
+      question: 'What brings the patient here today? Please describe the main complaint.',
       type: 'text',
+      suggestions: ['Joint pain', 'Acidity', 'Skin rash', 'Diabetes', 'Cough', 'Headache', 'Anxiety', 'Insomnia'],
     }
   }
 
+  // Phase 3: Complaint Details (steps 6-12) with RAG suggestions
   if (step === 6) {
+    const relatedDiseases = getRelatedDiseases(complaintText)
+    const diseaseHint = relatedDiseases.length > 0
+      ? `\n\n*Related conditions in knowledge base: ${relatedDiseases.join(', ')}*`
+      : ''
     return {
       id: 'duration',
       field: 'duration',
-      question: 'How long has the patient been experiencing this?',
+      question: `How long has the patient been experiencing "${complaintText}"?${diseaseHint}`,
       type: 'select',
       options: [
         { value: 'Days', label: 'Days' },
@@ -147,7 +266,7 @@ function getNextQuestionForStep(step: number, caseData: Partial<CaseData>): Inta
     return {
       id: 'severity',
       field: 'severity',
-      question: 'On a scale of 1-10, how would you rate the severity? (1=mild, 10=severe)',
+      question: `On a scale of 1-10, how severe is "${complaintText}"? (1=mild, 10=severe)`,
       type: 'scale',
       severityScale: { min: 1, max: 10, default: '5' },
     }
@@ -155,33 +274,320 @@ function getNextQuestionForStep(step: number, caseData: Partial<CaseData>): Inta
 
   if (step === 8) {
     return {
-      id: 'nadi',
-      field: 'nadi',
-      question: 'Nadi (Pulse): What characteristics were noted?',
-      type: 'select',
-      options: [
-        { value: 'Vata', label: 'Vata - Thready, fast, irregular' },
-        { value: 'Pitta', label: 'Pitta - Bounding, moderate rate' },
-        { value: 'Kapha', label: 'Kapha - Slow, deep, steady' },
-        { value: 'Mixed', label: 'Mixed/Difficult to determine' },
-      ],
+      id: 'location',
+      field: 'location',
+      question: `Where exactly is "${complaintText}" located? Please describe the specific area.`,
+      type: 'text',
+      suggestions: ['Left side', 'Right side', 'Both sides', 'Upper body', 'Lower body', 'Abdomen', 'Chest', 'Head'],
     }
   }
 
   if (step === 9) {
     return {
-      id: 'prakriti',
-      field: 'prakriti',
-      question: 'Based on lifelong characteristics, what is the natural constitution?',
+      id: 'onset',
+      field: 'onset',
+      question: 'When and how did this start? Was it sudden or gradual?',
+      type: 'text',
+      suggestions: ['Sudden onset', 'Gradual onset', 'After meal', 'Morning', 'Night', 'After stress', 'Seasonal'],
+    }
+  }
+
+  if (step === 10) {
+    const aggravatingSuggestions = getAggravatingFactorSuggestions(complaintText)
+    return {
+      id: 'aggravatingFactors',
+      field: 'aggravatingFactors',
+      question: `What makes "${complaintText}" worse?`,
+      type: 'text',
+      suggestions: aggravatingSuggestions.length > 0 ? aggravatingSuggestions : ['Cold weather', 'Hot weather', 'Stress', 'Fasting', 'Heavy food', 'Physical exertion'],
+    }
+  }
+
+  if (step === 11) {
+    const relievingSuggestions = getRelievingFactorSuggestions(complaintText)
+    return {
+      id: 'relievingFactors',
+      field: 'relievingFactors',
+      question: `What makes "${complaintText}" better?`,
+      type: 'text',
+      suggestions: relievingSuggestions.length > 0 ? relievingSuggestions : ['Rest', 'Warm compress', 'Cold compress', 'Light food', 'Sleep', 'Massage'],
+    }
+  }
+
+  if (step === 12) {
+    const relatedSymptoms = getRelatedSymptoms(complaintText)
+    return {
+      id: 'associatedSymptoms',
+      field: 'associatedSymptoms',
+      question: `Are there any other symptoms associated with "${complaintText}"?`,
+      type: 'text',
+      suggestions: relatedSymptoms.length > 0 ? relatedSymptoms : ['Fever', 'Fatigue', 'Loss of appetite', 'Sleep disturbance', 'Weight change', 'Mood changes'],
+    }
+  }
+
+  // Phase 5: Medical History (steps 13-15)
+  if (step === 13) {
+    return {
+      id: 'comorbidities',
+      field: 'comorbidities',
+      question: 'Does the patient have any other existing medical conditions?',
+      type: 'text',
+      suggestions: ['Diabetes', 'Hypertension', 'Thyroid disorder', 'Heart disease', 'Asthma', 'None'],
+    }
+  }
+
+  if (step === 14) {
+    return {
+      id: 'ongoingMedications',
+      field: 'ongoingMedications',
+      question: 'Is the patient currently taking any medications (Ayurvedic or modern)?',
+      type: 'text',
+      suggestions: ['No medications', 'Metformin', 'Amlodipine', 'Thyronorm', 'Ayurvedic medicines', 'Herbal supplements'],
+    }
+  }
+
+  if (step === 15) {
+    return {
+      id: 'allergies',
+      field: 'allergies',
+      question: 'Does the patient have any known allergies?',
+      type: 'text',
+      suggestions: ['No known allergies', 'Drug allergy', 'Food allergy', 'Dust allergy', 'Pollen allergy'],
+    }
+  }
+
+  // Phase 6: Ashtavidha Pariksha (steps 16-23)
+  if (step === 16) {
+    return {
+      id: 'nadi',
+      field: 'nadi',
+      question: '**Nadi (Pulse)** — What characteristics were noted?',
       type: 'select',
       options: [
-        { value: 'Vata', label: 'Vata' },
-        { value: 'Pitta', label: 'Pitta' },
-        { value: 'Kapha', label: 'Kapha' },
-        { value: 'Vata-Pitta', label: 'Vata-Pitta' },
-        { value: 'Pitta-Kapha', label: 'Pitta-Kapha' },
-        { value: 'Kapha-Vata', label: 'Kapha-Vata' },
-        { value: 'Tridosha', label: 'Tridosha' },
+        { value: 'Vata', label: 'Vata — Thready, fast, irregular (like snake movement)' },
+        { value: 'Pitta', label: 'Pitta — Bounding, moderate rate (like frog movement)' },
+        { value: 'Kapha', label: 'Kapha — Slow, deep, steady (like swan movement)' },
+        { value: 'Vata-Pitta', label: 'Vata-Pitta — Mixed Vata and Pitta pattern' },
+        { value: 'Pitta-Kapha', label: 'Pitta-Kapha — Mixed Pitta and Kapha pattern' },
+        { value: 'Kapha-Vata', label: 'Kapha-Vata — Mixed Kapha and Vata pattern' },
+        { value: 'Tridosha', label: 'Tridosha — All three doshas affected' },
+      ],
+    }
+  }
+
+  if (step === 17) {
+    return {
+      id: 'mootra',
+      field: 'mootra',
+      question: '**Mootra (Urine)** — What is the urinary pattern?',
+      type: 'select',
+      options: [
+        { value: 'Normal', label: 'Normal — Clear, moderate frequency' },
+        { value: 'Increased frequency', label: 'Increased frequency (Prabhoota)' },
+        { value: 'Burning', label: 'Burning sensation (Daha)' },
+        { value: 'Dark colored', label: 'Dark colored urine' },
+        { value: 'Cloudy', label: 'Cloudy/turbid (Avila)' },
+        { value: 'Sweet smell', label: 'Sweet smell (Madhura — Prameha indicator)' },
+        { value: 'Scanty', label: 'Scanty urination' },
+      ],
+    }
+  }
+
+  if (step === 18) {
+    return {
+      id: 'mala',
+      field: 'mala',
+      question: '**Mala (Stool)** — What is the stool pattern?',
+      type: 'select',
+      options: [
+        { value: 'Regular', label: 'Regular — Well-formed, daily' },
+        { value: 'Constipated', label: 'Constipated (Vibandha) — Hard, infrequent' },
+        { value: 'Loose', label: 'Loose stools (Atisara)' },
+        { value: 'Irregular', label: 'Irregular — Alternating constipation and loose' },
+        { value: 'Mucus', label: 'Mucus in stool' },
+        { value: 'Undigested food', label: 'Undigested food particles' },
+        { value: 'Heavy/foul smell', label: 'Heavy/foul smell' },
+      ],
+    }
+  }
+
+  if (step === 19) {
+    return {
+      id: 'jivha',
+      field: 'jivha',
+      question: '**Jivha (Tongue)** — What is the tongue appearance?',
+      type: 'select',
+      options: [
+        { value: 'Clean', label: 'Clean and pink (Healthy)' },
+        { value: 'White coated', label: 'White coating (Ama/Kapha)' },
+        { value: 'Yellow coated', label: 'Yellow coating (Pitta)' },
+        { value: 'Red', label: 'Red/inflamed (Pitta)' },
+        { value: 'Pale', label: 'Pale (Vata/Kapha)' },
+        { value: 'Cracked', label: 'Cracked/dry (Vata)' },
+        { value: 'Indented edges', label: 'Indented edges (Teeth marks — Ama)' },
+      ],
+    }
+  }
+
+  if (step === 20) {
+    return {
+      id: 'drik',
+      field: 'drik',
+      question: '**Drik (Eyes)** — What is the eye appearance?',
+      type: 'select',
+      options: [
+        { value: 'Normal', label: 'Normal — Clear, bright' },
+        { value: 'Red', label: 'Red/congested (Pitta)' },
+        { value: 'Dry', label: 'Dry (Vata)' },
+        { value: 'Cloudy', label: 'Cloudy/dull (Kapha)' },
+        { value: 'Yellowish', label: 'Yellowish sclera (Pitta/Liver)' },
+        { value: 'Watery', label: 'Watery (Kapha)' },
+      ],
+    }
+  }
+
+  if (step === 21) {
+    return {
+      id: 'shabda',
+      field: 'shabda',
+      question: '**Shabda (Voice)** — How is the voice quality?',
+      type: 'select',
+      options: [
+        { value: 'Clear', label: 'Clear and strong (Healthy)' },
+        { value: 'Hoarse', label: 'Hoarse/rough (Vata)' },
+        { value: 'Weak', label: 'Weak/faint (Vata)' },
+        { value: 'Loud', label: 'Loud/forceful (Pitta)' },
+        { value: 'Heavy', label: 'Heavy/slow (Kapha)' },
+        { value: 'Stammering', label: 'Stammering/hesitant (Vata)' },
+      ],
+    }
+  }
+
+  if (step === 22) {
+    return {
+      id: 'sparsh',
+      field: 'sparsh',
+      question: '**Sparsh (Skin/Touch)** — What is the skin texture and temperature?',
+      type: 'select',
+      options: [
+        { value: 'Normal', label: 'Normal — Warm, smooth, supple' },
+        { value: 'Warm', label: 'Warm to touch (Pitta)' },
+        { value: 'Cool', label: 'Cool to touch (Kapha/Vata)' },
+        { value: 'Dry', label: 'Dry/rough (Vata)' },
+        { value: 'Oily', label: 'Oily/greasy (Kapha)' },
+        { value: 'Moist', label: 'Moist/sweaty (Kapha/Pitta)' },
+        { value: 'Rough', label: 'Rough/cracked (Vata)' },
+      ],
+    }
+  }
+
+  if (step === 23) {
+    return {
+      id: 'aakriti',
+      field: 'aakriti',
+      question: '**Aakriti (Body Build)** — What is the body constitution?',
+      type: 'select',
+      options: [
+        { value: 'Lean', label: 'Lean/thin (Vata dominant)' },
+        { value: 'Medium', label: 'Medium/muscular (Pitta dominant)' },
+        { value: 'Heavy', label: 'Heavy/sturdy (Kapha dominant)' },
+        { value: 'Obese', label: 'Overweight/obese (Kapha/Medodhatu)' },
+        { value: 'Emaciated', label: 'Emaciated (Severe Vata)' },
+        { value: 'Athletic', label: 'Athletic/well-proportioned (Balanced)' },
+      ],
+    }
+  }
+
+  // Phase 7: Dashavidha (steps 24-29)
+  if (step === 24) {
+    return {
+      id: 'prakritiDetail',
+      field: 'prakritiDetail',
+      question: '**Prakriti (Natural Constitution)** — Based on lifelong characteristics, what is the natural constitution?',
+      type: 'select',
+      options: [
+        { value: 'Vata', label: 'Vata — Creative, quick-thinking, lean build' },
+        { value: 'Pitta', label: 'Pitta — Sharp intellect, medium build, leadership' },
+        { value: 'Kapha', label: 'Kapha — Calm, sturdy build, strong immunity' },
+        { value: 'Vata-Pitta', label: 'Vata-Pitta — Mixed Vata and Pitta' },
+        { value: 'Pitta-Kapha', label: 'Pitta-Kapha — Mixed Pitta and Kapha' },
+        { value: 'Kapha-Vata', label: 'Kapha-Vata — Mixed Kapha and Vata' },
+        { value: 'Tridosha', label: 'Tridosha — Balanced all three' },
+      ],
+    }
+  }
+
+  if (step === 25) {
+    return {
+      id: 'saara',
+      field: 'saara',
+      question: '**Saara (Tissue Quality)** — Which dhatu (tissue) quality is most prominent?',
+      type: 'select',
+      options: [
+        { value: 'Rasa', label: 'Rasa (Plasma) — Soft skin, good complexion, emotional' },
+        { value: 'Rakta', label: 'Rakta (Blood) — Bright eyes, warm skin, passionate' },
+        { value: 'Mamsa', label: 'Mamsa (Muscle) — Well-developed muscles, courageous' },
+        { value: 'Meda', label: 'Meda (Fat) — Soft skin, large body, joyful' },
+        { value: 'Asthi', label: 'Asthi (Bone) — Strong bones, prominent joints, stable' },
+        { value: 'Majja', label: 'Majja (Marrow/Nerve) — Soft organs, sensitive, intelligent' },
+        { value: 'Shukra', label: 'Shukra (Reproductive) — Bright complexion, charming, strong' },
+      ],
+    }
+  }
+
+  if (step === 26) {
+    return {
+      id: 'samhanana',
+      field: 'samhanana',
+      question: '**Samhanana (Body Compactness)** — How compact is the body structure?',
+      type: 'select',
+      options: [
+        { value: 'Compact', label: 'Compact/well-knit (Strong constitution)' },
+        { value: 'Moderate', label: 'Moderate (Average constitution)' },
+        { value: 'Loose', label: 'Loose/flabby (Weak constitution)' },
+      ],
+    }
+  }
+
+  if (step === 27) {
+    return {
+      id: 'satva',
+      field: 'satva',
+      question: '**Satva (Mental Strength)** — How is the mental resilience?',
+      type: 'select',
+      options: [
+        { value: 'Strong', label: 'Strong — High tolerance, positive outlook, good memory' },
+        { value: 'Medium', label: 'Medium — Moderate tolerance, sometimes overwhelmed' },
+        { value: 'Weak', label: 'Weak — Low tolerance, anxious, poor memory' },
+      ],
+    }
+  }
+
+  if (step === 28) {
+    return {
+      id: 'aharaShakti',
+      field: 'aharaShakti',
+      question: '**Ahara Shakti (Digestive Capacity)** — How is the appetite and digestion?',
+      type: 'select',
+      options: [
+        { value: 'Strong', label: 'Strong — Good appetite, digests all foods well' },
+        { value: 'Medium', label: 'Medium — Moderate appetite, sometimes slow digestion' },
+        { value: 'Weak', label: 'Weak — Poor appetite, frequent indigestion' },
+        { value: 'Irregular', label: 'Irregular — Sometimes hungry, sometimes no appetite (Vishama Agni)' },
+      ],
+    }
+  }
+
+  if (step === 29) {
+    return {
+      id: 'vyayamaShakti',
+      field: 'vyayamaShakti',
+      question: '**Vyayama Shakti (Exercise Tolerance)** — How is the physical endurance?',
+      type: 'select',
+      options: [
+        { value: 'Strong', label: 'Strong — Can exercise vigorously for long' },
+        { value: 'Medium', label: 'Medium — Moderate endurance, needs rest' },
+        { value: 'Weak', label: 'Weak — Gets tired quickly, low stamina' },
       ],
     }
   }
@@ -189,48 +595,131 @@ function getNextQuestionForStep(step: number, caseData: Partial<CaseData>): Inta
   return null
 }
 
-function analyzeProvisionalDiagnosis(caseData: Partial<CaseData>): string {
-  const symptoms = caseData.chiefComplaints?.map(c => c.complaint).join(', ') || 'No symptoms recorded'
-  const doshaIndicators: string[] = []
+function buildCaseDataFromAnswers(caseData: Partial<CaseData>): Partial<CaseData> {
+  return {
+    name: caseData.name || '',
+    age: caseData.age || '',
+    gender: caseData.gender || '',
+    occupation: caseData.occupation || '',
+    area: caseData.area || '',
+    prakriti: caseData.prakriti || '',
+    chiefComplaints: caseData.chiefComplaints || [],
+    comorbidities: caseData.comorbidities || [],
+    investigations: caseData.investigations || [],
+    investigationText: caseData.investigationText || '',
+    ongoingMedications: caseData.ongoingMedications || '',
+    medicalHistory: caseData.medicalHistory || '',
+    allergies: caseData.allergies || '',
+    familyHistory: caseData.familyHistory || '',
+    nadi: caseData.nadi || '',
+    mootra: caseData.mootra || '',
+    mala: caseData.mala || '',
+    jivha: caseData.jivha || '',
+    drik: caseData.drik || '',
+    sparsh: caseData.sparsh || '',
+    shabda: caseData.shabda || '',
+    aakriti: caseData.aakriti || '',
+    prakritiDetail: caseData.prakritiDetail || '',
+    saara: caseData.saara || '',
+    samhanana: caseData.samhanana || '',
+    satva: caseData.satva || '',
+    aharaShakti: caseData.aharaShakti || '',
+    vyayamaShakti: caseData.vyayamaShakti || '',
+    desha: caseData.desha || '',
+    provisionalDiagnosis: caseData.provisionalDiagnosis || '',
+    provisionalReasoning: caseData.provisionalReasoning || '',
+  }
+}
 
-  if (symptoms.toLowerCase().includes('pain') || symptoms.toLowerCase().includes('stiffness')) {
+function generateDiagnosisFromEngine(caseData: Partial<CaseData>): string {
+  try {
+    const result = analyzeProvisionalDiagnosis(caseData as CaseData)
+    let output = formatDiagnosisForDisplay(result)
+
+    // Enrich with knowledge base data
+    const diseaseEntry = AYURVEDA_KNOWLEDGE.diseases?.find(
+      d => d.name.toLowerCase() === result.primary.disease.toLowerCase()
+    )
+    if (diseaseEntry) {
+      output += `\n\n### Knowledge Base: ${diseaseEntry.name}\n`
+      output += `**Modern Correlation:** ${diseaseEntry.modernCorrelation}\n`
+      output += `**Treatment Approach:** ${diseaseEntry.treatment.slice(0, 3).join(', ')}\n`
+      output += `**Pathya (Recommended):** ${diseaseEntry.pathya.slice(0, 5).join(', ')}\n`
+      output += `**Apathya (Avoid):** ${diseaseEntry.apathya.slice(0, 5).join(', ')}\n`
+      output += `**Prognosis:** ${diseaseEntry.prognosis}\n`
+    }
+
+    // Check for drug interactions
+    if (caseData.ongoingMedications && caseData.ongoingMedications !== 'No medications') {
+      output += `\n### ⚠️ Drug Interaction Alert\n`
+      output += `Patient is on: ${caseData.ongoingMedications}\n`
+      output += `Please verify herb-drug interactions before prescribing.\n`
+    }
+
+    return output
+  } catch {
+    return generateFallbackDiagnosis(caseData)
+  }
+}
+
+function generateFallbackDiagnosis(caseData: Partial<CaseData>): string {
+  const symptoms = caseData.chiefComplaints?.map(c => c.complaint).join(', ') || 'No symptoms recorded'
+  const relatedDiseases = getRelatedDiseases(symptoms)
+
+  const doshaIndicators: string[] = []
+  const lowerSymptoms = symptoms.toLowerCase()
+  if (lowerSymptoms.includes('pain') || lowerSymptoms.includes('stiffness') || lowerSymptoms.includes('dry')) {
     doshaIndicators.push('Vata')
   }
-  if (symptoms.toLowerCase().includes('burning') || symptoms.toLowerCase().includes('heat')) {
+  if (lowerSymptoms.includes('burning') || lowerSymptoms.includes('heat') || lowerSymptoms.includes('inflammation')) {
     doshaIndicators.push('Pitta')
   }
-  if (symptoms.toLowerCase().includes('heaviness') || symptoms.toLowerCase().includes('congestion')) {
+  if (lowerSymptoms.includes('heaviness') || lowerSymptoms.includes('congestion') || lowerSymptoms.includes('swelling')) {
     doshaIndicators.push('Kapha')
   }
 
-  const dosha = doshaIndicators.length > 0 ? doshaIndicators.join(', ') : 'Vata, Pitta, Kapha'
+  const dosha = doshaIndicators.length > 0 ? doshaIndicators.join(', ') : 'To be determined'
 
-  return `## Current Diagnostic Thinking
+  let output = `## Provisional Diagnosis\n\n`
+  output += `### Symptoms Analyzed\n${symptoms}\n\n`
+  output += `### Involved Doshas\n${dosha}\n\n`
 
-Based on the information gathered so far:
+  if (relatedDiseases.length > 0) {
+    output += `### Possible Conditions (from Knowledge Base)\n`
+    for (const disease of relatedDiseases) {
+      const entry = AYURVEDA_KNOWLEDGE.diseases?.find(d => d.name === disease)
+      if (entry) {
+        output += `- **${entry.name}** (${entry.sanskrit}) — ${entry.modernCorrelation}\n`
+        output += `  Dosha: ${entry.doshaInvolvement.join(', ')} | Treatment: ${entry.treatment.slice(0, 2).join(', ')}\n`
+      }
+    }
+    output += '\n'
+  }
 
-### Primary Suspect
-**Condition to be determined**
+  output += `### Ashtavidha Summary\n`
+  output += `- Nadi: ${caseData.nadi || 'Not assessed'}\n`
+  output += `- Mootra: ${caseData.mootra || 'Not assessed'}\n`
+  output += `- Mala: ${caseData.mala || 'Not assessed'}\n`
+  output += `- Jivha: ${caseData.jivha || 'Not assessed'}\n`
+  output += `- Prakriti: ${caseData.prakritiDetail || 'Not assessed'}\n\n`
 
-### Samprapti (Pathogenesis)
-A assessment based on symptom patterns.
+  output += `---\n*This is a knowledge-base-derived diagnosis. Please confirm with your clinical judgment.*\n`
+  output += `- **[Confirm]** — Proceed to treatment protocol\n`
+  output += `- **[Refine]** — Add more clinical details\n`
+  output += `- **[Correct]** — Override with your diagnosis`
 
-### Involved Doshas
-${dosha}
+  return output
+}
 
-### Key Symptoms
-${symptoms}
-
-### Diagnostic Confidence
-Insufficient data - more information needed
-
----
-
-Does this align with your clinical judgment?
-
-- **[Confirm]** - Proceed to treatment plan
-- **[Refine]** - Let me add more information
-- **[Correct]** - I believe it's different`
+function updateLastComplaint(
+  complaints: ChiefComplaint[],
+  updates: Partial<ChiefComplaint>
+): ChiefComplaint[] {
+  if (complaints.length === 0) return complaints
+  const updated = [...complaints]
+  const lastIndex = updated.length - 1
+  updated[lastIndex] = { ...updated[lastIndex], ...updates }
+  return updated
 }
 
 export async function POST(req: NextRequest) {
@@ -246,55 +735,185 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(getWelcomeMessage())
 
       case 'answer': {
-        const updatedCaseData = { ...caseData }
+        const updated = buildCaseDataFromAnswers(caseData as Partial<CaseData>)
 
-        if (currentStep === 0) {
-          updatedCaseData.name = sanitizedAnswer
-        } else if (currentStep === 1) {
-          updatedCaseData.age = sanitizedAnswer
-        } else if (currentStep === 2) {
-          updatedCaseData.gender = sanitizedAnswer
-        } else if (currentStep === 3) {
-          updatedCaseData.occupation = sanitizedAnswer
-        } else if (currentStep === 4) {
-          updatedCaseData.area = sanitizedAnswer
-        } else if (currentStep === 5) {
-          const newComplaint: ChiefComplaint = {
-            id: `complaint_${Date.now()}`,
-            complaint: sanitizedAnswer ?? '',
-            duration: '',
-            severity: 5,
+        // Step-to-field mapping — every step saves its answer
+        switch (currentStep) {
+          case 0:
+            updated.name = sanitizedAnswer ?? ''
+            break
+          case 1:
+            updated.age = sanitizedAnswer ?? ''
+            break
+          case 2:
+            updated.gender = sanitizedAnswer ?? ''
+            break
+          case 3:
+            updated.occupation = sanitizedAnswer ?? ''
+            break
+          case 4:
+            updated.area = sanitizedAnswer ?? ''
+            break
+          case 5: {
+            // Chief complaint — create new entry
+            const newComplaint: ChiefComplaint = {
+              id: `complaint_${Date.now()}`,
+              complaint: sanitizedAnswer ?? '',
+              duration: '',
+              severity: 5,
+            }
+            updated.chiefComplaints = [...(updated.chiefComplaints || []), newComplaint]
+            break
           }
-          updatedCaseData.chiefComplaints = [...(caseData.chiefComplaints || []), newComplaint]
+          case 6: {
+            // Duration — update last complaint
+            updated.chiefComplaints = updateLastComplaint(
+              updated.chiefComplaints || [],
+              { duration: sanitizedAnswer ?? '' }
+            )
+            break
+          }
+          case 7: {
+            // Severity — update last complaint
+            updated.chiefComplaints = updateLastComplaint(
+              updated.chiefComplaints || [],
+              { severity: parseInt(sanitizedAnswer ?? '5') || 5 }
+            )
+            break
+          }
+          case 8: {
+            // Location — update last complaint
+            updated.chiefComplaints = updateLastComplaint(
+              updated.chiefComplaints || [],
+              { location: sanitizedAnswer ?? '' }
+            )
+            break
+          }
+          case 9: {
+            // Onset — update last complaint
+            updated.chiefComplaints = updateLastComplaint(
+              updated.chiefComplaints || [],
+              { onset: sanitizedAnswer ?? '' }
+            )
+            break
+          }
+          case 10: {
+            // Aggravating factors
+            updated.chiefComplaints = updateLastComplaint(
+              updated.chiefComplaints || [],
+              { aggravatingFactors: [sanitizedAnswer ?? ''] }
+            )
+            break
+          }
+          case 11: {
+            // Relieving factors
+            updated.chiefComplaints = updateLastComplaint(
+              updated.chiefComplaints || [],
+              { relievingFactors: [sanitizedAnswer ?? ''] }
+            )
+            break
+          }
+          case 12: {
+            // Associated symptoms
+            updated.chiefComplaints = updateLastComplaint(
+              updated.chiefComplaints || [],
+              { associatedSymptoms: [sanitizedAnswer ?? ''] }
+            )
+            break
+          }
+          case 13: {
+            // Comorbidities
+            updated.comorbidities = sanitizedAnswer ? [sanitizedAnswer] : []
+            break
+          }
+          case 14: {
+            // Ongoing medications
+            updated.ongoingMedications = sanitizedAnswer ?? ''
+            break
+          }
+          case 15: {
+            // Allergies
+            updated.allergies = sanitizedAnswer ?? ''
+            break
+          }
+          case 16:
+            updated.nadi = sanitizedAnswer ?? ''
+            break
+          case 17:
+            updated.mootra = sanitizedAnswer ?? ''
+            break
+          case 18:
+            updated.mala = sanitizedAnswer ?? ''
+            break
+          case 19:
+            updated.jivha = sanitizedAnswer ?? ''
+            break
+          case 20:
+            updated.drik = sanitizedAnswer ?? ''
+            break
+          case 21:
+            updated.shabda = sanitizedAnswer ?? ''
+            break
+          case 22:
+            updated.sparsh = sanitizedAnswer ?? ''
+            break
+          case 23:
+            updated.aakriti = sanitizedAnswer ?? ''
+            break
+          case 24:
+            updated.prakritiDetail = sanitizedAnswer ?? ''
+            updated.prakriti = sanitizedAnswer ?? ''
+            break
+          case 25:
+            updated.saara = sanitizedAnswer ?? ''
+            break
+          case 26:
+            updated.samhanana = sanitizedAnswer ?? ''
+            break
+          case 27:
+            updated.satva = sanitizedAnswer ?? ''
+            break
+          case 28:
+            updated.aharaShakti = sanitizedAnswer ?? ''
+            break
+          case 29:
+            updated.vyayamaShakti = sanitizedAnswer ?? ''
+            break
         }
 
         const nextStep = currentStep + 1
-        const nextQuestion = getNextQuestionForStep(nextStep, updatedCaseData)
+        const nextQuestion = getNextQuestionForStep(nextStep, updated as Partial<CaseData>)
 
         return NextResponse.json({
           type: nextQuestion ? 'question' : 'confirmation',
           question: nextQuestion,
-          progress: calculateProgress(updatedCaseData),
-          caseData: updatedCaseData,
-          message: nextQuestion ? undefined : 'I have gathered the initial information. Ready for diagnosis?',
+          progress: calculateProgress(updated as Partial<CaseData>),
+          caseData: updated,
+          message: nextQuestion
+            ? undefined
+            : 'All information collected. Ready to generate provisional diagnosis.',
         })
       }
 
       case 'getQuestion': {
-        const question = getNextQuestionForStep(currentStep, caseData)
+        const question = getNextQuestionForStep(currentStep, caseData as Partial<CaseData>)
         return NextResponse.json({
           type: question ? 'question' : 'confirmation',
           question,
-          progress: calculateProgress(caseData),
+          progress: calculateProgress(caseData as Partial<CaseData>),
         })
       }
 
-      case 'showDiagnosis':
+      case 'showDiagnosis': {
+        const fullCaseData = buildCaseDataFromAnswers(caseData as Partial<CaseData>)
+        const diagnosis = generateDiagnosisFromEngine(fullCaseData as Partial<CaseData>)
         return NextResponse.json({
           type: 'diagnosis',
-          diagnosis: analyzeProvisionalDiagnosis(caseData),
-          progress: calculateProgress(caseData),
+          diagnosis,
+          progress: calculateProgress(fullCaseData as Partial<CaseData>),
+          caseData: fullCaseData,
         })
+      }
 
       case 'reset':
         return NextResponse.json(getWelcomeMessage())
@@ -306,6 +925,7 @@ export async function POST(req: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Invalid request body', details: error.issues }, { status: 400 })
     }
+    console.error('[Intake API] Error:', error)
     return NextResponse.json({ error: 'Failed to process intake request' }, { status: 500 })
   }
 }
