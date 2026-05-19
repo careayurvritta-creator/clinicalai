@@ -131,6 +131,11 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
             mootra: caseData.mootra || '',
             mala: caseData.mala || '',
             jivha: caseData.jivha || '',
+            complaintsArray: complaints.map(c => ({
+              complaint: c.complaint,
+              duration: c.duration || '',
+              severity: c.severity || 5,
+            })),
           },
           treatmentSelection: {
             selectedPanchakarma: [],
