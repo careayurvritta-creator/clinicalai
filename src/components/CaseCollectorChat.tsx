@@ -9,16 +9,30 @@ interface CaseCollectorChatProps {
   onShowDiagnosis?: (caseData: CaseData) => void
 }
 
+interface Question {
+  id: string
+  field: string
+  question: string
+  type: string
+  options?: { value: string; label: string }[]
+  suggestions?: string[]
+  severityScale?: { min: number; max: number; default: string }
+}
+
 export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollectorChatProps) {
   const messages = useChatStore((state) => state.messages)
   const addMessage = useChatStore((state) => state.addMessage)
   const setCanvasContent = useChatStore((state) => state.setCanvasContent)
+  const appendToCanvas = useChatStore((state) => state.appendToCanvas)
 
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [currentStep, setCurrentStep] = useState(0)
   const [showDiagnosis, setShowDiagnosis] = useState(false)
-  const [progress, setProgress] = useState({ current: 0, total: 10, percentage: 0 })
+  const [diagnosisShown, setDiagnosisShown] = useState(false)
+  const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null)
+  const [progress, setProgress] = useState({ current: 0, total: 30, percentage: 0 })
+  const [scaleValue, setScaleValue] = useState(5)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -72,6 +86,72 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
     }
   }
 
+  const generateTreatmentProtocol = async () => {
+    setIsLoading(true)
+    addMessage({
+      id: `msg_${Date.now()}`,
+      role: 'assistant',
+      content: 'Generating comprehensive treatment protocol using AI knowledge base...',
+      timestamp: Date.now(),
+      status: 'complete',
+    })
+
+    try {
+      const complaints = caseData.chiefComplaints || []
+      const duration = complaints[0]?.duration || ''
+      const associatedSymptoms = complaints.flatMap(c => c.associatedSymptoms || []).join(', ')
+
+      const response = await fetch('/api/treatment-protocol', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patientInfo: {
+            name: caseData.name || 'Patient',
+            age: caseData.age || '',
+            gender: caseData.gender || '',
+            prakriti: caseData.prakritiDetail || caseData.prakriti || '',
+            chiefComplaints: complaints.map(c => c.complaint).join(', '),
+            diagnosis: 'Based on clinical assessment',
+            duration,
+            associatedSymptoms,
+            investigation: caseData.investigationText || '',
+          },
+          treatmentSelection: {
+            selectedPanchakarma: [],
+            selectedPurvakarma: [],
+            selectedHerbs: [],
+            treatmentDuration: '14',
+            budget: 'medium',
+          },
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.protocol) {
+        appendToCanvas(data.protocol)
+        addMessage({
+          id: `msg_${Date.now()}`,
+          role: 'assistant',
+          content: 'Treatment protocol has been generated and displayed in the Canvas panel.',
+          timestamp: Date.now(),
+          status: 'complete',
+        })
+      }
+    } catch (error) {
+      console.error('Treatment protocol error:', error)
+      addMessage({
+        id: `msg_${Date.now()}`,
+        role: 'assistant',
+        content: 'Error generating treatment protocol. Please try again.',
+        timestamp: Date.now(),
+        status: 'error',
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const sendAnswer = async (answer: string) => {
     if (!answer.trim()) return
 
@@ -85,24 +165,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
       status: 'complete',
     })
 
-    const updatedCaseData = { ...caseData }
-
-    if (currentStep === 0) updatedCaseData.name = answer
-    else if (currentStep === 1) updatedCaseData.age = answer
-    else if (currentStep === 2) updatedCaseData.gender = answer
-    else if (currentStep === 3) updatedCaseData.occupation = answer
-    else if (currentStep === 4) updatedCaseData.area = answer
-    else if (currentStep === 5) {
-      const newComplaint: ChiefComplaint = {
-        id: `complaint_${Date.now()}`,
-        complaint: answer,
-        duration: '',
-        severity: 5,
-      }
-      updatedCaseData.chiefComplaints = [...(caseData.chiefComplaints || []), newComplaint]
-    }
-
-    setCaseData(updatedCaseData)
+    // Server handles all step-to-field mapping and returns updated caseData
 
     try {
       const response = await fetch('/api/intake', {
@@ -111,14 +174,15 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
         body: JSON.stringify({
           action: 'answer',
           answer,
-          currentStep: currentStep + 1,
-          caseData: updatedCaseData,
+          currentStep,
+          caseData,
         }),
       })
 
       const data = await response.json()
 
-      if (data.question) {
+      if (data.type === 'question' && data.question) {
+        setCurrentQuestion(data.question)
         addMessage({
           id: `msg_${Date.now()}`,
           role: 'assistant',
@@ -127,10 +191,35 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
           status: 'complete',
         })
         setCurrentStep(currentStep + 1)
+      } else if (data.type === 'diagnosis' && data.diagnosis) {
+        setShowDiagnosis(true)
+        setDiagnosisShown(true)
+        setCurrentQuestion(null)
+        addMessage({
+          id: `msg_${Date.now()}`,
+          role: 'assistant',
+          content: data.diagnosis,
+          timestamp: Date.now(),
+          status: 'complete',
+        })
+        setCanvasContent(data.diagnosis)
+      } else if (data.type === 'confirmation') {
+        setCurrentQuestion(null)
+        addMessage({
+          id: `msg_${Date.now()}`,
+          role: 'assistant',
+          content: data.message || 'Ready for diagnosis.',
+          timestamp: Date.now(),
+          status: 'complete',
+        })
+        setShowDiagnosis(true)
       }
 
       if (data.progress) {
         setProgress(data.progress)
+      }
+      if (data.caseData) {
+        setCaseData(data.caseData)
       }
     } catch {
       addMessage({
@@ -148,6 +237,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
   const handleShowDiagnosis = async () => {
     setIsLoading(true)
     setShowDiagnosis(true)
+    setDiagnosisShown(true)
 
     try {
       const response = await fetch('/api/intake', {
@@ -188,10 +278,11 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
     }
   }
 
-  const handleConfirmDiagnosis = () => {
+  const handleConfirmDiagnosis = async () => {
     if (onComplete) {
       onComplete(caseData as CaseData)
     }
+    await generateTreatmentProtocol()
   }
 
   useEffect(() => {
@@ -199,6 +290,10 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
       startIntake()
     }
   }, [])
+
+  const handleSuggestionClick = (suggestion: string) => {
+    sendAnswer(suggestion)
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -241,16 +336,31 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
           </div>
         ))}
 
-        {showDiagnosis && (
+        {showDiagnosis && !diagnosisShown && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              onClick={handleShowDiagnosis}
+              className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              Generate Diagnosis
+            </button>
+          </div>
+        )}
+
+        {diagnosisShown && (
           <div className="mt-4 flex flex-wrap gap-2">
             <button
               onClick={handleConfirmDiagnosis}
-              className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+              disabled={isLoading}
+              className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
-              Confirm Diagnosis
+              Confirm & Generate Treatment Protocol
             </button>
             <button
-              onClick={() => setShowDiagnosis(false)}
+              onClick={() => {
+                setShowDiagnosis(false)
+                setDiagnosisShown(false)
+              }}
               className="px-4 py-2 text-sm bg-muted border border-border rounded-lg hover:border-primary/50 transition-colors"
             >
               Add More Information
@@ -273,42 +383,100 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
         <div ref={messagesEndRef} />
       </div>
 
-      {!showDiagnosis && messages.length > 0 && (
+      {!diagnosisShown && messages.length > 0 && (
         <div className="border-t border-border p-3 bg-muted/30">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && input.trim()) {
-                  sendAnswer(input)
-                  setInput('')
-                }
-              }}
-              placeholder="Type your answer..."
-              className="flex-1 px-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-              disabled={isLoading}
-            />
-            <button
-              onClick={() => {
-                if (input.trim()) {
-                  sendAnswer(input)
-                  setInput('')
-                }
-              }}
-              disabled={!input.trim() || isLoading}
-              className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
-            >
-              Send
-            </button>
-          </div>
-          {currentStep === 5 && (
+          {currentQuestion?.options && currentQuestion.options.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2">
+              {currentQuestion.options.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => sendAnswer(opt.value)}
+                  disabled={isLoading}
+                  className="px-3 py-1.5 text-xs bg-muted/50 border border-border rounded-lg hover:bg-primary/10 hover:border-primary/50 transition-colors text-foreground disabled:opacity-50"
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {currentQuestion?.type === 'scale' && (
+            <div className="mb-3">
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+                <span>{currentQuestion.severityScale?.min || 1} - Mild</span>
+                <span className="font-medium text-foreground">{scaleValue}/10</span>
+                <span>{currentQuestion.severityScale?.max || 10} - Severe</span>
+              </div>
+              <input
+                type="range"
+                min={currentQuestion.severityScale?.min || 1}
+                max={currentQuestion.severityScale?.max || 10}
+                value={scaleValue}
+                onChange={(e) => setScaleValue(parseInt(e.target.value))}
+                className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+              />
+              <button
+                onClick={() => sendAnswer(String(scaleValue))}
+                disabled={isLoading}
+                className="mt-2 w-full px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                Confirm Severity: {scaleValue}/10
+              </button>
+            </div>
+          )}
+
+          {currentQuestion?.suggestions && currentQuestion.suggestions.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2">
+              {currentQuestion.suggestions.map((suggestion, i) => (
+                <button
+                  key={i}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  disabled={isLoading}
+                  className="px-3 py-1.5 text-xs bg-muted/50 border border-border rounded-lg hover:bg-primary/10 hover:border-primary/50 transition-colors text-foreground disabled:opacity-50"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {(!currentQuestion?.options || currentQuestion.options.length === 0) && currentQuestion?.type !== 'scale' && (
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && input.trim()) {
+                    sendAnswer(input)
+                    setInput('')
+                  }
+                }}
+                placeholder="Type your answer..."
+                className="flex-1 px-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                disabled={isLoading}
+              />
+              <button
+                onClick={() => {
+                  if (input.trim()) {
+                    sendAnswer(input)
+                    setInput('')
+                  }
+                }}
+                disabled={!input.trim() || isLoading}
+                className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                Send
+              </button>
+            </div>
+          )}
+
+          {currentStep >= 5 && !showDiagnosis && (
             <button
               onClick={handleShowDiagnosis}
               className="mt-2 w-full px-4 py-2 text-sm bg-muted border border-border rounded-lg hover:border-primary/50 transition-colors"
             >
-              Generate Diagnosis
+              Skip to Diagnosis
             </button>
           )}
         </div>
