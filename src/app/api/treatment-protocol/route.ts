@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { TREATMENTS, PURVAKARMA } from '@/lib/ayurknowledge/treatments'
 import { HERBS } from '@/lib/ayurknowledge/herbs'
 import { DISEASES } from '@/lib/ayurknowledge/diseases'
-import { getResearchContext, formatResearchForProtocol, type ResearchContext } from '@/lib/research-analyzer'
+import { getResearchContext, formatResearchForProtocol, type ResearchContext, type ResearchPaper } from '@/lib/research-analyzer'
+import { vectorSearch, initializeVectorRAG, formatVectorResultsForContext } from '@/lib/ayurrag/vector-rag'
+import { getCharakTreatmentProtocols, getCharakDiseaseDescriptions } from '@/lib/ayurknowledge/charak'
+import { createServerClient } from '@/lib/supabase/client'
 
 interface PatientInfo {
   name: string
@@ -83,10 +87,10 @@ function generateProtocol(
     protocol += `## Phase 1: Purvakarma (Pre-treatment)\n`
     selectedPurvakarma.forEach((p, index) => {
       protocol += `### ${index + 1}. ${p.name}\n`
-      protocol += `- **Sanskrit:** ${p.id}\n`
+      protocol += `- **ID:** ${p.id}\n`
       protocol += `- **Duration:** ${p.duration}\n`
       protocol += `- **Description:** ${p.description}\n`
-      protocol += `- **Indications:** ${p.indications?.join(', ')}\n`
+      protocol += `- **Indications:** ${p.indications?.join(', ') || 'General preparation'}\n`
       if (p.types) {
         protocol += `- **Types:** ${p.types.join(', ')}\n`
       }
@@ -163,15 +167,18 @@ function generateProtocol(
   protocol += `- **Night (9-10 PM):** Sleep time\n\n`
 
   protocol += `## Diet Guidelines (Ahara)\n`
-  if (patientInfo.prakriti.includes('Vata')) {
+  if (patientInfo.prakriti?.includes('Vata')) {
     protocol += `- **Favor:** Warm, moist, nourishing foods\n`
     protocol += `- **Avoid:** Dry, cold, light foods\n`
-  } else if (patientInfo.prakriti.includes('Pitta')) {
+  } else if (patientInfo.prakriti?.includes('Pitta')) {
     protocol += `- **Favor:** Cool, sweet, light foods\n`
     protocol += `- **Avoid:** Spicy, sour, hot foods\n`
-  } else if (patientInfo.prakriti.includes('Kapha')) {
+  } else if (patientInfo.prakriti?.includes('Kapha')) {
     protocol += `- **Favor:** Light, dry, warm foods\n`
     protocol += `- **Avoid:** Heavy, oily, sweet foods\n`
+  } else {
+    protocol += `- **Favor:** Balanced, seasonal, whole foods\n`
+    protocol += `- **Avoid:** Processed foods, extreme temperatures\n`
   }
   protocol += `- **Water:** Warm water throughout the day\n`
   protocol += `- **Avoid:** Cold drinks, processed foods, leftovers\n\n`
@@ -188,41 +195,156 @@ function generateProtocol(
   return protocol
 }
 
+const RequestSchema = z.object({
+  patientInfo: z.object({
+    name: z.string().default(''),
+    age: z.string().default(''),
+    gender: z.string().default(''),
+    prakriti: z.string().default(''),
+    chiefComplaints: z.string().default(''),
+    diagnosis: z.string().default(''),
+    duration: z.string().default(''),
+    associatedSymptoms: z.string().default(''),
+    investigation: z.string().default(''),
+    nadi: z.string().optional(),
+    mootra: z.string().optional(),
+    mala: z.string().optional(),
+    jivha: z.string().optional(),
+    complaintsArray: z.array(z.object({
+      complaint: z.string(),
+      duration: z.string(),
+      severity: z.number(),
+    })).optional(),
+  }),
+  treatmentSelection: z.object({
+    selectedPanchakarma: z.array(z.string()).default([]),
+    selectedPurvakarma: z.array(z.string()).default([]),
+    selectedHerbs: z.array(z.string()).default([]),
+    treatmentDuration: z.string().default('14'),
+    budget: z.string().default('moderate'),
+  }),
+})
+
+let ragInitialized = false
+
+async function ensureRAGInitialized() {
+  if (!ragInitialized) {
+    try {
+      await initializeVectorRAG()
+      ragInitialized = true
+    } catch (error) {
+      console.error('[Treatment Protocol] RAG init failed:', error)
+    }
+  }
+}
+
+// Fire-and-forget protocol persistence
+async function persistProtocol(
+  patientInfo: PatientInfo,
+  protocol: string,
+  researchPapers: ResearchPaper[],
+  charakRefs: string[]
+) {
+  try {
+    const supabase = createServerClient()
+    const protocolNumber = `PROTO-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
+
+    // Check if treatment_protocols table exists, if not skip
+    const { error } = await supabase
+      .from('treatment_protocols')
+      .insert({
+        protocol_number: protocolNumber,
+        patient_name: patientInfo.name || 'Unknown',
+        diagnosis: patientInfo.diagnosis || null,
+        prakriti: patientInfo.prakriti || null,
+        protocol_content: protocol,
+        research_papers: researchPapers.map(p => ({ pmid: p.pmid, title: p.title })),
+        charak_references: charakRefs,
+        created_at: new Date().toISOString(),
+      })
+
+    if (error) {
+      console.warn('[Treatment Protocol] Persistence skipped:', error.message)
+    } else {
+      console.log('[Treatment Protocol] Saved:', protocolNumber)
+    }
+  } catch (error) {
+    console.warn('[Treatment Protocol] Persistence error:', error)
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const body: RequestBody = await req.json()
+    const body = RequestSchema.parse(await req.json())
     const { patientInfo, treatmentSelection } = body
-
-    if (!patientInfo || !treatmentSelection) {
-      return NextResponse.json(
-        { error: 'Missing patient info or treatment selection' },
-        { status: 400 }
-      )
-    }
 
     // Extract complaints text for research
     const complaintsText = patientInfo.chiefComplaints || 'General health'
     const durationText = patientInfo.duration || 'Not specified'
     const diagnosisText = patientInfo.diagnosis || 'Not specified'
 
-    // Fetch research papers
-    let researchContext: ResearchContext | null = null
-    try {
-      researchContext = await getResearchContext(complaintsText, durationText, diagnosisText, patientInfo.prakriti)
-      console.log('[Treatment Protocol] Research context:', researchContext.papers.length, 'papers')
-    } catch (error) {
-      console.error('[Treatment Protocol] Research fetch failed:', error)
+    // Fetch research papers and RAG context in parallel
+    const [researchContext, ragResults] = await Promise.all([
+      getResearchContext(complaintsText, durationText, diagnosisText, patientInfo.prakriti).catch(err => {
+        console.error('[Treatment Protocol] Research fetch failed:', err)
+        return null
+      }),
+      (async () => {
+        try {
+          await ensureRAGInitialized()
+          const searchQuery = `${diagnosisText} ${complaintsText} treatment protocol`
+          return await vectorSearch(searchQuery, {
+            maxResults: 5,
+            minRelevance: 0.3,
+            includeWHO: false,
+            includeAyurKnowledge: true,
+          })
+        } catch (err) {
+          console.error('[Treatment Protocol] RAG search failed:', err)
+          return []
+        }
+      })(),
+    ])
+
+    console.log('[Treatment Protocol] Research:', researchContext?.papers.length || 0, 'papers, RAG:', ragResults.length, 'results')
+
+    // Get Charak Samhita references for the diagnosis
+    const charakProtocols = getCharakTreatmentProtocols(patientInfo.diagnosis || '')
+    const charakDiseases = getCharakDiseaseDescriptions(patientInfo.diagnosis || '')
+    const charakRefs = [
+      ...charakProtocols.map(c => `${c.chapter}: ${c.condition} — ${c.treatment}`),
+      ...charakDiseases.map(c => `${c.chapter}: ${c.name} — ${c.treatment}`),
+    ]
+
+    // Build RAG context for protocol enhancement
+    let ragContext = ''
+    if (ragResults.length > 0) {
+      ragContext = formatVectorResultsForContext(ragResults)
     }
 
     const protocol = generateProtocol(patientInfo, treatmentSelection, researchContext)
+
+    // Persist protocol (fire-and-forget)
+    persistProtocol(patientInfo, protocol, researchContext?.papers || [], charakRefs)
 
     return NextResponse.json({
       protocol,
       researchPapers: researchContext?.papers || [],
       researchSummary: researchContext?.summary || '',
       paperCount: researchContext?.papers.length || 0,
+      charakReferences: charakRefs.length > 0 ? charakRefs.slice(0, 5) : undefined,
+      ragContext: ragContext || undefined,
     })
   } catch (error) {
+    console.error('[Treatment Protocol] Error:', error)
+
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Invalid request', details: error.issues },
+        { status: 400 }
+      )
+    }
+
     return NextResponse.json(
       { error: 'Failed to generate protocol' },
       { status: 500 }

@@ -319,7 +319,7 @@ create table allopathy_integration (
   
   -- Evidence
   evidence_level text check (evidence_level in ('strong', 'moderate', 'weak', 'anecdotal')),
-  references text[],
+  source_references text[],
   
   -- Search
   search_vector tsvector generated always as (
@@ -366,7 +366,7 @@ create table combined_protocols (
   
   -- Evidence
   evidence_level text,
-  references text[],
+  source_references text[],
   created_by uuid references profiles(id) on delete set null,
   
   -- Search
@@ -396,7 +396,8 @@ create table knowledge_embeddings (
   id uuid primary key default uuid_generate_v4(),
   source_table text not null check (source_table in (
     'who_terminology', 'diseases', 'herbs', 'treatments',
-    'charak_chapters', 'allopathy_integration', 'combined_protocols'
+    'charak_chapters', 'allopathy_integration', 'combined_protocols',
+    'diagnostics', 'fundamentals'
   )),
   source_id uuid not null,
   source_title text not null,
@@ -404,8 +405,8 @@ create table knowledge_embeddings (
   content text not null,
   metadata jsonb default '{}',
   
-  -- Vector embedding (1536 dimensions for OpenAI/NVIDIA embeddings)
-  embedding vector(1536),
+  -- Vector embedding (1024 dimensions for NVIDIA nv-embedqa-e5-v5)
+  embedding vector(1024),
   
   created_at timestamptz default now(),
   updated_at timestamptz default now()
@@ -414,7 +415,7 @@ create table knowledge_embeddings (
 comment on table knowledge_embeddings is 'Vector embeddings for semantic RAG search across knowledge base';
 comment on column knowledge_embeddings.source_table is 'Which knowledge table this embedding comes from';
 comment on column knowledge_embeddings.source_id is 'UUID of the source record';
-comment on column knowledge_embeddings.embedding is '1536-dimension vector embedding for semantic search';
+comment on column knowledge_embeddings.embedding is '1024-dimension vector embedding for semantic search (NVIDIA nv-embedqa-e5-v5)';
 
 create index idx_knowledge_embeddings_source on knowledge_embeddings(source_table, source_id);
 create index idx_knowledge_embeddings_content_type on knowledge_embeddings(content_type);

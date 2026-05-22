@@ -173,7 +173,7 @@ export const TREATMENTS: Treatment[] = [
     postTreatment: ['Rest']
   },
   {
-    id: 'basti',
+    id: 'uttara-basti',
     name: 'Uttara Basti',
     sanskrit: 'उत्तर बस्ति',
     category: 'Localized - Genitourinary',
@@ -235,7 +235,7 @@ export const PATHYA_APATHYA = {
       'Mindful eating'
     ],
     byDosha: {
-      vata: ['Warm, moist, nourishing foods', 'Ghee,油的', 'Cooked vegetables', 'Warm drinks'],
+      vata: ['Warm, moist, nourishing foods', 'Ghee, oily foods', 'Cooked vegetables', 'Warm drinks'],
       pitta: ['Cooling, slightly dry foods', 'Coconut water', 'Butter, cream', 'Sweet fruits'],
       kapha: ['Light, dry, warm foods', 'Honey', 'Spices', 'Light grains']
     }

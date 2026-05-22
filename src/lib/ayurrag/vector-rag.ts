@@ -1,5 +1,14 @@
-import { AYURVEDA_KNOWLEDGE } from '../ayurknowledge'
-import { CHARAK_SAMHITA_COMPLETE, searchCharakSamhita, getCharakTreatmentProtocols, getCharakDiseaseDescriptions } from '../ayurknowledge/charak'
+/**
+ * Vector RAG Engine — True Semantic Search
+ *
+ * Uses NVIDIA NIM embeddings + Supabase pgvector for semantic search.
+ * Falls back to full-text search (tsvector) if embedding fails.
+ */
+
+import { generateSearchEmbedding } from '@/lib/embedding-client'
+import { semanticSearch, searchKnowledgeBase } from '@/lib/supabase/services'
+
+// ─── Interfaces (preserved for backward compatibility) ────────────────────────
 
 export interface VectorSearchResult {
   id: string
@@ -18,362 +27,355 @@ export interface VectorRAGConfig {
   includeAyurKnowledge: boolean
 }
 
+// ─── Initialization (no-op — no in-memory cache needed) ──────────────────────
+
 export async function initializeVectorRAG(): Promise<void> {
-  console.log('[VectorRAG] Initialized')
+  console.log('[VectorRAG] Initialized (vector search mode)')
 }
 
-function computeRelevance(searchText: string, query: string): number {
-  if (!searchText.includes(query)) return 0
-  const queryWords = query.split(/\s+/).filter(w => w.length > 2)
-  if (queryWords.length <= 1) {
-    return searchText.split(query).length - 1
+// ─── Source table → category mapping ──────────────────────────────────────────
+
+const SOURCE_TABLE_CATEGORY_MAP: Record<string, string> = {
+  who_terminology: 'WHO Terminology',
+  diseases: 'Disease',
+  herbs: 'Herb',
+  treatments: 'Treatment',
+  charak_chapters: 'Classical Text',
+  allopathy_integration: 'Allopathy Integration',
+  combined_protocols: 'Combined Protocol',
+  diagnostics: 'Diagnostic Method',
+  fundamentals: 'Fundamental Concept',
+}
+
+function mapSourceTableToCategory(sourceTable: string): string {
+  return SOURCE_TABLE_CATEGORY_MAP[sourceTable] || 'Knowledge Base'
+}
+
+// ─── Search History Logging (fire-and-forget) ────────────────────────────────
+
+async function logSearchHistory(
+  query: string,
+  resultsCount: number,
+  embeddingUsed: boolean,
+  latencyMs: number
+): Promise<void> {
+  try {
+    const { createServerClient } = await import('@/lib/supabase/client')
+    const serverSupabase = createServerClient()
+    await serverSupabase.from('rag_search_history').insert({
+      query,
+      query_type: 'general',
+      results_count: resultsCount,
+      results_used: Math.min(resultsCount, 10),
+      latency_ms: latencyMs,
+      embedding_used: embeddingUsed,
+    })
+  } catch {
+    // Silent fail — logging is non-critical
   }
-  let matchedWords = 0
-  let totalOccurrences = 0
-  for (const word of queryWords) {
-    const count = searchText.split(word).length - 1
-    if (count > 0) {
-      matchedWords++
-      totalOccurrences += count
+}
+
+// ─── Vector Search ───────────────────────────────────────────────────────────
+
+// Simple in-memory LRU cache for search results
+const searchCache = new Map<string, { results: VectorSearchResult[]; timestamp: number }>()
+const CACHE_MAX_SIZE = 100
+const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
+
+function getCachedResults(cacheKey: string): VectorSearchResult[] | null {
+  const cached = searchCache.get(cacheKey)
+  if (!cached) return null
+  if (Date.now() - cached.timestamp > CACHE_TTL_MS) {
+    searchCache.delete(cacheKey)
+    return null
+  }
+  // Move to end (most recently used)
+  searchCache.delete(cacheKey)
+  searchCache.set(cacheKey, cached)
+  return cached.results
+}
+
+function setCachedResults(cacheKey: string, results: VectorSearchResult[]) {
+  // Evict oldest if at capacity
+  if (searchCache.size >= CACHE_MAX_SIZE) {
+    const oldestKey = searchCache.keys().next().value
+    if (oldestKey) searchCache.delete(oldestKey)
+  }
+  searchCache.set(cacheKey, { results, timestamp: Date.now() })
+}
+
+/**
+ * Detect query intent to boost relevant categories.
+ */
+function detectQueryIntent(query: string): { boostCategories: string[]; keywords: string[] } {
+  const lower = query.toLowerCase()
+  const boostCategories: string[] = []
+  const keywords: string[] = []
+
+  // Disease/treatment queries
+  if (lower.match(/\b(treat|cure|therapy|protocol|manage|heal)\b/)) {
+    boostCategories.push('Treatment', 'Classical Text')
+    keywords.push('treatment', 'therapy')
+  }
+  if (lower.match(/\b(disease|diagnosis|condition|symptom|vyadhi)\b/)) {
+    boostCategories.push('Disease')
+    keywords.push('disease', 'diagnosis')
+  }
+  if (lower.match(/\b(herb|dravya|medicine|drug|plant|formulation)\b/)) {
+    boostCategories.push('Herb')
+    keywords.push('herb', 'medicine')
+  }
+  if (lower.match(/\b(panchakarma|basti|vamana|virechana|nasya|raktamokshana)\b/)) {
+    boostCategories.push('Treatment', 'Classical Text')
+    keywords.push('panchakarma')
+  }
+  if (lower.match(/\b(diet|food|pathya|apathya|ahara|nutrition)\b/)) {
+    boostCategories.push('Disease', 'Classical Text')
+    keywords.push('diet', 'pathya')
+  }
+  if (lower.match(/\b(dosha|vata|pitta|kapha|prakriti|vikriti)\b/)) {
+    boostCategories.push('Fundamental Concept', 'Classical Text')
+    keywords.push('dosha', 'prakriti')
+  }
+  if (lower.match(/\b(interaction|allopathy|modern|combine|safe|contraindic)\b/)) {
+    boostCategories.push('Allopathy Integration')
+    keywords.push('interaction', 'safety')
+  }
+
+  return { boostCategories: [...new Set(boostCategories)], keywords: [...new Set(keywords)] }
+}
+
+/**
+ * Re-rank results with hybrid scoring: semantic + keyword match + category boost.
+ */
+function hybridRerank(
+  results: VectorSearchResult[],
+  query: string,
+  intent: { boostCategories: string[]; keywords: string[] }
+): VectorSearchResult[] {
+  const queryWords = new Set(
+    query.toLowerCase().split(/\s+/).filter(w => w.length > 3)
+  )
+
+  return results.map(r => {
+    let boostedRelevance = r.relevance
+
+    // Category boost: +0.15 for matching categories
+    if (intent.boostCategories.includes(r.category)) {
+      boostedRelevance += 0.15
     }
-  }
-  return matchedWords === queryWords.length ? totalOccurrences : 0
-}
 
-// Cache for Charak Samhita chapter search text
-let charakChapterCache: Map<string, string> | null = null
+    // Keyword match boost: count matching words in content
+    const contentLower = r.content.toLowerCase()
+    let keywordMatches = 0
+    for (const word of queryWords) {
+      if (contentLower.includes(word)) keywordMatches++
+    }
+    boostedRelevance += Math.min(keywordMatches * 0.03, 0.12)
 
-function getCharakChapterSearchText(chapter: Record<string, unknown>): string {
-  const fields: string[] = [
-    (chapter.name as string) || '',
-    (chapter.sanskrit as string) || '',
-    (chapter.english as string) || '',
-    (chapter.summary as string) || '',
-    ...((chapter.keyConcepts as string[]) || []),
-    ...((chapter.shlokas as Array<Record<string, unknown>>)?.map(s => `${s.number || ''} ${s.sanskrit || ''} ${s.translation || ''} ${s.commentary || ''}`) || []),
-    ...((chapter.topics as Array<Record<string, unknown>>)?.map(t => `${t.title || ''} ${t.content || ''} ${t.clinicalRelevance || ''}`) || []),
-    ...((chapter.doshaDiscussion as string[]) || []),
-    ...((chapter.treatmentProtocols as Array<Record<string, unknown>>)?.map(t => `${t.condition || ''} ${t.treatment || ''} ${(t.herbs as string[])?.join(' ') || ''} ${t.dosage || ''} ${t.duration || ''}`) || []),
-    ...((chapter.diseaseDescriptions as Array<Record<string, unknown>>)?.map(d => `${d.name || ''} ${d.sanskrit || ''} ${d.etiology || ''} ${(d.symptoms as string[])?.join(' ') || ''} ${d.prognosis || ''} ${d.treatment || ''}`) || []),
-    ...((chapter.importantVerses as string[]) || []),
-    ...((chapter.clinicalApplications as string[]) || []),
-  ]
-  return fields.join(' ').toLowerCase()
-}
+    // Intent keyword boost
+    for (const kw of intent.keywords) {
+      if (contentLower.includes(kw)) boostedRelevance += 0.05
+    }
 
-function buildCharakCache(): Map<string, string> {
-  if (charakChapterCache) return charakChapterCache
-  charakChapterCache = new Map()
-  for (const chapter of CHARAK_SAMHITA_COMPLETE) {
-    const key = `${chapter.sthana}-${chapter.chapterNumber}`
-    charakChapterCache.set(key, getCharakChapterSearchText(chapter as unknown as Record<string, unknown>))
-  }
-  return charakChapterCache
+    return { ...r, relevance: Math.min(boostedRelevance, 1.0) }
+  }).sort((a, b) => b.relevance - a.relevance)
 }
 
 export async function vectorSearch(
   query: string,
   config: VectorRAGConfig = {
-    maxResults: 15,
-    minRelevance: 1,
+    maxResults: 10,
+    minRelevance: 0.25,
     includeWHO: true,
-    includeAyurKnowledge: true
+    includeAyurKnowledge: true,
   }
 ): Promise<VectorSearchResult[]> {
-  const lowerQuery = query.toLowerCase()
+  const startTime = Date.now()
+
+  // Check cache
+  const cacheKey = `${query}:${config.maxResults}:${config.minRelevance}:${config.includeWHO}:${config.includeAyurKnowledge}`
+  const cached = getCachedResults(cacheKey)
+  if (cached) {
+    console.log('[VectorRAG] Cache hit for query:', query.substring(0, 50))
+    return cached
+  }
+
   const results: VectorSearchResult[] = []
-  const seen = new Set<string>()
-  const maxCollect = config.maxResults * 2
+  let embeddingUsed = false
+  const intent = detectQueryIntent(query)
 
-  // Search diseases
-  if (config.includeAyurKnowledge) {
-    for (const disease of AYURVEDA_KNOWLEDGE.diseases || []) {
-      const searchText = `${disease.name} ${disease.sanskrit} ${disease.category} ${disease.modernCorrelation} ${disease.samprapti} ${disease.clinicalFeatures.join(' ')} ${disease.treatment.join(' ')} ${disease.pathya.join(' ')} ${disease.apathya.join(' ')}`.toLowerCase()
-      const relevance = computeRelevance(searchText, lowerQuery)
-      if (relevance > 0) {
-        const id = `disease-${disease.name.toLowerCase()}`
-        if (!seen.has(id)) {
-          seen.add(id)
-          results.push({
-            id,
-            type: 'ayur_knowledge',
-            content: `Disease: ${disease.name} (${disease.sanskrit})\nCategory: ${disease.category}\nModern: ${disease.modernCorrelation}\nSamprapti: ${disease.samprapti}\nClinical: ${disease.clinicalFeatures.join(', ')}\nTreatment: ${disease.treatment.slice(0, 3).join(', ')}\nPathya: ${disease.pathya.join(', ')}\nApathya: ${disease.apathya.join(', ')}\nPrognosis: ${disease.prognosis}`,
-            source: disease.name,
-            category: 'Disease',
-            relevance,
-            metadata: { ...disease }
-          })
-          if (results.length >= maxCollect) break
-        }
+  // Phase 1: Semantic vector search
+  try {
+    const queryEmbedding = await generateSearchEmbedding(query)
+    embeddingUsed = true
+
+    const { data: semanticResults, error } = await semanticSearch(
+      queryEmbedding,
+      config.minRelevance,
+      config.maxResults * 2, // fetch extra to allow dedup with text search
+      undefined // search all source tables
+    )
+
+    if (!error && semanticResults && semanticResults.length > 0) {
+      for (const r of semanticResults) {
+        results.push({
+          id: r.id,
+          type: 'ayur_knowledge',
+          content: r.content,
+          source: r.source_title,
+          category: mapSourceTableToCategory(r.source_table),
+          relevance: r.similarity,
+          metadata: {
+            source_table: r.source_table,
+            source_id: r.source_id,
+          },
+        })
       }
     }
+  } catch (embeddingError) {
+    console.error('[VectorRAG] Embedding search failed, falling back to full-text:', embeddingError)
+  }
 
-    // Search herbs
-    for (const herb of AYURVEDA_KNOWLEDGE.herbs || []) {
-      const searchText = `${herb.name} ${herb.sanskrit} ${herb.botanicalName} ${herb.indications.join(' ')} ${herb.guna.join(' ')} ${herb.rasa.join(' ')} ${herb.virya} ${herb.vipaka} ${herb.doshaKarma.vata} ${herb.doshaKarma.pitta} ${herb.doshaKarma.kapha} ${herb.partUsed.join(' ')} ${herb.preparation.join(' ')} ${herb.dosage} ${herb.contraindications.join(' ')}`.toLowerCase()
-      const relevance = computeRelevance(searchText, lowerQuery)
-      if (relevance > 0) {
-        const id = `herb-${herb.name.toLowerCase()}`
-        if (!seen.has(id)) {
-          seen.add(id)
-          results.push({
-            id,
-            type: 'ayur_knowledge',
-            content: `Herb: ${herb.name} (${herb.sanskrit})\nBotanical: ${herb.botanicalName}\nRasa: ${herb.rasa.join(', ')}\nGuna: ${herb.guna.join(', ')}\nVirya: ${herb.virya}\nVipaka: ${herb.vipaka}\nIndications: ${herb.indications.slice(0, 5).join(', ')}\nDosha: Vata-${herb.doshaKarma.vata}, Pitta-${herb.doshaKarma.pitta}, Kapha-${herb.doshaKarma.kapha}\nDosage: ${herb.dosage}\nParts: ${herb.partUsed.join(', ')}`,
-            source: herb.name,
-            category: 'Herb',
-            relevance,
-            metadata: { ...herb }
-          })
-          if (results.length >= maxCollect) break
-        }
-      }
-    }
+  // Phase 2: Full-text search complement (fill gaps if vector search returned few results)
+  if (results.length < config.maxResults) {
+    try {
+      const remaining = config.maxResults - results.length
+      const sourceTables = ['diseases', 'herbs', 'treatments', 'charak_chapters', 'allopathy_integration']
+      if (config.includeWHO) sourceTables.push('who_terminology')
 
-    // Search treatments
-    for (const treatment of AYURVEDA_KNOWLEDGE.treatments || []) {
-      const searchText = `${treatment.name} ${treatment.sanskrit} ${treatment.category} ${treatment.description} ${treatment.procedure.join(' ')} ${treatment.indications.join(' ')} ${treatment.contraindications.join(' ')} ${treatment.preparation.join(' ')} ${treatment.postTreatment.join(' ')}`.toLowerCase()
-      const relevance = computeRelevance(searchText, lowerQuery)
-      if (relevance > 0) {
-        const id = `treatment-${treatment.name.toLowerCase()}`
-        if (!seen.has(id)) {
-          seen.add(id)
-          results.push({
-            id,
-            type: 'ayur_knowledge',
-            content: `Treatment: ${treatment.name} (${treatment.sanskrit})\nCategory: ${treatment.category}\nDescription: ${treatment.description}\nProcedure: ${treatment.procedure.slice(0, 3).join(', ')}\nIndications: ${treatment.indications.join(', ')}\nContraindications: ${treatment.contraindications.join(', ')}\nDuration: ${treatment.duration}`,
-            source: treatment.name,
-            category: 'Treatment',
-            relevance,
-            metadata: { ...treatment }
-          })
-          if (results.length >= maxCollect) break
-        }
-      }
-    }
+      const { data: textResults, error: textError } = await searchKnowledgeBase(
+        query,
+        sourceTables,
+        remaining
+      )
 
-    // Search diagnostics
-    for (const diagnostic of AYURVEDA_KNOWLEDGE.diagnostics || []) {
-      const searchText = `${diagnostic.name} ${diagnostic.sanskrit} ${diagnostic.description} ${diagnostic.components.join(' ')} ${diagnostic.clinicalApplication.join(' ')}`.toLowerCase()
-      const relevance = computeRelevance(searchText, lowerQuery)
-      if (relevance > 0) {
-        const id = `diagnostic-${diagnostic.name.toLowerCase()}`
-        if (!seen.has(id)) {
-          seen.add(id)
-          results.push({
-            id,
-            type: 'ayur_knowledge',
-            content: `Diagnostic: ${diagnostic.name} (${diagnostic.sanskrit})\nDescription: ${diagnostic.description}\nComponents: ${diagnostic.components.join(', ')}\nApplications: ${diagnostic.clinicalApplication.join(', ')}`,
-            source: diagnostic.name,
-            category: 'Diagnostic',
-            relevance,
-            metadata: { ...diagnostic }
-          })
-          if (results.length >= maxCollect) break
-        }
-      }
-    }
+      if (!textError && textResults) {
+        const existingKeys = new Set(
+          results.map(r => `${r.metadata?.source_table}:${r.metadata?.source_id}`)
+        )
 
-    // Search allopathy integration
-    for (const integration of AYURVEDA_KNOWLEDGE.allopathyIntegration || []) {
-      const searchText = `${integration.condition} ${integration.ayurvedicCorrelation} ${integration.allopathyTreatment} ${integration.integratedApproach} ${integration.safetyNotes.join(' ')} ${integration.monitoringParameters.join(' ')}`.toLowerCase()
-      const relevance = computeRelevance(searchText, lowerQuery)
-      if (relevance > 0) {
-        const id = `integration-${integration.condition.toLowerCase()}`
-        if (!seen.has(id)) {
-          seen.add(id)
-          results.push({
-            id,
-            type: 'ayur_knowledge',
-            content: `Integration: ${integration.condition}\nAyurvedic: ${integration.ayurvedicCorrelation}\nAllopathic: ${integration.allopathyTreatment}\nApproach: ${integration.integratedApproach}\nSafety: ${integration.safetyNotes.join(', ')}\nMonitoring: ${integration.monitoringParameters.join(', ')}`,
-            source: integration.condition,
-            category: 'Allopathy Integration',
-            relevance,
-            metadata: { ...integration }
-          })
-          if (results.length >= maxCollect) break
-        }
-      }
-    }
-
-    // Search drug interactions
-    const drugDB = AYURVEDA_KNOWLEDGE.drugInteractionDB
-    const allInteractions = drugDB ? [...(drugDB.highRisk || []), ...(drugDB.moderateRisk || []), ...(drugDB.safeToCombine || [])] : []
-    for (const interaction of allInteractions) {
-      const searchText = `${interaction.herb} ${interaction.drugs?.join(' ')} ${interaction.reason}`.toLowerCase()
-      const relevance = computeRelevance(searchText, lowerQuery)
-      if (relevance > 0) {
-        const id = `interaction-${interaction.herb.toLowerCase()}-${interaction.drugs?.join('-').toLowerCase()}`
-        if (!seen.has(id)) {
-          seen.add(id)
-          results.push({
-            id,
-            type: 'ayur_knowledge',
-            content: `Drug Interaction: ${interaction.herb} + ${interaction.drugs?.join(', ')}\nReason: ${interaction.reason}`,
-            source: `${interaction.herb} + ${interaction.drugs?.join(', ')}`,
-            category: 'Drug Interaction',
-            relevance,
-            metadata: { ...interaction }
-          })
-          if (results.length >= maxCollect) break
-        }
-      }
-    }
-
-    // Search concepts from fundamentals
-    const fundamentals = AYURVEDA_KNOWLEDGE.fundamentals || {} as Record<string, unknown>
-    const concepts = [
-      ...((fundamentals.tridosha as unknown[]) || []),
-      ...((fundamentals.saptadhatu as unknown[]) || []),
-      ...((fundamentals.agni as unknown[]) || []),
-      ...((fundamentals.srotas as unknown[]) || []),
-      ...((fundamentals.ama as unknown[]) || []),
-      ...((fundamentals.ojas as unknown[]) || []),
-    ]
-    for (const concept of concepts) {
-      const conceptName = (concept as Record<string, unknown>).name as string ||
-                          (concept as Record<string, unknown>).term as string || ''
-      const searchText = `${conceptName} ${JSON.stringify(concept)}`.toLowerCase()
-      const relevance = computeRelevance(searchText, lowerQuery)
-      if (relevance > 0) {
-        const id = `concept-${conceptName.toLowerCase()}`
-        if (!seen.has(id)) {
-          seen.add(id)
-          results.push({
-            id,
-            type: 'ayur_knowledge',
-            content: `Concept: ${conceptName}\nDetails: ${JSON.stringify(concept)}`,
-            source: conceptName,
-            category: 'Concept',
-            relevance,
-            metadata: concept as Record<string, unknown>
-          })
-          if (results.length >= maxCollect) break
-        }
-      }
-    }
-
-    // Search Charak Samhita chapters (comprehensive - all 8 Sthanas, 120 chapters)
-    const charakCache = buildCharakCache()
-    for (const chapter of CHARAK_SAMHITA_COMPLETE) {
-      const key = `${chapter.sthana}-${chapter.chapterNumber}`
-      const searchText = charakCache.get(key) || ''
-      const relevance = computeRelevance(searchText, lowerQuery)
-      if (relevance > 0) {
-        const id = `charak-${chapter.sthana.toLowerCase().replace(/\s+/g, '-')}-${chapter.chapterNumber}`
-        if (!seen.has(id)) {
-          seen.add(id)
-          // Build rich content from chapter
-          const chapterData = chapter as unknown as Record<string, unknown>
-          const shlokas = (chapterData.shlokas as Array<Record<string, unknown>>) || []
-          const treatments = (chapterData.treatmentProtocols as Array<Record<string, unknown>>) || []
-          const diseases = (chapterData.diseaseDescriptions as Array<Record<string, unknown>>) || []
-
-          let content = `Charak Samhita - ${chapter.sthana}, Chapter ${chapter.chapterNumber}: ${chapter.name}\n`
-          content += `English: ${chapter.english}\n`
-          content += `Summary: ${chapter.summary}\n`
-          content += `Key Concepts: ${chapter.keyConcepts.join(', ')}\n`
-
-          if (shlokas.length > 0) {
-            content += `\nImportant Verses:\n`
-            for (const s of shlokas.slice(0, 5)) {
-              content += `- [${s.number}] ${s.translation}\n`
-            }
+        for (const tr of textResults) {
+          const key = `${tr.source_table}:${tr.source_id}`
+          if (!existingKeys.has(key)) {
+            existingKeys.add(key)
+            results.push({
+              id: tr.source_id,
+              type: 'ayur_knowledge',
+              content: tr.content,
+              source: tr.title,
+              category: mapSourceTableToCategory(tr.source_table),
+              relevance: Math.min(tr.rank * 10, 1.0) * 0.8, // normalize then downweight text search results
+              metadata: {
+                source_table: tr.source_table,
+                source_id: tr.source_id,
+              },
+            })
           }
-
-          if (treatments.length > 0) {
-            content += `\nTreatment Protocols:\n`
-            for (const t of treatments.slice(0, 3)) {
-              content += `- ${t.condition}: ${t.treatment} (Herbs: ${(t.herbs as string[])?.join(', ') || 'N/A'})\n`
-            }
-          }
-
-          if (diseases.length > 0) {
-            content += `\nDisease Descriptions:\n`
-            for (const d of diseases.slice(0, 3)) {
-              content += `- ${d.name} (${d.sanskrit}): ${d.etiology}\n`
-            }
-          }
-
-          const clinicalApps = (chapterData.clinicalApplications as string[]) || []
-          if (clinicalApps.length > 0) {
-            content += `\nClinical Applications: ${clinicalApps.slice(0, 3).join(', ')}`
-          }
-
-          results.push({
-            id,
-            type: 'ayur_knowledge',
-            content,
-            source: `Charak Samhita - ${chapter.sthana} Ch.${chapter.chapterNumber}`,
-            category: 'Classical Text',
-            relevance,
-            metadata: chapterData
-          })
-          if (results.length >= maxCollect) break
         }
       }
-    }
-
-    // Also search Charak treatment protocols directly
-    const charakProtocols = getCharakTreatmentProtocols()
-    for (const protocol of charakProtocols) {
-      const searchText = `${protocol.condition} ${protocol.treatment} ${protocol.herbs.join(' ')} ${protocol.dosage} ${protocol.duration}`.toLowerCase()
-      const relevance = computeRelevance(searchText, lowerQuery)
-      if (relevance > 0) {
-        const id = `charak-protocol-${protocol.condition.toLowerCase().replace(/\s+/g, '-')}`
-        if (!seen.has(id)) {
-          seen.add(id)
-          results.push({
-            id,
-            type: 'ayur_knowledge',
-            content: `Charak Treatment: ${protocol.condition}\nChapter: ${protocol.chapter} (${protocol.sthana})\nTreatment: ${protocol.treatment}\nHerbs: ${protocol.herbs.join(', ')}\nDosage: ${protocol.dosage}\nDuration: ${protocol.duration}\nPrecautions: ${protocol.precautions.join(', ')}`,
-            source: `${protocol.sthana} - ${protocol.chapter}`,
-            category: 'Charak Treatment Protocol',
-            relevance,
-          })
-          if (results.length >= maxCollect) break
-        }
-      }
-    }
-
-    // Search Charak disease descriptions
-    const charakDiseases = getCharakDiseaseDescriptions()
-    for (const desc of charakDiseases) {
-      const searchText = `${desc.name} ${desc.sanskrit} ${desc.etiology} ${desc.symptoms.join(' ')} ${desc.prognosis} ${desc.treatment}`.toLowerCase()
-      const relevance = computeRelevance(searchText, lowerQuery)
-      if (relevance > 0) {
-        const id = `charak-disease-${desc.name.toLowerCase().replace(/\s+/g, '-')}`
-        if (!seen.has(id)) {
-          seen.add(id)
-          results.push({
-            id,
-            type: 'ayur_knowledge',
-            content: `Charak Disease: ${desc.name} (${desc.sanskrit})\nChapter: ${desc.chapter} (${desc.sthana})\nEtiology: ${desc.etiology}\nSymptoms: ${desc.symptoms.join(', ')}\nPrognosis: ${desc.prognosis}\nTreatment: ${desc.treatment}`,
-            source: `${desc.sthana} - ${desc.chapter}`,
-            category: 'Charak Disease Description',
-            relevance,
-          })
-          if (results.length >= maxCollect) break
-        }
-      }
+    } catch (textError) {
+      console.error('[VectorRAG] Full-text search also failed:', textError)
     }
   }
 
-  // Sort by relevance and limit
-  return results
-    .sort((a, b) => b.relevance - a.relevance)
+  // Phase 3: Hybrid re-ranking
+  const reranked = hybridRerank(results, query, intent)
+
+  // Filter and limit
+  const finalResults = reranked
+    .filter(r => r.relevance >= config.minRelevance)
     .slice(0, config.maxResults)
+
+  // Cache results
+  setCachedResults(cacheKey, finalResults)
+
+  // Log to search history (non-blocking)
+  logSearchHistory(query, finalResults.length, embeddingUsed, Date.now() - startTime).catch(() => {})
+
+  console.log('[VectorRAG] Search complete:', {
+    query: query.substring(0, 50),
+    results: finalResults.length,
+    intent: intent.boostCategories,
+    timeMs: Date.now() - startTime,
+  })
+
+  return finalResults
 }
+
+// ─── Context Formatting (preserved exactly) ──────────────────────────────────
 
 export function formatVectorResultsForContext(results: VectorSearchResult[]): string {
   if (results.length === 0) return ''
 
-  let context = '\n## 📚 Relevant Knowledge Base Information:\n\n'
+  // Deduplicate by content similarity (first 100 chars)
+  const seen = new Set<string>()
+  const deduped = results.filter(r => {
+    const key = r.content.substring(0, 100).toLowerCase()
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
 
-  for (const result of results) {
-    context += `### 🔖 ${result.source} (${result.category})\n`
-    context += `${result.content}\n\n`
-    context += `---\n\n`
+  // Group by category for structured formatting
+  const byCategory = new Map<string, VectorSearchResult[]>()
+  for (const r of deduped) {
+    const list = byCategory.get(r.category) || []
+    list.push(r)
+    byCategory.set(r.category, list)
+  }
+
+  // Priority order: Diseases > Treatments > Herbs > Classical Text > WHO > Others
+  const categoryPriority = [
+    'Disease', 'Treatment', 'Herb', 'Classical Text',
+    'Allopathy Integration', 'Combined Protocol',
+    'Diagnostic Method', 'Fundamental Concept', 'WHO Terminology',
+  ]
+
+  const sortedCategories = [...byCategory.entries()].sort((a, b) => {
+    const aIdx = categoryPriority.indexOf(a[0])
+    const bIdx = categoryPriority.indexOf(b[0])
+    return (aIdx === -1 ? 99 : aIdx) - (bIdx === -1 ? 99 : bIdx)
+  })
+
+  let context = '\n## Relevant Knowledge Base Information:\n\n'
+  let totalTokens = 0
+  const maxTokens = 3000 // ~12000 chars
+
+  for (const [category, items] of sortedCategories) {
+    const categoryHeader = `### ${category}\n`
+    const categoryContent = items
+      .map(r => {
+        const source = r.source ? ` [Source: ${r.source}]` : ''
+        return `- ${r.content}${source}`
+      })
+      .join('\n')
+
+    const section = categoryHeader + categoryContent + '\n\n'
+    const sectionTokens = Math.ceil(section.length / 4) // rough token estimate
+
+    if (totalTokens + sectionTokens > maxTokens) {
+      // Truncate to fit budget
+      const remaining = maxTokens - totalTokens
+      if (remaining > 100) {
+        context += section.substring(0, remaining * 4) + '\n\n'
+      }
+      break
+    }
+
+    context += section
+    totalTokens += sectionTokens
+  }
+
+  // Add safety warning if drug interaction results present
+  const hasDrugInteraction = deduped.some(r =>
+    r.category === 'Allopathy Integration' ||
+    r.content.toLowerCase().includes('interaction') ||
+    r.content.toLowerCase().includes('contraindication')
+  )
+
+  if (hasDrugInteraction) {
+    context += '\n**Safety Notice:** Some results involve drug interactions or contraindications. Always verify with current pharmacological references and consult specialists when combining Ayurvedic and modern treatments.\n'
   }
 
   return context

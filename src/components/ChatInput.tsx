@@ -75,7 +75,7 @@ export function ChatInput() {
 
   const handleSend = async () => {
     const text = input.trim()
-    if ((!text && attachments.length === 0) || isStreaming || isProcessing) return
+    if ((!text && attachments.length === 0) || useChatStore.getState().isStreaming || isProcessing) return
 
     const userMessage: Message = {
       id: generateId(),
@@ -93,6 +93,8 @@ export function ChatInput() {
 
     addMessage(userMessage)
     setInput('')
+    // Revoke object URLs before clearing attachments to prevent memory leak
+    attachments.forEach(a => { if (a.preview) URL.revokeObjectURL(a.preview) })
     setAttachments([])
     setStreaming(true)
 
@@ -110,7 +112,71 @@ export function ChatInput() {
       const apiMessages = currentMessages
         .map((m) => ({ role: m.role, content: m.content }))
 
-      const body: any = { messages: apiMessages, model: selectedModel }
+      // Include attachment content in the last user message
+      const attachmentContext = attachments
+        .filter(a => a.text)
+        .map(a => {
+          if (a.type === 'pdf') return `\n\n[Attached PDF: ${a.name}]\n${a.text}`
+          if (a.type === 'image') return `\n\n[Attached Image: ${a.name}]`
+          return ''
+        })
+        .join('')
+
+      // For images, make a vision API call to get description
+      let imageDescription = ''
+      const imageAttachments = attachments.filter(a => a.type === 'image' && a.text)
+      if (imageAttachments.length > 0) {
+        try {
+          const visionPrompts = imageAttachments.map(async (img) => {
+            const visionRes = await fetch('/api/vision', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                imageBase64: img.text,
+                prompt: 'Describe this medical image in detail. Focus on any visible symptoms, conditions, or medical findings.',
+                mimeType: img.name.endsWith('.png') ? 'image/png' : 'image/jpeg',
+              }),
+            })
+            if (visionRes.ok) {
+              const visionData = await visionRes.json()
+              return `[Image Analysis: ${img.name}]\n${visionData.content || ''}`
+            }
+            return ''
+          })
+          const descriptions = await Promise.all(visionPrompts)
+          imageDescription = descriptions.filter(Boolean).join('\n\n')
+        } catch (e) {
+          console.warn('[Chat] Vision analysis failed:', e)
+        }
+      }
+
+      // Combine attachment context with message content
+      let messageWithContext = text
+      if (imageDescription) {
+        messageWithContext += `\n\n[Image Analysis]\n${imageDescription}`
+      }
+      if (attachmentContext) {
+        messageWithContext += attachmentContext
+      }
+
+      // Update the last user message with attachment context
+      if (messageWithContext !== text && apiMessages.length > 0) {
+        const lastMsg = apiMessages[apiMessages.length - 1]
+        if (lastMsg.role === 'user') {
+          lastMsg.content = messageWithContext
+        }
+      }
+
+      const body: any = {
+        messages: apiMessages,
+        model: selectedModel,
+        attachments: attachments.map(a => ({
+          type: a.type,
+          name: a.name,
+          ...(a.type === 'pdf' && a.text ? { text: a.text } : {}),
+          ...(a.type === 'image' && a.text ? { base64: a.text } : {}),
+        })),
+      }
 
       console.log('[Chat] Sending request:', { model: selectedModel, messageCount: apiMessages.length })
 
@@ -233,9 +299,9 @@ export function ChatInput() {
       <input {...getInputProps()} />
 
       {attachments.length > 0 && (
-        <div className="flex flex-wrap gap-2 px-3 pt-3">
+        <div className="flex gap-2 px-3 pt-3 overflow-x-auto scrollbar-thin pb-1">
           {attachments.map((att, i) => (
-            <div key={i} className="relative group">
+            <div key={i} className="relative group flex-shrink-0">
               {att.type === 'image' && att.preview ? (
                 <div className="relative">
                   <img
@@ -245,9 +311,9 @@ export function ChatInput() {
                   />
                   <button
                     onClick={(e) => { e.stopPropagation(); removeAttachment(i) }}
-                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute -top-1.5 -right-1.5 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white text-xs opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity touch-target"
                   >
-                    ×
+                    x
                   </button>
                 </div>
               ) : (
@@ -258,9 +324,9 @@ export function ChatInput() {
                   <span className="text-muted-foreground max-w-[100px] truncate">{att.name}</span>
                   <button
                     onClick={(e) => { e.stopPropagation(); removeAttachment(i) }}
-                    className="text-red-400 hover:text-red-300"
+                    className="text-red-400 hover:text-red-300 touch-target"
                   >
-                    ×
+                    x
                   </button>
                 </div>
               )}
@@ -269,11 +335,12 @@ export function ChatInput() {
         </div>
       )}
 
-      <div className="p-3">
-        <div className="flex items-end gap-2">
+      <div className="p-2 md:p-3">
+        <div className="flex items-end gap-1.5 md:gap-2">
+          {/* Attach button - larger touch target on mobile */}
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors flex-shrink-0"
+            className="touch-target flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors flex-shrink-0"
             title="Attach file"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -284,12 +351,35 @@ export function ChatInput() {
             ref={fileInputRef}
             type="file"
             accept="image/*,.pdf"
+            capture="environment"
             className="hidden"
             onChange={(e) => {
               if (e.target.files?.length) onDrop(Array.from(e.target.files))
               e.target.value = ''
             }}
           />
+
+          {/* Camera button - mobile only */}
+          <button
+            onClick={() => {
+              const input = document.createElement('input')
+              input.type = 'file'
+              input.accept = 'image/*'
+              input.capture = 'environment'
+              input.onchange = (e) => {
+                const files = (e.target as HTMLInputElement).files
+                if (files?.length) onDrop(Array.from(files))
+              }
+              input.click()
+            }}
+            className="touch-target flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors flex-shrink-0 md:hidden"
+            title="Take photo"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </button>
 
           <div className="flex-1 relative">
             <textarea
@@ -298,16 +388,17 @@ export function ChatInput() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={isDragActive ? 'Drop files here...' : 'Ask about Ayurvedic health...'}
-              className="w-full bg-muted border border-border rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 resize-none focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50 scrollbar-thin"
+              className="w-full bg-muted border border-border rounded-xl px-3 md:px-4 py-2 md:py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 resize-none focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50 scrollbar-thin"
               rows={1}
               disabled={isStreaming || isProcessing}
             />
           </div>
 
+          {/* Send button - larger touch target */}
           <button
             onClick={handleSend}
             disabled={!input.trim() && attachments.length === 0 || isStreaming || isProcessing}
-            className="p-2.5 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex-shrink-0"
+            className="touch-target flex items-center justify-center bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex-shrink-0"
           >
             {isProcessing ? (
               <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -322,8 +413,8 @@ export function ChatInput() {
           </button>
         </div>
 
-        <div className="flex items-center justify-between mt-2 px-1">
-          <span className="text-[10px] text-muted-foreground/40">
+        <div className="flex items-center justify-between mt-1.5 md:mt-2 px-1">
+          <span className="text-[10px] text-muted-foreground/40 hidden md:inline">
             Enter to send, Shift+Enter for new line
           </span>
           <ModelSelector />

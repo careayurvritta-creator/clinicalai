@@ -4,6 +4,7 @@ import type { CaseData, ChiefComplaint } from '@/lib/types'
 import { sanitizeInput } from '@/lib/utils'
 import { searchKnowledge, AYURVEDA_KNOWLEDGE } from '@/lib/ayurknowledge'
 import { analyzeProvisionalDiagnosis, formatDiagnosisForDisplay } from '@/lib/diagnosis-engine'
+import { createServerClient } from '@/lib/supabase/client'
 
 const intakeRequestSchema = z.object({
   action: z.enum(['start', 'answer', 'getQuestion', 'showDiagnosis', 'reset']),
@@ -28,7 +29,14 @@ const intakeRequestSchema = z.object({
       associatedSymptoms: z.array(z.string()).optional(),
     })).optional(),
     comorbidities: z.array(z.string()).optional(),
-    investigations: z.array(z.any()).optional(),
+    investigations: z.array(z.object({
+      parameter: z.string(),
+      value: z.string(),
+      unit: z.string().optional(),
+      normalRange: z.string().optional(),
+      status: z.enum(['normal', 'abnormal', 'critical']).optional(),
+    })).optional(),
+    investigationText: z.string().optional(),
     ongoingMedications: z.string().optional(),
     medicalHistory: z.string().optional(),
     allergies: z.string().optional(),
@@ -657,7 +665,8 @@ function generateDiagnosisFromEngine(caseData: Partial<CaseData>): string {
     }
 
     return output
-  } catch {
+  } catch (error) {
+    console.error('[Intake API] Diagnosis engine error:', error)
     return generateFallbackDiagnosis(caseData)
   }
 }
@@ -720,6 +729,61 @@ function updateLastComplaint(
   const lastIndex = updated.length - 1
   updated[lastIndex] = { ...updated[lastIndex], ...updates }
   return updated
+}
+
+// Fire-and-forget case persistence
+async function persistCaseData(caseData: Partial<CaseData>, diagnosis: string) {
+  try {
+    const supabase = createServerClient()
+    const caseNumber = `CASE-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
+
+    // Insert case record
+    const { data: caseRecord, error: caseError } = await supabase
+      .from('cases')
+      .insert({
+        case_number: caseNumber,
+        chief_complaints: caseData.chiefComplaints || [],
+        duration: caseData.chiefComplaints?.[0]?.duration || null,
+        severity_score: caseData.chiefComplaints?.[0]?.severity || null,
+        nadi: caseData.nadi || null,
+        mootra: caseData.mootra || null,
+        mala: caseData.mala || null,
+        jivha: caseData.jivha || null,
+        drik: caseData.drik || null,
+        sparsh: caseData.sparsh || null,
+        shabda: caseData.shabda || null,
+        aakriti: caseData.aakriti || null,
+        prakriti: caseData.prakritiDetail || caseData.prakriti || null,
+        prakriti_detail: caseData.prakritiDetail || null,
+        saara: caseData.saara || null,
+        samhanana: caseData.samhanana || null,
+        satva: caseData.satva || null,
+        ahara_shakti: caseData.aharaShakti || null,
+        vyayama_shakti: caseData.vyayamaShakti || null,
+        desha: caseData.desha || null,
+        comorbidities: caseData.comorbidities || [],
+        medical_history: caseData.medicalHistory || null,
+        allergies: caseData.allergies || null,
+        family_history: caseData.familyHistory || null,
+        ongoing_medications: caseData.ongoingMedications || null,
+        investigation_text: caseData.investigationText || null,
+        investigation_findings: caseData.investigations || [],
+        provisional_diagnosis: caseData.provisionalDiagnosis || null,
+        provisional_reasoning: caseData.provisionalReasoning || null,
+        treatment_plan: diagnosis,
+        status: 'active',
+      })
+      .select('id')
+      .single()
+
+    if (caseError) {
+      console.warn('[Intake API] Case insert error:', caseError.message)
+    } else {
+      console.log('[Intake API] Case saved:', caseNumber, caseRecord?.id)
+    }
+  } catch (error) {
+    console.warn('[Intake API] Persistence error:', error)
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -801,7 +865,7 @@ export async function POST(req: NextRequest) {
             // Aggravating factors
             updated.chiefComplaints = updateLastComplaint(
               updated.chiefComplaints || [],
-              { aggravatingFactors: [sanitizedAnswer ?? ''] }
+              { aggravatingFactors: sanitizedAnswer?.split(',').map(s => s.trim()).filter(Boolean) ?? [] }
             )
             break
           }
@@ -809,7 +873,7 @@ export async function POST(req: NextRequest) {
             // Relieving factors
             updated.chiefComplaints = updateLastComplaint(
               updated.chiefComplaints || [],
-              { relievingFactors: [sanitizedAnswer ?? ''] }
+              { relievingFactors: sanitizedAnswer?.split(',').map(s => s.trim()).filter(Boolean) ?? [] }
             )
             break
           }
@@ -817,7 +881,7 @@ export async function POST(req: NextRequest) {
             // Associated symptoms
             updated.chiefComplaints = updateLastComplaint(
               updated.chiefComplaints || [],
-              { associatedSymptoms: [sanitizedAnswer ?? ''] }
+              { associatedSymptoms: sanitizedAnswer?.split(',').map(s => s.trim()).filter(Boolean) ?? [] }
             )
             break
           }
@@ -907,6 +971,12 @@ export async function POST(req: NextRequest) {
       case 'showDiagnosis': {
         const fullCaseData = buildCaseDataFromAnswers(caseData as Partial<CaseData>)
         const diagnosis = generateDiagnosisFromEngine(fullCaseData as Partial<CaseData>)
+
+        // Persist case data to Supabase (fire-and-forget)
+        persistCaseData(fullCaseData, diagnosis).catch(err =>
+          console.warn('[Intake API] Case persistence failed:', err)
+        )
+
         return NextResponse.json({
           type: 'diagnosis',
           diagnosis,

@@ -23,6 +23,7 @@ export interface TreatmentProtocol {
   dosage: string
   duration: string
   precautions: string[]
+  prerequisites?: string[]
 }
 
 export interface DiseaseDescription {

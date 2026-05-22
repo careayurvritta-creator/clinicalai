@@ -1,4 +1,5 @@
 export * from './query-engine'
+export * from './vector-rag'
 
 export interface AyurRagConfig {
   includeSafetyWarnings: boolean

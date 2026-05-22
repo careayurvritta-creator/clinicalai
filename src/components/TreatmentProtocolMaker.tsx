@@ -92,8 +92,12 @@ export function TreatmentProtocolMaker() {
         body: JSON.stringify({ patientInfo, treatmentSelection }),
       })
 
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`)
+      }
+
       const data = await response.json()
-      setGeneratedProtocol(data.protocol)
+      setGeneratedProtocol(data.protocol || 'No protocol generated.')
     } catch (error) {
       setGeneratedProtocol('Error generating protocol. Please try again.')
     } finally {

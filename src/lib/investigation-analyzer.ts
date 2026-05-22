@@ -67,7 +67,11 @@ export const LAB_PARAMETERS: LabParameter[] = [
   },
   {
     name: 'Total Cholesterol',
-    patterns: [/\bcholesterol\b.*?(\d+\.?\d*)/i, /total.?cholesterol.*?(\d+\.?\d*)/i, /chol\..*?(\d+\.?\d*)/i],
+    patterns: [
+      /(?:total\s*)?cholesterol(?!\s*(?:hdl|ldl)).*?(\d+\.?\d*)/i,
+      /\bchol\b\.?(?!\s*(?:hdl|ldl)).*?(\d+\.?\d*)/i,
+      /\btotal\b.*?cholesterol.*?(\d+\.?\d*)/i,
+    ],
     normalRange: { min: 0, max: 200 },
     unit: 'mg/dL',
     ayurvedicCorrelation: 'Meda Dhatu status - elevated suggests Medodhatu imbalance',
@@ -81,14 +85,14 @@ export const LAB_PARAMETERS: LabParameter[] = [
   },
   {
     name: 'HDL',
-    patterns: [/\bHDL\b.*?(\d+\.?\d*)/i, /hdl.*?(\d+\.?\d*)/i],
+    patterns: [/\bHDL\b[^\d]*?(\d+\.?\d*)/i, /(?:good\s*)?hdl\s*(?:cholesterol)?[^\d]*?(\d+\.?\d*)/i],
     normalRange: { min: 40, max: 100 },
     unit: 'mg/dL',
     ayurvedicCorrelation: 'Good cholesterol - low suggests metabolic imbalance',
   },
   {
     name: 'LDL',
-    patterns: [/\bLDL\b.*?(\d+\.?\d*)/i, /ldl.*?(\d+\.?\d*)/i],
+    patterns: [/\bLDL\b[^\d]*?(\d+\.?\d*)/i, /(?:bad\s*)?ldl\s*(?:cholesterol)?[^\d]*?(\d+\.?\d*)/i],
     normalRange: { min: 0, max: 100 },
     unit: 'mg/dL',
     ayurvedicCorrelation: 'Atherogenic lipid - elevated suggests Medovaha Srotas involvement',

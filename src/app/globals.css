@@ -80,3 +80,40 @@ body {
 .animate-fade-in {
   animation: fadeIn 0.2s ease-out;
 }
+
+/* Mobile-specific styles */
+@media (max-width: 767px) {
+  /* Prevent iOS zoom on input focus */
+  input[type="text"],
+  input[type="number"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  /* Smaller scrollbar on mobile */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.2);
+    border-radius: 2px;
+  }
+
+  /* Touch-friendly option buttons */
+  .touch-option {
+    min-height: 44px;
+    padding: 10px 16px;
+  }
+}
+
+/* Safe area support for notched devices */
+.safe-top { padding-top: env(safe-area-inset-top); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+
+/* Touch target minimum size */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}

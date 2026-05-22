@@ -1,61 +1,156 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { ChatPanel } from '@/components/ChatPanel'
 import { CanvasPanel } from '@/components/CanvasPanel'
 import { ResizableLayout } from '@/components/ResizableLayout'
-import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { ModuleSidebar } from '@/components/ModuleSidebar'
 import { useChatStore } from '@/lib/store'
-import { useEffect, useState } from 'react'
+
+const MODULE_TITLES: Record<string, string> = {
+  chat: 'Ayurveda Clinical AI',
+  intake: 'Case Collector',
+  'treatment-protocol': 'Treatment Protocol',
+  'patient-portal': 'Patient Portal',
+  'diet-chart': 'Diet Chart',
+  'lifestyle-advice': 'Lifestyle Advice',
+}
 
 export default function Home() {
-  const [hydrated, setHydrated] = useState(false)
+  const activeModule = useChatStore((s) => s.activeModule)
+  const setActiveModule = useChatStore((s) => s.setActiveModule)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
-    setHydrated(true)
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768
+      setIsMobile(mobile)
+      if (!mobile) setSidebarOpen(false) // Close sidebar on desktop
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  if (!hydrated) {
-    return (
-      <div className="h-screen bg-background flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm text-muted-foreground">Loading Clinical AI...</span>
-        </div>
-      </div>
-    )
+  const handleModuleSelect = (module: string) => {
+    setActiveModule(module)
+    if (isMobile) setSidebarOpen(false) // Auto-close on mobile
   }
 
   return (
-    <main className="h-screen flex flex-col bg-background">
-      <header className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-background/80 backdrop-blur-sm">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-            <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-            </svg>
-          </div>
-          <div>
-            <h1 className="text-sm font-semibold text-foreground">Clinical AI</h1>
-            <p className="text-[10px] text-muted-foreground">AyurVritta Ayurveda</p>
-          </div>
+    <div className="flex flex-col h-dvh bg-background overflow-hidden">
+      {/* Header */}
+      <header className="flex items-center justify-between px-3 md:px-4 py-2 border-b border-border bg-panel-header flex-shrink-0">
+        <div className="flex items-center gap-2">
+          {/* Mobile hamburger */}
+          {isMobile && (
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-1.5 -ml-1 rounded-md hover:bg-secondary transition-colors"
+              aria-label="Toggle menu"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {sidebarOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
+          )}
+          <h1 className="text-base md:text-lg font-semibold text-foreground truncate">
+            {MODULE_TITLES[activeModule] || 'Ayurveda Clinical AI'}
+          </h1>
+          {!isMobile && activeModule !== 'chat' && (
+            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+              {activeModule}
+            </span>
+          )}
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 bg-muted/50 rounded-lg">
-            <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-            <span className="text-xs text-muted-foreground">NVIDIA NIM</span>
+        {/* Desktop module quick switcher */}
+        {!isMobile && (
+          <div className="flex gap-1">
+            {Object.keys(MODULE_TITLES).filter(m => m !== 'chat').map(mod => (
+              <button
+                key={mod}
+                onClick={() => handleModuleSelect(mod)}
+                className={`px-2 py-1 text-xs rounded-md transition-colors ${
+                  activeModule === mod
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-secondary'
+                }`}
+              >
+                {MODULE_TITLES[mod]}
+              </button>
+            ))}
           </div>
-        </div>
+        )}
       </header>
 
-      <div className="flex-1 overflow-hidden">
-        <ErrorBoundary>
-          <ResizableLayout
-            chatPanel={<ChatPanel />}
-            canvasPanel={<CanvasPanel />}
+      <div className="flex flex-1 min-h-0 relative">
+        {/* Mobile sidebar overlay */}
+        {isMobile && sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 z-40 top-[41px]"
+            onClick={() => setSidebarOpen(false)}
           />
-        </ErrorBoundary>
+        )}
+
+        {/* Sidebar */}
+        <div
+          className={`${
+            isMobile
+              ? `fixed left-0 top-[41px] bottom-0 z-50 w-72 transform transition-transform duration-300 ${
+                  sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                }`
+              : 'w-64 flex-shrink-0 border-r border-border'
+          }`}
+        >
+          <ModuleSidebar />
+        </div>
+
+        {/* Main content */}
+        <div className="flex-1 min-w-0">
+          {activeModule === 'chat' ? (
+            <ResizableLayout
+              chatPanel={<ChatPanel />}
+              canvasPanel={<CanvasPanel />}
+            />
+          ) : activeModule === 'intake' ? (
+            <ChatPanel key="intake" />
+          ) : activeModule === 'treatment-protocol' ? (
+            <ChatPanel key="treatment-protocol" />
+          ) : (
+            <div className="flex items-center justify-center h-full text-muted-foreground p-4 text-center">
+              <div>
+                <p className="text-lg font-medium mb-2">{MODULE_TITLES[activeModule]}</p>
+                <p className="text-sm">This module is coming soon. Switch to Chat or Case Collector to get started.</p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-    </main>
+
+      {/* Mobile bottom nav */}
+      {isMobile && (
+        <nav className="flex border-t border-border bg-panel-header flex-shrink-0">
+          {(['chat', 'intake', 'treatment-protocol'] as const).map(mod => (
+            <button
+              key={mod}
+              onClick={() => handleModuleSelect(mod)}
+              className={`flex-1 py-2 text-xs font-medium text-center transition-colors ${
+                activeModule === mod
+                  ? 'text-primary border-t-2 border-primary'
+                  : 'text-muted-foreground'
+              }`}
+            >
+              {mod === 'chat' ? 'Chat' : mod === 'intake' ? 'Intake' : 'Protocol'}
+            </button>
+          ))}
+        </nav>
+      )}
+    </div>
   )
 }

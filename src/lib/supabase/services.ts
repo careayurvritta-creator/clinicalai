@@ -1,4 +1,6 @@
-import { supabase } from './client'
+import { createServerClient } from './client'
+
+const supabase = createServerClient()
 
 // ============================================
 // PROFILES
@@ -372,7 +374,7 @@ export async function searchKnowledgeBase(query: string, sourceTables?: string[]
     })
 }
 
-export async function semanticSearch(embedding: number[], matchThreshold = 0.8, matchCount = 10, sourceTable?: string) {
+export async function semanticSearch(embedding: number[], matchThreshold = 0.5, matchCount = 10, sourceTable?: string) {
   return supabase
     .rpc('semantic_search', {
       query_embedding: embedding,
@@ -380,6 +382,17 @@ export async function semanticSearch(embedding: number[], matchThreshold = 0.8, 
       match_count: matchCount,
       source_table_filter: sourceTable || null,
     })
+}
+
+export async function logRagSearch(data: {
+  query: string
+  query_type?: string
+  results_count: number
+  results_used: number
+  latency_ms: number
+  embedding_used: boolean
+}) {
+  return supabase.from('rag_search_history').insert(data)
 }
 
 export async function getDisease(diseaseCode: string) {
@@ -447,25 +460,25 @@ export async function getPatientCaseHistory(patientId: string) {
     .rpc('get_patient_case_history', { patient_uuid: patientId })
 }
 
+// TODO: v_patient_summary view needs doctor_id column added
 export async function getPatientSummary(doctorId: string) {
   return supabase
     .from('v_patient_summary')
     .select('*')
-    .eq('doctor_id', doctorId)
 }
 
+// TODO: v_case_analytics view needs doctor_id column added
 export async function getCaseAnalytics(doctorId: string) {
   return supabase
     .from('v_case_analytics')
     .select('*')
-    .eq('doctor_id', doctorId)
 }
 
+// TODO: v_treatment_effectiveness view needs doctor_id column added
 export async function getTreatmentEffectiveness(doctorId: string) {
   return supabase
     .from('v_treatment_effectiveness')
     .select('*')
-    .eq('doctor_id', doctorId)
 }
 
 // ============================================

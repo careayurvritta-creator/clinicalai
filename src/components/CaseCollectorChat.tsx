@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useChatStore } from '@/lib/store'
+import { generateId } from '@/lib/utils'
 import type { CaseData, ChiefComplaint } from '@/lib/types'
 
 interface CaseCollectorChatProps {
@@ -20,7 +21,6 @@ interface Question {
 }
 
 export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollectorChatProps) {
-  const messages = useChatStore((state) => state.messages)
   const addMessage = useChatStore((state) => state.addMessage)
   const setCanvasContent = useChatStore((state) => state.setCanvasContent)
   const appendToCanvas = useChatStore((state) => state.appendToCanvas)
@@ -47,6 +47,8 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
     ongoingMedications: '',
   })
 
+  const messages = useChatStore((state) => state.messages)
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
@@ -63,7 +65,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
       const data = await response.json()
 
       addMessage({
-        id: `msg_${Date.now()}`,
+        id: generateId(),
         role: 'assistant',
         content: data.message,
         timestamp: Date.now(),
@@ -75,7 +77,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
       }
     } catch {
       addMessage({
-        id: `msg_${Date.now()}`,
+        id: generateId(),
         role: 'assistant',
         content: 'Sorry, I encountered an error. Please try again.',
         timestamp: Date.now(),
@@ -89,7 +91,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
   const generateTreatmentProtocol = async () => {
     setIsLoading(true)
     addMessage({
-      id: `msg_${Date.now()}`,
+      id: generateId(),
       role: 'assistant',
       content: 'Searching PubMed for relevant research papers based on complaints and diagnosis...',
       timestamp: Date.now(),
@@ -102,7 +104,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
       const duration = complaints[0]?.duration || ''
       const associatedSymptoms = complaints.flatMap(c => c.associatedSymptoms || []).join(', ')
 
-      const progressMsgId = `msg_progress_${Date.now()}`
+      const progressMsgId = generateId()
       setTimeout(() => {
         addMessage({
           id: progressMsgId,
@@ -158,7 +160,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
           : 'Treatment protocol generated. Limited research papers found for this condition.'
 
         addMessage({
-          id: `msg_${Date.now()}`,
+          id: generateId(),
           role: 'assistant',
           content: researchMsg,
           timestamp: Date.now(),
@@ -168,7 +170,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
     } catch (error) {
       console.error('Treatment protocol error:', error)
       addMessage({
-        id: `msg_${Date.now()}`,
+        id: generateId(),
         role: 'assistant',
         content: 'Error generating treatment protocol. Please try again.',
         timestamp: Date.now(),
@@ -185,7 +187,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
     setIsLoading(true)
 
     addMessage({
-      id: `msg_${Date.now()}`,
+      id: generateId(),
       role: 'user',
       content: answer,
       timestamp: Date.now(),
@@ -211,7 +213,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
       if (data.type === 'question' && data.question) {
         setCurrentQuestion(data.question)
         addMessage({
-          id: `msg_${Date.now()}`,
+          id: generateId(),
           role: 'assistant',
           content: data.question.question,
           timestamp: Date.now(),
@@ -223,7 +225,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
         setDiagnosisShown(true)
         setCurrentQuestion(null)
         addMessage({
-          id: `msg_${Date.now()}`,
+          id: generateId(),
           role: 'assistant',
           content: data.diagnosis,
           timestamp: Date.now(),
@@ -233,7 +235,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
       } else if (data.type === 'confirmation') {
         setCurrentQuestion(null)
         addMessage({
-          id: `msg_${Date.now()}`,
+          id: generateId(),
           role: 'assistant',
           content: data.message || 'Ready for diagnosis.',
           timestamp: Date.now(),
@@ -250,7 +252,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
       }
     } catch {
       addMessage({
-        id: `msg_${Date.now()}`,
+        id: generateId(),
         role: 'assistant',
         content: 'Error processing answer. Please try again.',
         timestamp: Date.now(),
@@ -280,7 +282,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
 
       if (data.diagnosis) {
         addMessage({
-          id: `msg_${Date.now()}`,
+          id: generateId(),
           role: 'assistant',
           content: data.diagnosis,
           timestamp: Date.now(),
@@ -289,12 +291,12 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
         setCanvasContent(data.diagnosis)
       }
 
-      if (onShowDiagnosis) {
+      if (onShowDiagnosis && caseData.chiefComplaints && caseData.chiefComplaints.length > 0) {
         onShowDiagnosis(caseData as CaseData)
       }
     } catch {
       addMessage({
-        id: `msg_${Date.now()}`,
+        id: generateId(),
         role: 'assistant',
         content: 'Error generating diagnosis. Please try again.',
         timestamp: Date.now(),
@@ -306,14 +308,17 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
   }
 
   const handleConfirmDiagnosis = async () => {
-    if (onComplete) {
+    if (onComplete && caseData.chiefComplaints && caseData.chiefComplaints.length > 0) {
       onComplete(caseData as CaseData)
     }
     await generateTreatmentProtocol()
   }
 
+  const intakeInitialized = useRef(false)
+
   useEffect(() => {
-    if (messages.length === 0) {
+    if (!intakeInitialized.current) {
+      intakeInitialized.current = true
       startIntake()
     }
   }, [])

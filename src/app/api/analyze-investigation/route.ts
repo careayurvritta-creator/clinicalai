@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Invalid request', details: error.issues }, { status: 400 })
     }
+    console.error('[Analyze Investigation] Error:', error)
     return NextResponse.json({ error: 'Failed to analyze investigation' }, { status: 500 })
   }
 }

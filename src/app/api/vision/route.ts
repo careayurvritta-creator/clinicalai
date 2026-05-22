@@ -3,15 +3,16 @@ import { z } from 'zod'
 import { createChatStream } from '@/lib/nvidia-client'
 
 const visionRequestSchema = z.object({
-  imageBase64: z.string(),
+  imageBase64: z.string().min(1).max(20_000_000),
   prompt: z.string().default('Describe this image in detail.'),
   model: z.string().default('meta/llama-3.2-90b-vision-instruct'),
+  mimeType: z.string().default('image/jpeg'),
 })
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { imageBase64, prompt, model } = visionRequestSchema.parse(body)
+    const { imageBase64, prompt, model, mimeType } = visionRequestSchema.parse(body)
 
     const messages = [
       {
@@ -20,15 +21,33 @@ export async function POST(req: NextRequest) {
           { type: 'text', text: prompt },
           {
             type: 'image_url',
-            image_url: { url: `data:image/jpeg;base64,${imageBase64}` },
+            image_url: { url: `data:${mimeType};base64,${imageBase64}` },
           },
         ],
       },
     ]
 
-    const stream = await createChatStream(messages as any, model)
+    const stream = await createChatStream(messages, model)
 
-    return new Response(stream.toReadableStream() as any, {
+    const encoder = new TextEncoder()
+    const readable = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of stream) {
+            const content = chunk.choices[0]?.delta?.content || ''
+            if (content) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`))
+            }
+          }
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'))
+          controller.close()
+        } catch (error) {
+          controller.error(error)
+        }
+      },
+    })
+
+    return new Response(readable, {
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache, no-transform',

@@ -26,56 +26,56 @@ interface SymptomWeight {
 }
 
 const SYMPTOM_WEIGHTS: Record<string, { weight: number; diseases: string[] }> = {
-  joint_pain: { weight: 3, diseases: ['Sandhivata', 'Amavata', 'Vata Vyadhi'] },
-  morning_stiffness: { weight: 3, diseases: ['Amavata', 'Sandhivata'] },
-  swelling_joint: { weight: 3, diseases: ['Amavata', 'Sandhivata'] },
-  polyuria: { weight: 3, diseases: ['Madhumeha', 'Prameha'] },
-  polydipsia: { weight: 3, diseases: ['Madhumeha', 'Prameha'] },
-  weight_loss: { weight: 2, diseases: ['Madhumeha', 'Rajayakshma'] },
-  fatigue: { weight: 2, diseases: ['Madhumeha', 'Prameha', 'Kapha disorders'] },
-  acidity: { weight: 2, diseases: ['Amlapitta', 'Grahani'] },
-  bloating: { weight: 2, diseases: ['Grahani', 'Ama'] },
+  joint_pain: { weight: 3, diseases: ['Sandhi Vata', 'Amavata', 'Vata Vyadhi'] },
+  morning_stiffness: { weight: 3, diseases: ['Amavata', 'Sandhi Vata'] },
+  swelling_joint: { weight: 3, diseases: ['Amavata', 'Sandhi Vata'] },
+  polyuria: { weight: 3, diseases: ['Prameha'] },
+  polydipsia: { weight: 3, diseases: ['Prameha'] },
+  weight_loss: { weight: 2, diseases: ['Prameha'] },
+  fatigue: { weight: 2, diseases: ['Prameha'] },
+  acidity: { weight: 2, diseases: ['Grahani'] },
+  bloating: { weight: 2, diseases: ['Grahani', 'Amavata'] },
   constipation: { weight: 2, diseases: ['Vata Vyadhi', 'Grahani'] },
-  skin_rash: { weight: 3, diseases: ['Kushtha', 'Vicharchika'] },
-  itching: { weight: 2, diseases: ['Kushtha', 'Vicharchika'] },
-  cough: { weight: 2, diseases: ['Kasa', 'Tamaka Shwasa'] },
-  breathlessness: { weight: 3, diseases: ['Tamaka Shwasa', 'Hridroga'] },
-  chest_pain: { weight: 3, diseases: ['Hridroga', 'Hridaya'] },
+  skin_rash: { weight: 3, diseases: ['Kushtha'] },
+  itching: { weight: 2, diseases: ['Kushtha'] },
+  cough: { weight: 2, diseases: ['Kasa', 'Swasa'] },
+  breathlessness: { weight: 3, diseases: ['Swasa', 'Hridroga'] },
+  chest_pain: { weight: 3, diseases: ['Hridroga'] },
   palpitations: { weight: 2, diseases: ['Hridroga', 'Vata Vyadhi'] },
-  headache: { weight: 2, diseases: ['Vataja Jwara', 'Prana'] },
-  dizziness: { weight: 2, diseases: ['Vata Vyadhi', 'Ama'] },
-  insomnia: { weight: 2, diseases: ['Vata Vyadhi', 'Vishada'] },
-  anxiety: { weight: 2, diseases: ['Vata disorders', 'Vishada'] },
-  thirst_excessive: { weight: 3, diseases: ['Madhumeha', 'Prameha'] },
-  numbness: { weight: 2, diseases: ['Vata Vyadhi', 'Gridhrasi'] },
+  headache: { weight: 2, diseases: ['Shiroroga'] },
+  dizziness: { weight: 2, diseases: ['Vata Vyadhi', 'Amavata'] },
+  insomnia: { weight: 2, diseases: ['Vata Vyadhi', 'Anidra'] },
+  anxiety: { weight: 2, diseases: ['Vata Vyadhi', 'Unmada'] },
+  thirst_excessive: { weight: 3, diseases: ['Prameha'] },
+  numbness: { weight: 2, diseases: ['Vata Vyadhi'] },
   weakness_one_side: { weight: 3, diseases: ['Pakshaghata'] },
   facial_deviation: { weight: 3, diseases: ['Ardita', 'Pakshaghata'] },
 }
 
 function normalizeSymptom(symptom: string): string {
   const lower = symptom.toLowerCase()
-  if (lower.includes('joint pain') || lower.includes('knee') || lower.includes('pain in')) return 'joint_pain'
+  if (lower.includes('joint pain') || lower.includes('knee') || lower.includes('pain in joint') || lower.includes('pain in knee') || lower.includes('pain in shoulder')) return 'joint_pain'
   if (lower.includes('morning stiffness') || lower.includes('stiffness')) return 'morning_stiffness'
-  if (lower.includes('swelling')) return 'swelling_joint'
+  if (lower.includes('joint swelling') || lower.includes('knee swelling') || lower.includes('swollen joint')) return 'swelling_joint'
   if (lower.includes('urination') || lower.includes('frequent urine')) return 'polyuria'
   if (lower.includes('thirst') || lower.includes('excessive thirst')) return 'thirst_excessive'
   if (lower.includes('weight loss')) return 'weight_loss'
+  if (lower.includes('weakness one side') || (lower.includes('weakness') && lower.includes('one side'))) return 'weakness_one_side'
   if (lower.includes('fatigue') || lower.includes('tired') || lower.includes('weakness')) return 'fatigue'
   if (lower.includes('acidity') || lower.includes('heartburn')) return 'acidity'
   if (lower.includes('bloating') || lower.includes('gas')) return 'bloating'
   if (lower.includes('constipation') || lower.includes('hard stool')) return 'constipation'
-  if (lower.includes('rash') || lower.includes('skin')) return 'skin_rash'
+  if (lower.includes('skin rash') || lower.includes('skin lesion') || lower.includes('rash') || lower.includes('eruption')) return 'skin_rash'
   if (lower.includes('itching') || lower.includes('itch')) return 'itching'
   if (lower.includes('cough')) return 'cough'
-  if (lower.includes('breathless') || lower.includes('breath')) return 'breathlessness'
+  if (lower.includes('breathless') || lower.includes('shortness of breath') || lower.includes('difficulty breathing') || lower.includes('dyspnea')) return 'breathlessness'
   if (lower.includes('chest pain')) return 'chest_pain'
   if (lower.includes('palpitation')) return 'palpitations'
   if (lower.includes('headache') || lower.includes('head pain')) return 'headache'
   if (lower.includes('dizziness') || lower.includes('dizzy')) return 'dizziness'
-  if (lower.includes('sleep') || lower.includes('insomnia')) return 'insomnia'
+  if (lower.includes('insomnia') || lower.includes('sleep problem') || lower.includes('poor sleep') || lower.includes("can't sleep") || lower.includes('difficulty sleeping')) return 'insomnia'
   if (lower.includes('anxiety') || lower.includes('worry')) return 'anxiety'
   if (lower.includes('numbness') || lower.includes('tingling')) return 'numbness'
-  if (lower.includes('weakness one side') || lower.includes('one side')) return 'weakness_one_side'
   if (lower.includes('facial')) return 'facial_deviation'
   return lower.replace(/\s+/g, '_').substring(0, 30)
 }
@@ -83,7 +83,7 @@ function normalizeSymptom(symptom: string): string {
 function extractDoshaFromSymptoms(symptoms: string[]): string[] {
   const doshaSigns: Record<string, string[]> = {
     vata: ['pain', 'dry', 'constipation', 'nervous', 'anxiety', 'insomnia', 'cracking', 'cold'],
-    pitta: ['burning', 'heat', 'inflammation', ' redness', 'acidity', 'irritability'],
+    pitta: ['burning', 'heat', 'inflammation', 'redness', 'acidity', 'irritability'],
     kapha: ['heavy', 'congestion', 'cold', 'swelling', 'lethargy', 'slow'],
   }
   
@@ -137,7 +137,7 @@ export function getDurationScore(duration: string): number {
   if (lower.includes('days')) return 1
   if (lower.includes('week')) return 2
   if (lower.includes('1 month') || lower.includes('month')) return 3
-  if (lower.includes('3') || lower.includes('6 month')) return 4
+  if ((/\b3\b/.test(lower) && lower.includes('month')) || lower.includes('6 month')) return 4
   if (lower.includes('1+') || lower.includes('year')) return 5
   return 3
 }
@@ -174,13 +174,17 @@ export function analyzeProvisionalDiagnosis(caseData: CaseData): DiagnosisResult
     )
     
     if (disease) {
-      const dosha = caseData.prakriti ? [caseData.prakriti] : extractDoshaFromSymptoms(allSymptoms)
+      const dosha = extractDoshaFromSymptoms(allSymptoms)
       
       diseaseMatches.push({
         disease: disease.name,
         sanskrit: disease.sanskrit || disease.name,
         probability: Math.min(score / 10, 1),
-        matchingSymptoms: allSymptoms.slice(0, 5),
+        matchingSymptoms: allSymptoms.filter(s => {
+          const normalized = normalizeSymptom(s)
+          const weightData = SYMPTOM_WEIGHTS[normalized]
+          return weightData && weightData.diseases.includes(diseaseName)
+        }).slice(0, 5),
         dosha: dosha,
         samprapti: disease.samprapti || 'Pathogenesis to be analyzed',
         category: disease.category || 'Ayurvedic disorder',

@@ -1119,7 +1119,7 @@ export interface Database {
           recommendation: string | null
           monitoring_parameters: string[] | null
           evidence_level: 'strong' | 'moderate' | 'weak' | 'anecdotal' | null
-          references: string[] | null
+          source_references: string[] | null
           search_vector: unknown
           created_at: string
           updated_at: string
@@ -1139,7 +1139,7 @@ export interface Database {
           monitoring_parameters: string[] | null
           contraindications: string[] | null
           evidence_level: string | null
-          references: string[] | null
+          source_references: string[] | null
           created_by: string | null
           search_vector: unknown
           is_active: boolean

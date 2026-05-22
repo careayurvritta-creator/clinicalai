@@ -40,7 +40,7 @@ export const AYURVEDA_KNOWLEDGE = {
   charakSamhita: CHARAK_SAMHITA,
   keyConcepts: KEY_CONCEPTS,
   chapterSummary: CHAPTER_SUMMARY,
-  charakAllChapters: CHARAK_SAMHITA,
+  charakAllChapters: CHARAK_SAMHITA_COMPLETE,
   charakComplete: CHARAK_SAMHITA_COMPLETE,
   charakSearch: searchCharakSamhita,
   charakProtocols: getCharakTreatmentProtocols,
