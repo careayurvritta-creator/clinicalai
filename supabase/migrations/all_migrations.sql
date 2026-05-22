@@ -226,6 +226,107 @@ create trigger calculate_patient_bmi
   for each row
   execute function calculate_bmi();
 
+-- ============================================
+-- SEARCH VECTOR TRIGGER FUNCTIONS
+-- ============================================
+
+-- WHO Terminology search vector
+create or replace function update_who_terminology_search_vector()
+returns trigger as $$
+begin
+  new.search_vector :=
+    setweight(to_tsvector('simple', coalesce(new.term, '')), 'A') ||
+    setweight(to_tsvector('simple', coalesce(new.sanskrit_term, '')), 'A') ||
+    setweight(to_tsvector('simple', coalesce(new.definition, '')), 'B') ||
+    setweight(to_tsvector('simple', coalesce(array_to_string(new.synonyms, ' '), '')), 'C');
+  return new;
+end;
+$$ language plpgsql;
+
+-- Diseases search vector
+create or replace function update_diseases_search_vector()
+returns trigger as $$
+begin
+  new.search_vector :=
+    setweight(to_tsvector('simple', coalesce(new.name, '')), 'A') ||
+    setweight(to_tsvector('simple', coalesce(new.sanskrit_name, '')), 'A') ||
+    setweight(to_tsvector('simple', coalesce(new.modern_correlation, '')), 'B') ||
+    setweight(to_tsvector('simple', coalesce(new.samprapti, '')), 'B') ||
+    setweight(to_tsvector('simple', coalesce(array_to_string(new.clinical_features, ' '), '')), 'C');
+  return new;
+end;
+$$ language plpgsql;
+
+-- Herbs search vector
+create or replace function update_herbs_search_vector()
+returns trigger as $$
+begin
+  new.search_vector :=
+    setweight(to_tsvector('simple', coalesce(new.name, '')), 'A') ||
+    setweight(to_tsvector('simple', coalesce(new.botanical_name, '')), 'A') ||
+    setweight(to_tsvector('simple', coalesce(new.sanskrit_name, '')), 'A') ||
+    setweight(to_tsvector('simple', coalesce(array_to_string(new.indications, ' '), '')), 'B') ||
+    setweight(to_tsvector('simple', coalesce(array_to_string(new.primary_uses, ' '), '')), 'B') ||
+    setweight(to_tsvector('simple', coalesce(new.prabhava, '')), 'C');
+  return new;
+end;
+$$ language plpgsql;
+
+-- Treatments search vector
+create or replace function update_treatments_search_vector()
+returns trigger as $$
+begin
+  new.search_vector :=
+    setweight(to_tsvector('simple', coalesce(new.name, '')), 'A') ||
+    setweight(to_tsvector('simple', coalesce(new.sanskrit_name, '')), 'A') ||
+    setweight(to_tsvector('simple', coalesce(new.description, '')), 'B') ||
+    setweight(to_tsvector('simple', coalesce(array_to_string(new.indications, ' '), '')), 'C');
+  return new;
+end;
+$$ language plpgsql;
+
+-- Charak Chapters search vector
+create or replace function update_charak_chapters_search_vector()
+returns trigger as $$
+begin
+  new.search_vector :=
+    setweight(to_tsvector('simple', coalesce(new.chapter_name, '')), 'A') ||
+    setweight(to_tsvector('simple', coalesce(new.sanskrit_name, '')), 'A') ||
+    setweight(to_tsvector('simple', coalesce(new.english_title, '')), 'A') ||
+    setweight(to_tsvector('simple', coalesce(new.summary, '')), 'B') ||
+    setweight(to_tsvector('simple', coalesce(new.content, '')), 'B') ||
+    setweight(to_tsvector('simple', coalesce(array_to_string(new.key_concepts, ' '), '')), 'C');
+  return new;
+end;
+$$ language plpgsql;
+
+-- Allopathy Integration search vector
+create or replace function update_allopathy_integration_search_vector()
+returns trigger as $$
+begin
+  new.search_vector :=
+    setweight(to_tsvector('simple', coalesce(new.condition_name, '')), 'A') ||
+    setweight(to_tsvector('simple', coalesce(new.allopathic_drug, '')), 'A') ||
+    setweight(to_tsvector('simple', coalesce(new.ayurvedic_herb, '')), 'A') ||
+    setweight(to_tsvector('simple', coalesce(new.description, '')), 'B') ||
+    setweight(to_tsvector('simple', coalesce(new.mechanism, '')), 'B');
+  return new;
+end;
+$$ language plpgsql;
+
+-- Combined Protocols search vector
+create or replace function update_combined_protocols_search_vector()
+returns trigger as $$
+begin
+  new.search_vector :=
+    setweight(to_tsvector('simple', coalesce(new.condition_name, '')), 'A') ||
+    setweight(to_tsvector('simple', coalesce(new.protocol_name, '')), 'A') ||
+    setweight(to_tsvector('simple', coalesce(new.description, '')), 'B') ||
+    setweight(to_tsvector('simple', coalesce(new.integration_notes, '')), 'B');
+  return new;
+end;
+$$ language plpgsql;
+
 create trigger update_cases_updated_at
   before update on cases
   for each row
@@ -918,13 +1019,8 @@ create table who_terminology (
   notes text,
   
   -- Search optimization
-  search_vector tsvector generated always as (
-    setweight(to_tsvector('simple', term), 'A') ||
-    setweight(to_tsvector('simple', coalesce(sanskrit_term, '')), 'A') ||
-    setweight(to_tsvector('simple', coalesce(definition, '')), 'B') ||
-    setweight(to_tsvector('simple', coalesce(array_to_string(synonyms, ' '), '')), 'C')
-  ) stored,
-  
+  search_vector tsvector,
+
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -937,6 +1033,11 @@ create index idx_who_terminology_code on who_terminology(ita_code);
 create index idx_who_terminology_category on who_terminology(category);
 create index idx_who_terminology_term on who_terminology using gin(search_vector);
 create index idx_who_terminology_parent on who_terminology(parent_term);
+
+create trigger update_who_terminology_search_vector_trigger
+  before insert or update on who_terminology
+  for each row
+  execute function update_who_terminology_search_vector();
 
 -- ============================================
 -- KNOWLEDGE BASE: DISEASES
@@ -982,14 +1083,8 @@ create table diseases (
   classical_chapters text[],
   
   -- Search
-  search_vector tsvector generated always as (
-    setweight(to_tsvector('simple', name), 'A') ||
-    setweight(to_tsvector('simple', coalesce(sanskrit_name, '')), 'A') ||
-    setweight(to_tsvector('simple', coalesce(modern_correlation, '')), 'B') ||
-    setweight(to_tsvector('simple', coalesce(samprapti, '')), 'B') ||
-    setweight(to_tsvector('simple', coalesce(array_to_string(clinical_features, ' '), '')), 'C')
-  ) stored,
-  
+  search_vector tsvector,
+
   is_active boolean default true,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
@@ -1003,6 +1098,11 @@ create index idx_diseases_category on diseases(category);
 create index idx_diseases_dosha on diseases using gin(dosha_involvement);
 create index idx_diseases_search on diseases using gin(search_vector);
 create index idx_diseases_active on diseases(is_active) where is_active = true;
+
+create trigger update_diseases_search_vector_trigger
+  before insert or update on diseases
+  for each row
+  execute function update_diseases_search_vector();
 
 -- ============================================
 -- KNOWLEDGE BASE: HERBS
@@ -1049,15 +1149,8 @@ create table herbs (
   pharmacological_actions text[],
   
   -- Search
-  search_vector tsvector generated always as (
-    setweight(to_tsvector('simple', name), 'A') ||
-    setweight(to_tsvector('simple', coalesce(botanical_name, '')), 'A') ||
-    setweight(to_tsvector('simple', coalesce(sanskrit_name, '')), 'A') ||
-    setweight(to_tsvector('simple', coalesce(array_to_string(indications, ' '), '')), 'B') ||
-    setweight(to_tsvector('simple', coalesce(array_to_string(primary_uses, ' '), '')), 'B') ||
-    setweight(to_tsvector('simple', coalesce(prabhava, '')), 'C')
-  ) stored,
-  
+  search_vector tsvector,
+
   is_active boolean default true,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
@@ -1073,6 +1166,11 @@ create index idx_herbs_family on herbs(family);
 create index idx_herbs_virya on herbs(virya);
 create index idx_herbs_indications on herbs using gin(to_tsvector('simple', array_to_string(indications, ' ')));
 create index idx_herbs_active on herbs(is_active) where is_active = true;
+
+create trigger update_herbs_search_vector_trigger
+  before insert or update on herbs
+  for each row
+  execute function update_herbs_search_vector();
 
 -- ============================================
 -- KNOWLEDGE BASE: TREATMENTS
@@ -1116,13 +1214,8 @@ create table treatments (
   classical_chapters text[],
   
   -- Search
-  search_vector tsvector generated always as (
-    setweight(to_tsvector('simple', name), 'A') ||
-    setweight(to_tsvector('simple', coalesce(sanskrit_name, '')), 'A') ||
-    setweight(to_tsvector('simple', coalesce(description, '')), 'B') ||
-    setweight(to_tsvector('simple', coalesce(array_to_string(indications, ' '), '')), 'C')
-  ) stored,
-  
+  search_vector tsvector,
+
   is_active boolean default true,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
@@ -1134,6 +1227,11 @@ create index idx_treatments_code on treatments(treatment_code);
 create index idx_treatments_category on treatments(category);
 create index idx_treatments_search on treatments using gin(search_vector);
 create index idx_treatments_active on treatments(is_active) where is_active = true;
+
+create trigger update_treatments_search_vector_trigger
+  before insert or update on treatments
+  for each row
+  execute function update_treatments_search_vector();
 
 -- ============================================
 -- KNOWLEDGE BASE: CHARAK SAMHITA CHAPTERS
@@ -1164,15 +1262,8 @@ create table charak_chapters (
   clinical_applications text[],
   
   -- Search
-  search_vector tsvector generated always as (
-    setweight(to_tsvector('simple', chapter_name), 'A') ||
-    setweight(to_tsvector('simple', coalesce(sanskrit_name, '')), 'A') ||
-    setweight(to_tsvector('simple', coalesce(english_title, '')), 'A') ||
-    setweight(to_tsvector('simple', coalesce(summary, '')), 'B') ||
-    setweight(to_tsvector('simple', coalesce(content, '')), 'B') ||
-    setweight(to_tsvector('simple', coalesce(array_to_string(key_concepts, ' '), '')), 'C')
-  ) stored,
-  
+  search_vector tsvector,
+
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -1184,6 +1275,11 @@ create index idx_charak_chapters_number on charak_chapters(sthana, chapter_numbe
 create index idx_charak_chapters_sthana on charak_chapters(sthana);
 create index idx_charak_chapters_search on charak_chapters using gin(search_vector);
 create index idx_charak_chapters_relevance on charak_chapters using gin(relevance_tags);
+
+create trigger update_charak_chapters_search_vector_trigger
+  before insert or update on charak_chapters
+  for each row
+  execute function update_charak_chapters_search_vector();
 
 -- ============================================
 -- KNOWLEDGE BASE: ALLOPATHY INTEGRATION
@@ -1208,14 +1304,8 @@ create table allopathy_integration (
   source_references text[],
   
   -- Search
-  search_vector tsvector generated always as (
-    setweight(to_tsvector('simple', condition_name), 'A') ||
-    setweight(to_tsvector('simple', allopathic_drug), 'A') ||
-    setweight(to_tsvector('simple', ayurvedic_herb), 'A') ||
-    setweight(to_tsvector('simple', coalesce(description, '')), 'B') ||
-    setweight(to_tsvector('simple', coalesce(mechanism, '')), 'B')
-  ) stored,
-  
+  search_vector tsvector,
+
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -1228,6 +1318,11 @@ create index idx_allopathy_herb on allopathy_integration(ayurvedic_herb);
 create index idx_allopathy_interaction_type on allopathy_integration(interaction_type);
 create index idx_allopathy_severity on allopathy_integration(severity);
 create index idx_allopathy_search on allopathy_integration using gin(search_vector);
+
+create trigger update_allopathy_integration_search_vector_trigger
+  before insert or update on allopathy_integration
+  for each row
+  execute function update_allopathy_integration_search_vector();
 
 -- ============================================
 -- KNOWLEDGE BASE: COMBINED TREATMENT PROTOCOLS
@@ -1256,13 +1351,8 @@ create table combined_protocols (
   created_by uuid references profiles(id) on delete set null,
   
   -- Search
-  search_vector tsvector generated always as (
-    setweight(to_tsvector('simple', condition_name), 'A') ||
-    setweight(to_tsvector('simple', protocol_name), 'A') ||
-    setweight(to_tsvector('simple', coalesce(description, '')), 'B') ||
-    setweight(to_tsvector('simple', coalesce(integration_notes, '')), 'B')
-  ) stored,
-  
+  search_vector tsvector,
+
   is_active boolean default true,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
@@ -1273,6 +1363,11 @@ comment on table combined_protocols is 'Integrated Ayurveda-Allopathy treatment 
 create index idx_combined_protocols_condition on combined_protocols(condition_name);
 create index idx_combined_protocols_search on combined_protocols using gin(search_vector);
 create index idx_combined_protocols_active on combined_protocols(is_active) where is_active = true;
+
+create trigger update_combined_protocols_search_vector_trigger
+  before insert or update on combined_protocols
+  for each row
+  execute function update_combined_protocols_search_vector();
 
 -- ============================================
 -- RAG: VECTOR EMBEDDINGS
