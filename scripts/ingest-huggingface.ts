@@ -23,9 +23,10 @@ const HF_BASE = 'https://huggingface.co/datasets'
 const BATCH_SIZE = 100
 
 const DATASETS = {
-  sushrutaQA: `${HF_BASE}/jaychedaa/Ayurveda-LLM-dataset/resolve/main/train.jsonl`,
-  ayurvedaQA: `${HF_BASE}/Macromrit/ayurveda-text-based-qanda/resolve/main/train.jsonl`,
-  medicines: `${HF_BASE}/dmedhi/indian-medicines/resolve/main/train.jsonl`,
+  sushrutaQA: `${HF_BASE}/jaychedaa/Ayurveda-LLM-dataset/resolve/main/AYURVEDIC_DATASETFULL.json`,
+  // ayurvedaQA: gated/private — skip for now
+  // medicines: Parquet — use HF datasets server API with pagination
+  medicinesApiBase: `https://datasets-server.huggingface.co/rows?dataset=dmedhi/indian-medicines&config=default&split=train`,
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -48,15 +49,30 @@ function batchItems<T>(items: T[], size: number): T[][] {
   return batches
 }
 
-async function fetchJsonl(url: string): Promise<Record<string, unknown>[]> {
+async function fetchJson(url: string): Promise<Record<string, unknown>[]> {
   console.log(`  Fetching: ${url}`)
   const response = await fetch(url)
   if (!response.ok) {
     throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`)
   }
-  const text = await response.text()
-  const lines = text.trim().split('\n')
-  return lines.map(line => JSON.parse(line))
+  const data = await response.json()
+
+  // Handle HF datasets API format: { rows: [{ row: {...} }, ...] }
+  if (data.rows && Array.isArray(data.rows)) {
+    return data.rows.map((r: Record<string, unknown>) => (r as Record<string, unknown>).row || r)
+  }
+
+  // Handle plain JSON array
+  if (Array.isArray(data)) {
+    return data
+  }
+
+  // Handle JSONL (newline-delimited JSON)
+  if (typeof data === 'string') {
+    return data.trim().split('\n').map(line => JSON.parse(line))
+  }
+
+  throw new Error('Unexpected data format')
 }
 
 // ─── Parsers ──────────────────────────────────────────────────────────────────
@@ -145,7 +161,7 @@ async function main() {
   // ── 1. Sushruta Samhita Q&A ──
   console.log('\n[1/3] Sushruta Samhita Q&A...')
   try {
-    const sushrutaData = await fetchJsonl(DATASETS.sushrutaQA)
+    const sushrutaData = await fetchJson(DATASETS.sushrutaQA)
     const qaRows = parseSushrutaQA(sushrutaData)
     console.log(`  Parsed ${qaRows.length} Sushruta Q&A pairs`)
 
@@ -170,58 +186,47 @@ async function main() {
     console.error('  Failed:', (e as Error).message)
   }
 
-  // ── 2. General Ayurveda Q&A ──
-  console.log('\n[2/3] General Ayurveda Q&A...')
+  // ── 2. Modern Medicines (paginated from HF datasets server) ──
+  console.log('\n[2/2] Modern Medicines...')
   try {
-    const ayurvedaData = await fetchJsonl(DATASETS.ayurvedaQA)
-    const qaRows = parseAyurvedaQA(ayurvedaData)
-    console.log(`  Parsed ${qaRows.length} Ayurveda Q&A pairs`)
+    const PAGE_SIZE = 100  // HF datasets server max per page
+    let totalUpserted = 0
+    let offset = 0
+    let hasMore = true
 
-    if (!dryRun) {
-      const batches = batchItems(qaRows, BATCH_SIZE)
-      for (let i = 0; i < batches.length; i++) {
-        const { error } = await supabase
-          .from('external_qa')
-          .upsert(batches[i], { onConflict: 'id' })
-        if (error) {
-          console.error(`  Batch ${i + 1}/${batches.length} error:`, error.message)
+    while (hasMore) {
+      const url = `${DATASETS.medicinesApiBase}&offset=${offset}&length=${PAGE_SIZE}`
+      console.log(`  Fetching offset ${offset}...`)
+      try {
+        const data = await fetchJson(url)
+        if (data.length === 0) break
+
+        const rows = parseMedicines(data)
+
+        if (!dryRun) {
+          const { error } = await supabase
+            .from('modern_medicines')
+            .upsert(rows, { onConflict: 'id' })
+          if (error) {
+            console.error(`  Upsert error at offset ${offset}:`, error.message)
+          } else {
+            totalUpserted += rows.length
+          }
         } else {
-          process.stdout.write(`  Batch ${i + 1}/${batches.length} done\r`)
+          totalUpserted += rows.length
         }
-      }
-      console.log(`\n  Upserted ${qaRows.length} rows into external_qa`)
-    } else {
-      console.log(`  Would upsert ${qaRows.length} rows into external_qa`)
-      console.log('  Sample:', JSON.stringify(qaRows[0], null, 2))
-    }
-  } catch (e) {
-    console.error('  Failed:', (e as Error).message)
-  }
 
-  // ── 3. Modern Medicines ──
-  console.log('\n[3/3] Modern Medicines...')
-  try {
-    const medicineData = await fetchJsonl(DATASETS.medicines)
-    const medicineRows = parseMedicines(medicineData)
-    console.log(`  Parsed ${medicineRows.length} medicines`)
-
-    if (!dryRun) {
-      const batches = batchItems(medicineRows, BATCH_SIZE)
-      for (let i = 0; i < batches.length; i++) {
-        const { error } = await supabase
-          .from('modern_medicines')
-          .upsert(batches[i], { onConflict: 'id' })
-        if (error) {
-          console.error(`  Batch ${i + 1}/${batches.length} error:`, error.message)
-        } else {
-          process.stdout.write(`  Batch ${i + 1}/${batches.length} done\r`)
-        }
+        offset += PAGE_SIZE
+        hasMore = data.length === PAGE_SIZE
+        // Small delay to avoid rate limiting
+        await new Promise(r => setTimeout(r, 200))
+      } catch (e) {
+        console.log(`  Stopped at offset ${offset}: ${(e as Error).message}`)
+        break
       }
-      console.log(`\n  Upserted ${medicineRows.length} rows into modern_medicines`)
-    } else {
-      console.log(`  Would upsert ${medicineRows.length} rows into modern_medicines`)
-      console.log('  Sample:', JSON.stringify(medicineRows[0], null, 2))
     }
+
+    console.log(`  ${dryRun ? 'Would upsert' : 'Upserted'} ${totalUpserted} rows into modern_medicines`)
   } catch (e) {
     console.error('  Failed:', (e as Error).message)
   }
