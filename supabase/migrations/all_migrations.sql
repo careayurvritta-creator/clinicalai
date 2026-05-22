@@ -8,10 +8,32 @@ create extension if not exists "uuid-ossp";
 create extension if not exists "pgcrypto";
 
 -- ============================================
+-- CLEANUP: Drop all existing functions to avoid return type conflicts
+-- Must happen before any CREATE statements
+-- ============================================
+DO $$ DECLARE
+  r RECORD;
+BEGIN
+  FOR r IN (
+    SELECT p.proname, pg_get_function_identity_arguments(p.oid) as args
+    FROM pg_proc p
+    JOIN pg_namespace n ON p.pronamespace = n.oid
+    WHERE n.nspname = 'public'
+    AND p.prokind = 'f'
+  ) LOOP
+    BEGIN
+      EXECUTE 'DROP FUNCTION IF EXISTS ' || r.proname || '(' || r.args || ') CASCADE';
+    EXCEPTION WHEN OTHERS THEN
+      NULL;
+    END;
+  END LOOP;
+END $$;
+
+-- ============================================
 -- PROFILES TABLE
 -- Doctor/user accounts with Ayurvedic credentials
 -- ============================================
-create table profiles (
+create table if not exists profiles (
   id uuid primary key default uuid_generate_v4(),
   auth_user_id uuid references auth.users(id) on delete cascade,
   email text unique not null,
@@ -41,7 +63,7 @@ comment on column profiles.settings is 'User preferences and app settings';
 -- PATIENTS TABLE
 -- Master patient records
 -- ============================================
-create table patients (
+create table if not exists patients (
   id uuid primary key default uuid_generate_v4(),
   doctor_id uuid references profiles(id) on delete cascade not null,
   patient_code text unique,
@@ -75,7 +97,7 @@ comment on column patients.bmi is 'Auto-calculated from height and weight';
 -- CASES TABLE
 -- Clinical case records with complete CaseData
 -- ============================================
-create table cases (
+create table if not exists cases (
   id uuid primary key default uuid_generate_v4(),
   patient_id uuid references patients(id) on delete cascade not null,
   doctor_id uuid references profiles(id) on delete set null,
@@ -165,29 +187,34 @@ comment on column cases.prescribed_panchakarma is 'Array of prescribed Panchakar
 -- ============================================
 -- INDEXES FOR PERFORMANCE
 -- ============================================
-create index idx_profiles_email on profiles(email);
-create index idx_profiles_auth_user on profiles(auth_user_id);
-create index idx_profiles_active on profiles(is_active) where is_active = true;
+create index if not exists idx_profiles_email on profiles(email);
+create index if not exists idx_profiles_auth_user on profiles(auth_user_id);
+create index if not exists idx_profiles_active on profiles(is_active) where is_active = true;
 
-create index idx_patients_doctor on patients(doctor_id);
-create index idx_patients_name on patients(name);
-create index idx_patients_phone on patients(phone);
-create index idx_patients_code on patients(patient_code);
-create index idx_patients_archived on patients(is_archived) where is_archived = false;
+create index if not exists idx_patients_doctor on patients(doctor_id);
+create index if not exists idx_patients_name on patients(name);
+create index if not exists idx_patients_phone on patients(phone);
+create index if not exists idx_patients_code on patients(patient_code);
+create index if not exists idx_patients_archived on patients(is_archived) where is_archived = false;
 
-create index idx_cases_patient on cases(patient_id);
-create index idx_cases_doctor on cases(doctor_id);
-create index idx_cases_status on cases(status);
-create index idx_cases_visit_date on cases(visit_date);
-create index idx_cases_case_number on cases(case_number);
-create index idx_cases_provisional_diagnosis on cases(provisional_diagnosis);
-create index idx_cases_created_at on cases(created_at desc);
-create index idx_cases_visit_type on cases(visit_type);
-create index idx_cases_follow_up on cases(follow_up_date) where follow_up_date is not null;
+create index if not exists idx_cases_patient on cases(patient_id);
+create index if not exists idx_cases_doctor on cases(doctor_id);
+create index if not exists idx_cases_status on cases(status);
+create index if not exists idx_cases_visit_date on cases(visit_date);
+create index if not exists idx_cases_case_number on cases(case_number);
+create index if not exists idx_cases_provisional_diagnosis on cases(provisional_diagnosis);
+create index if not exists idx_cases_created_at on cases(created_at desc);
+create index if not exists idx_cases_visit_type on cases(visit_type);
+create index if not exists idx_cases_follow_up on cases(follow_up_date) where follow_up_date is not null;
 
 -- ============================================
 -- TRIGGERS FOR AUTOMATIC TIMESTAMPS
 -- ============================================
+DO $$ BEGIN
+  DROP FUNCTION IF EXISTS update_updated_at_column() CASCADE;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
 create or replace function update_updated_at_column()
 returns trigger as $$
 begin
@@ -199,6 +226,11 @@ $$ language plpgsql;
 -- ============================================
 -- AUTO-CALCULATE BMI
 -- ============================================
+DO $$ BEGIN
+  DROP FUNCTION IF EXISTS calculate_bmi() CASCADE;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
 create or replace function calculate_bmi()
 returns trigger as $$
 begin
@@ -211,16 +243,19 @@ begin
 end;
 $$ language plpgsql;
 
+drop trigger if exists update_profiles_updated_at on profiles;
 create trigger update_profiles_updated_at
   before update on profiles
   for each row
   execute function update_updated_at_column();
 
+drop trigger if exists update_patients_updated_at on patients;
 create trigger update_patients_updated_at
   before update on patients
   for each row
   execute function update_updated_at_column();
 
+drop trigger if exists calculate_patient_bmi on patients;
 create trigger calculate_patient_bmi
   before insert or update of height_cm, weight_kg on patients
   for each row
@@ -231,6 +266,11 @@ create trigger calculate_patient_bmi
 -- ============================================
 
 -- WHO Terminology search vector
+DO $$ BEGIN
+  DROP FUNCTION IF EXISTS update_who_terminology_search_vector() CASCADE;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
 create or replace function update_who_terminology_search_vector()
 returns trigger as $$
 begin
@@ -244,6 +284,11 @@ end;
 $$ language plpgsql;
 
 -- Diseases search vector
+DO $$ BEGIN
+  DROP FUNCTION IF EXISTS update_diseases_search_vector() CASCADE;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
 create or replace function update_diseases_search_vector()
 returns trigger as $$
 begin
@@ -258,6 +303,11 @@ end;
 $$ language plpgsql;
 
 -- Herbs search vector
+DO $$ BEGIN
+  DROP FUNCTION IF EXISTS update_herbs_search_vector() CASCADE;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
 create or replace function update_herbs_search_vector()
 returns trigger as $$
 begin
@@ -273,6 +323,11 @@ end;
 $$ language plpgsql;
 
 -- Treatments search vector
+DO $$ BEGIN
+  DROP FUNCTION IF EXISTS update_treatments_search_vector() CASCADE;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
 create or replace function update_treatments_search_vector()
 returns trigger as $$
 begin
@@ -286,6 +341,11 @@ end;
 $$ language plpgsql;
 
 -- Charak Chapters search vector
+DO $$ BEGIN
+  DROP FUNCTION IF EXISTS update_charak_chapters_search_vector() CASCADE;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
 create or replace function update_charak_chapters_search_vector()
 returns trigger as $$
 begin
@@ -301,6 +361,11 @@ end;
 $$ language plpgsql;
 
 -- Allopathy Integration search vector
+DO $$ BEGIN
+  DROP FUNCTION IF EXISTS update_allopathy_integration_search_vector() CASCADE;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
 create or replace function update_allopathy_integration_search_vector()
 returns trigger as $$
 begin
@@ -315,6 +380,11 @@ end;
 $$ language plpgsql;
 
 -- Combined Protocols search vector
+DO $$ BEGIN
+  DROP FUNCTION IF EXISTS update_combined_protocols_search_vector() CASCADE;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
 create or replace function update_combined_protocols_search_vector()
 returns trigger as $$
 begin
@@ -327,6 +397,7 @@ begin
 end;
 $$ language plpgsql;
 
+drop trigger if exists update_cases_updated_at on cases;
 create trigger update_cases_updated_at
   before update on cases
   for each row
@@ -335,6 +406,11 @@ create trigger update_cases_updated_at
 -- ============================================
 -- PATIENT CODE GENERATOR
 -- ============================================
+DO $$ BEGIN
+  DROP FUNCTION IF EXISTS generate_patient_code() CASCADE;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
 create or replace function generate_patient_code()
 returns trigger as $$
 declare
@@ -353,6 +429,7 @@ begin
 end;
 $$ language plpgsql;
 
+drop trigger if exists generate_patient_code_trigger on patients;
 create trigger generate_patient_code_trigger
   before insert on patients
   for each row
@@ -362,6 +439,11 @@ create trigger generate_patient_code_trigger
 -- ============================================
 -- CASE NUMBER GENERATOR
 -- ============================================
+DO $$ BEGIN
+  DROP FUNCTION IF EXISTS generate_case_number() CASCADE;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
 create or replace function generate_case_number()
 returns trigger as $$
 declare
@@ -380,6 +462,7 @@ begin
 end;
 $$ language plpgsql;
 
+drop trigger if exists generate_case_number_trigger on cases;
 create trigger generate_case_number_trigger
   before insert on cases
   for each row
@@ -389,6 +472,11 @@ create trigger generate_case_number_trigger
 -- ============================================
 -- AUTO-INCREMENT VISIT NUMBER
 -- ============================================
+DO $$ BEGIN
+  DROP FUNCTION IF EXISTS set_visit_number() CASCADE;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
 create or replace function set_visit_number()
 returns trigger as $$
 begin
@@ -401,6 +489,7 @@ begin
 end;
 $$ language plpgsql;
 
+drop trigger if exists set_visit_number_trigger on cases;
 create trigger set_visit_number_trigger
   before insert on cases
   for each row
@@ -413,7 +502,7 @@ create trigger set_visit_number_trigger
 -- CHIEF COMPLAINTS TABLE
 -- Normalized complaint tracking per case
 -- ============================================
-create table chief_complaints (
+create table if not exists chief_complaints (
   id uuid primary key default uuid_generate_v4(),
   case_id uuid references cases(id) on delete cascade not null,
   complaint text not null,
@@ -436,15 +525,15 @@ comment on column chief_complaints.aggravating_factors is 'Array of factors that
 comment on column chief_complaints.relieving_factors is 'Array of factors that improve the complaint';
 comment on column chief_complaints.associated_symptoms is 'Array of related symptoms';
 
-create index idx_chief_complaints_case on chief_complaints(case_id);
-create index idx_chief_complaints_severity on chief_complaints(severity);
-create index idx_chief_complaints_complaint on chief_complaints(complaint);
+create index if not exists idx_chief_complaints_case on chief_complaints(case_id);
+create index if not exists idx_chief_complaints_severity on chief_complaints(severity);
+create index if not exists idx_chief_complaints_complaint on chief_complaints(complaint);
 
 -- ============================================
 -- INVESTIGATION FINDINGS TABLE
 -- Lab report analysis results per case
 -- ============================================
-create table investigation_findings (
+create table if not exists investigation_findings (
   id uuid primary key default uuid_generate_v4(),
   case_id uuid references cases(id) on delete cascade not null,
   report_type text check (report_type in ('blood', 'urine', 'imaging', 'ecg', 'general')),
@@ -472,17 +561,17 @@ comment on column investigation_findings.dosha_implication is 'Which doshas are 
 comment on column investigation_findings.dhatu_involvement is 'Which dhatus are affected';
 comment on column investigation_findings.srotas_involvement is 'Which srotas (channels) are involved';
 
-create index idx_investigation_findings_case on investigation_findings(case_id);
-create index idx_investigation_findings_status on investigation_findings(status);
-create index idx_investigation_findings_parameter on investigation_findings(parameter);
-create index idx_investigation_findings_report_type on investigation_findings(report_type);
-create index idx_investigation_findings_critical on investigation_findings(status) where status = 'critical';
+create index if not exists idx_investigation_findings_case on investigation_findings(case_id);
+create index if not exists idx_investigation_findings_status on investigation_findings(status);
+create index if not exists idx_investigation_findings_parameter on investigation_findings(parameter);
+create index if not exists idx_investigation_findings_report_type on investigation_findings(report_type);
+create index if not exists idx_investigation_findings_critical on investigation_findings(status) where status = 'critical';
 
 -- ============================================
 -- TREATMENT PROTOCOLS TABLE
 -- Generated treatment plans per case
 -- ============================================
-create table treatment_protocols (
+create table if not exists treatment_protocols (
   id uuid primary key default uuid_generate_v4(),
   case_id uuid references cases(id) on delete cascade not null,
   protocol_version integer default 1,
@@ -546,23 +635,26 @@ comment on column treatment_protocols.diet_plan is 'JSON object with meal-wise d
 comment on column treatment_protocols.pathya is 'Recommended foods and habits';
 comment on column treatment_protocols.apathya is 'Foods and habits to avoid';
 
-create index idx_treatment_protocols_case on treatment_protocols(case_id);
-create index idx_treatment_protocols_status on treatment_protocols(status);
-create index idx_treatment_protocols_version on treatment_protocols(case_id, protocol_version);
+create index if not exists idx_treatment_protocols_case on treatment_protocols(case_id);
+create index if not exists idx_treatment_protocols_status on treatment_protocols(status);
+create index if not exists idx_treatment_protocols_version on treatment_protocols(case_id, protocol_version);
 
 -- ============================================
 -- TRIGGERS
 -- ============================================
+drop trigger if exists update_chief_complaints_updated_at on chief_complaints;
 create trigger update_chief_complaints_updated_at
   before update on chief_complaints
   for each row
   execute function update_updated_at_column();
 
+drop trigger if exists update_investigation_findings_updated_at on investigation_findings;
 create trigger update_investigation_findings_updated_at
   before update on investigation_findings
   for each row
   execute function update_updated_at_column();
 
+drop trigger if exists update_treatment_protocols_updated_at on treatment_protocols;
 create trigger update_treatment_protocols_updated_at
   before update on treatment_protocols
   for each row
@@ -571,6 +663,11 @@ create trigger update_treatment_protocols_updated_at
 -- ============================================
 -- AUTO-INCREMENT PROTOCOL VERSION
 -- ============================================
+DO $$ BEGIN
+  DROP FUNCTION IF EXISTS set_protocol_version() CASCADE;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
 create or replace function set_protocol_version()
 returns trigger as $$
 begin
@@ -583,6 +680,7 @@ begin
 end;
 $$ language plpgsql;
 
+drop trigger if exists set_protocol_version_trigger on treatment_protocols;
 create trigger set_protocol_version_trigger
   before insert on treatment_protocols
   for each row
@@ -595,7 +693,7 @@ create trigger set_protocol_version_trigger
 -- CONVERSATIONS TABLE
 -- Chat sessions per case or standalone
 -- ============================================
-create table conversations (
+create table if not exists conversations (
   id uuid primary key default uuid_generate_v4(),
   case_id uuid references cases(id) on delete cascade,
   doctor_id uuid references profiles(id) on delete set null,
@@ -619,18 +717,18 @@ comment on table conversations is 'Chat sessions per case or standalone';
 comment on column conversations.module is 'Which app module this conversation belongs to';
 comment on column conversations.metadata is 'Additional session metadata';
 
-create index idx_conversations_case on conversations(case_id);
-create index idx_conversations_doctor on conversations(doctor_id);
-create index idx_conversations_session on conversations(session_id);
-create index idx_conversations_module on conversations(module);
-create index idx_conversations_status on conversations(status);
-create index idx_conversations_created_at on conversations(created_at desc);
+create index if not exists idx_conversations_case on conversations(case_id);
+create index if not exists idx_conversations_doctor on conversations(doctor_id);
+create index if not exists idx_conversations_session on conversations(session_id);
+create index if not exists idx_conversations_module on conversations(module);
+create index if not exists idx_conversations_status on conversations(status);
+create index if not exists idx_conversations_created_at on conversations(created_at desc);
 
 -- ============================================
 -- MESSAGES TABLE
 -- Individual chat messages within conversations
 -- ============================================
-create table messages (
+create table if not exists messages (
   id uuid primary key default uuid_generate_v4(),
   conversation_id uuid references conversations(id) on delete cascade not null,
   role text not null check (role in ('user', 'assistant', 'system')),
@@ -660,20 +758,20 @@ comment on column messages.question_data is 'Structured question metadata for in
 comment on column messages.suggestions is 'Quick reply suggestions for the user';
 comment on column messages.attachment_ids is 'Array of attachment IDs associated with this message';
 
-create index idx_messages_conversation on messages(conversation_id);
-create index idx_messages_role on messages(role);
-create index idx_messages_status on messages(status);
-create index idx_messages_created_at on messages(created_at);
-create index idx_messages_is_question on messages(is_question) where is_question = true;
+create index if not exists idx_messages_conversation on messages(conversation_id);
+create index if not exists idx_messages_role on messages(role);
+create index if not exists idx_messages_status on messages(status);
+create index if not exists idx_messages_created_at on messages(created_at);
+create index if not exists idx_messages_is_question on messages(is_question) where is_question = true;
 
 -- Full text search on message content
-create index idx_messages_content_search on messages(content);
+create index if not exists idx_messages_content_search on messages(content);
 
 -- ============================================
 -- ATTACHMENTS TABLE
 -- File metadata for images, PDFs, and other uploads
 -- ============================================
-create table attachments (
+create table if not exists attachments (
   id uuid primary key default uuid_generate_v4(),
   case_id uuid references cases(id) on delete set null,
   conversation_id uuid references conversations(id) on delete set null,
@@ -710,30 +808,33 @@ comment on column attachments.extracted_text is 'OCR/text extraction from PDF or
 comment on column attachments.analysis_results is 'AI analysis results (lab values, image findings, etc.)';
 comment on column attachments.storage_path is 'Path in Supabase Storage bucket';
 
-create index idx_attachments_case on attachments(case_id);
-create index idx_attachments_conversation on attachments(conversation_id);
-create index idx_attachments_message on attachments(message_id);
-create index idx_attachments_doctor on attachments(doctor_id);
-create index idx_attachments_file_type on attachments(file_type);
-create index idx_attachments_analysis_status on attachments(analysis_status);
-create index idx_attachments_created_at on attachments(created_at desc);
+create index if not exists idx_attachments_case on attachments(case_id);
+create index if not exists idx_attachments_conversation on attachments(conversation_id);
+create index if not exists idx_attachments_message on attachments(message_id);
+create index if not exists idx_attachments_doctor on attachments(doctor_id);
+create index if not exists idx_attachments_file_type on attachments(file_type);
+create index if not exists idx_attachments_analysis_status on attachments(analysis_status);
+create index if not exists idx_attachments_created_at on attachments(created_at desc);
 
 -- Full text search on extracted text
-create index idx_attachments_text_search on attachments(extracted_text);
+create index if not exists idx_attachments_text_search on attachments(extracted_text);
 
 -- ============================================
 -- TRIGGERS
 -- ============================================
+drop trigger if exists update_conversations_updated_at on conversations;
 create trigger update_conversations_updated_at
   before update on conversations
   for each row
   execute function update_updated_at_column();
 
+drop trigger if exists update_messages_updated_at on messages;
 create trigger update_messages_updated_at
   before update on messages
   for each row
   execute function update_updated_at_column();
 
+drop trigger if exists update_attachments_updated_at on attachments;
 create trigger update_attachments_updated_at
   before update on attachments
   for each row
@@ -742,6 +843,11 @@ create trigger update_attachments_updated_at
 -- ============================================
 -- AUTO-INCREMENT MESSAGE COUNT
 -- ============================================
+DO $$ BEGIN
+  DROP FUNCTION IF EXISTS increment_message_count() CASCADE;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
 create or replace function increment_message_count()
 returns trigger as $$
 begin
@@ -753,6 +859,7 @@ begin
 end;
 $$ language plpgsql;
 
+drop trigger if exists increment_message_count_trigger on messages;
 create trigger increment_message_count_trigger
   after insert on messages
   for each row
@@ -765,7 +872,7 @@ create trigger increment_message_count_trigger
 -- CASE OUTCOMES TABLE
 -- Follow-up outcomes and treatment effectiveness
 -- ============================================
-create table case_outcomes (
+create table if not exists case_outcomes (
   id uuid primary key default uuid_generate_v4(),
   case_id uuid references cases(id) on delete cascade not null,
   follow_up_visit_number integer,
@@ -806,16 +913,16 @@ comment on table case_outcomes is 'Follow-up outcomes and treatment effectivenes
 comment on column case_outcomes.outcome_rating is '1=worst, 5=best outcome';
 comment on column case_outcomes.symptom_improvement is 'JSON object mapping symptoms to improvement status';
 
-create index idx_case_outcomes_case on case_outcomes(case_id);
-create index idx_case_outcomes_rating on case_outcomes(outcome_rating);
-create index idx_case_outcomes_follow_up_date on case_outcomes(follow_up_date);
-create index idx_case_outcomes_label on case_outcomes(outcome_label);
+create index if not exists idx_case_outcomes_case on case_outcomes(case_id);
+create index if not exists idx_case_outcomes_rating on case_outcomes(outcome_rating);
+create index if not exists idx_case_outcomes_follow_up_date on case_outcomes(follow_up_date);
+create index if not exists idx_case_outcomes_label on case_outcomes(outcome_label);
 
 -- ============================================
 -- CASE LEARNINGS TABLE
 -- AI learning feedback loop for continuous improvement
 -- ============================================
-create table case_learnings (
+create table if not exists case_learnings (
   id uuid primary key default uuid_generate_v4(),
   case_id uuid references cases(id) on delete cascade not null,
   outcome_id uuid references case_outcomes(id) on delete cascade,
@@ -850,17 +957,17 @@ comment on table case_learnings is 'AI learning feedback loop for continuous imp
 comment on column case_learnings.pattern_category is 'Type of pattern being learned';
 comment on column case_learnings.learning_weight is 'Weight for this learning in the AI model';
 
-create index idx_case_learnings_case on case_learnings(case_id);
-create index idx_case_learnings_outcome on case_learnings(outcome_id);
-create index idx_case_learnings_category on case_learnings(pattern_category);
-create index idx_case_learnings_validated on case_learnings(is_validated) where is_validated = true;
-create index idx_case_learnings_frequency on case_learnings(frequency desc);
+create index if not exists idx_case_learnings_case on case_learnings(case_id);
+create index if not exists idx_case_learnings_outcome on case_learnings(outcome_id);
+create index if not exists idx_case_learnings_category on case_learnings(pattern_category);
+create index if not exists idx_case_learnings_validated on case_learnings(is_validated) where is_validated = true;
+create index if not exists idx_case_learnings_frequency on case_learnings(frequency desc);
 
 -- ============================================
 -- INTAKE SESSIONS TABLE
 -- Active patient intake workflow state
 -- ============================================
-create table intake_sessions (
+create table if not exists intake_sessions (
   id uuid primary key default uuid_generate_v4(),
   case_id uuid references cases(id) on delete cascade,
   doctor_id uuid references profiles(id) on delete set null,
@@ -904,18 +1011,18 @@ comment on column intake_sessions.collected_data is 'JSON object of all collecte
 comment on column intake_sessions.question_history is 'Array of questions asked during the session';
 comment on column intake_sessions.answer_history is 'Array of answers given during the session';
 
-create index idx_intake_sessions_case on intake_sessions(case_id);
-create index idx_intake_sessions_doctor on intake_sessions(doctor_id);
-create index idx_intake_sessions_patient on intake_sessions(patient_id);
-create index idx_intake_sessions_session on intake_sessions(session_id);
-create index idx_intake_sessions_status on intake_sessions(status);
-create index idx_intake_sessions_active on intake_sessions(status) where status = 'active';
+create index if not exists idx_intake_sessions_case on intake_sessions(case_id);
+create index if not exists idx_intake_sessions_doctor on intake_sessions(doctor_id);
+create index if not exists idx_intake_sessions_patient on intake_sessions(patient_id);
+create index if not exists idx_intake_sessions_session on intake_sessions(session_id);
+create index if not exists idx_intake_sessions_status on intake_sessions(status);
+create index if not exists idx_intake_sessions_active on intake_sessions(status) where status = 'active';
 
 -- ============================================
 -- TREATMENT ADHERENCE TABLE
 -- Track patient compliance with treatment plan
 -- ============================================
-create table treatment_adherence (
+create table if not exists treatment_adherence (
   id uuid primary key default uuid_generate_v4(),
   case_id uuid references cases(id) on delete cascade not null,
   protocol_id uuid references treatment_protocols(id) on delete cascade,
@@ -941,28 +1048,32 @@ create table treatment_adherence (
 
 comment on table treatment_adherence is 'Track patient compliance with treatment plan';
 
-create index idx_treatment_adherence_case on treatment_adherence(case_id);
-create index idx_treatment_adherence_protocol on treatment_adherence(protocol_id);
-create index idx_treatment_adherence_date on treatment_adherence(adherence_date);
+create index if not exists idx_treatment_adherence_case on treatment_adherence(case_id);
+create index if not exists idx_treatment_adherence_protocol on treatment_adherence(protocol_id);
+create index if not exists idx_treatment_adherence_date on treatment_adherence(adherence_date);
 
 -- ============================================
 -- TRIGGERS
 -- ============================================
+drop trigger if exists update_case_outcomes_updated_at on case_outcomes;
 create trigger update_case_outcomes_updated_at
   before update on case_outcomes
   for each row
   execute function update_updated_at_column();
 
+drop trigger if exists update_case_learnings_updated_at on case_learnings;
 create trigger update_case_learnings_updated_at
   before update on case_learnings
   for each row
   execute function update_updated_at_column();
 
+drop trigger if exists update_intake_sessions_updated_at on intake_sessions;
 create trigger update_intake_sessions_updated_at
   before update on intake_sessions
   for each row
   execute function update_updated_at_column();
 
+drop trigger if exists update_treatment_adherence_updated_at on treatment_adherence;
 create trigger update_treatment_adherence_updated_at
   before update on treatment_adherence
   for each row
@@ -971,6 +1082,11 @@ create trigger update_treatment_adherence_updated_at
 -- ============================================
 -- AUTO-CALCULATE PROGRESS PERCENTAGE
 -- ============================================
+DO $$ BEGIN
+  DROP FUNCTION IF EXISTS calculate_intake_progress() CASCADE;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
 create or replace function calculate_intake_progress()
 returns trigger as $$
 begin
@@ -981,6 +1097,7 @@ begin
 end;
 $$ language plpgsql;
 
+drop trigger if exists calculate_intake_progress_trigger on intake_sessions;
 create trigger calculate_intake_progress_trigger
   before insert or update on intake_sessions
   for each row
@@ -996,7 +1113,7 @@ create extension if not exists vector;
 -- KNOWLEDGE BASE: WHO TERMINOLOGY
 -- International Standard Terminologies on Ayurveda (3545 terms)
 -- ============================================
-create table who_terminology (
+create table if not exists who_terminology (
   id uuid primary key default uuid_generate_v4(),
   ita_code text unique not null,
   term text not null,
@@ -1029,11 +1146,12 @@ comment on table who_terminology is 'WHO International Standard Terminologies on
 comment on column who_terminology.ita_code is 'ITA code (e.g., ITA-2.1.1 for Vata dosha)';
 comment on column who_terminology.search_vector is 'Auto-generated tsvector for full-text search';
 
-create index idx_who_terminology_code on who_terminology(ita_code);
-create index idx_who_terminology_category on who_terminology(category);
-create index idx_who_terminology_term on who_terminology using gin(search_vector);
-create index idx_who_terminology_parent on who_terminology(parent_term);
+create index if not exists idx_who_terminology_code on who_terminology(ita_code);
+create index if not exists idx_who_terminology_category on who_terminology(category);
+create index if not exists idx_who_terminology_term on who_terminology using gin(search_vector);
+create index if not exists idx_who_terminology_parent on who_terminology(parent_term);
 
+drop trigger if exists update_who_terminology_search_vector_trigger on who_terminology;
 create trigger update_who_terminology_search_vector_trigger
   before insert or update on who_terminology
   for each row
@@ -1043,7 +1161,7 @@ create trigger update_who_terminology_search_vector_trigger
 -- KNOWLEDGE BASE: DISEASES
 -- Ayurvedic disease database with modern correlations
 -- ============================================
-create table diseases (
+create table if not exists diseases (
   id uuid primary key default uuid_generate_v4(),
   disease_code text unique not null,
   name text not null,
@@ -1093,12 +1211,13 @@ create table diseases (
 comment on table diseases is 'Ayurvedic disease database with modern correlations';
 comment on column diseases.prognosis_category is 'Sukhasadhya=easy, Krichrasadhya=difficult, Yapya=palliable, Asadhya=incurable';
 
-create index idx_diseases_code on diseases(disease_code);
-create index idx_diseases_category on diseases(category);
-create index idx_diseases_dosha on diseases using gin(dosha_involvement);
-create index idx_diseases_search on diseases using gin(search_vector);
-create index idx_diseases_active on diseases(is_active) where is_active = true;
+create index if not exists idx_diseases_code on diseases(disease_code);
+create index if not exists idx_diseases_category on diseases(category);
+create index if not exists idx_diseases_dosha on diseases using gin(dosha_involvement);
+create index if not exists idx_diseases_search on diseases using gin(search_vector);
+create index if not exists idx_diseases_active on diseases(is_active) where is_active = true;
 
+drop trigger if exists update_diseases_search_vector_trigger on diseases;
 create trigger update_diseases_search_vector_trigger
   before insert or update on diseases
   for each row
@@ -1108,7 +1227,7 @@ create trigger update_diseases_search_vector_trigger
 -- KNOWLEDGE BASE: HERBS
 -- Herbal pharmacopeia with properties and interactions
 -- ============================================
-create table herbs (
+create table if not exists herbs (
   id uuid primary key default uuid_generate_v4(),
   herb_code text unique not null,
   name text not null,
@@ -1160,13 +1279,14 @@ comment on table herbs is 'Herbal pharmacopeia with properties, indications, and
 comment on column herbs.dosha_karma is 'JSON: {vata: "pacifies", pitta: "increases", kapha: "increases"}';
 comment on column herbs.classical_formulations is 'Array of classical formulations containing this herb';
 
-create index idx_herbs_code on herbs(herb_code);
-create index idx_herbs_name on herbs using gin(search_vector);
-create index idx_herbs_family on herbs(family);
-create index idx_herbs_virya on herbs(virya);
-create index idx_herbs_indications on herbs using gin(indications);
-create index idx_herbs_active on herbs(is_active) where is_active = true;
+create index if not exists idx_herbs_code on herbs(herb_code);
+create index if not exists idx_herbs_name on herbs using gin(search_vector);
+create index if not exists idx_herbs_family on herbs(family);
+create index if not exists idx_herbs_virya on herbs(virya);
+create index if not exists idx_herbs_indications on herbs using gin(indications);
+create index if not exists idx_herbs_active on herbs(is_active) where is_active = true;
 
+drop trigger if exists update_herbs_search_vector_trigger on herbs;
 create trigger update_herbs_search_vector_trigger
   before insert or update on herbs
   for each row
@@ -1176,7 +1296,7 @@ create trigger update_herbs_search_vector_trigger
 -- KNOWLEDGE BASE: TREATMENTS
 -- Panchakarma, Purvakarma, and other therapies
 -- ============================================
-create table treatments (
+create table if not exists treatments (
   id uuid primary key default uuid_generate_v4(),
   treatment_code text unique not null,
   name text not null,
@@ -1223,11 +1343,12 @@ create table treatments (
 
 comment on table treatments is 'Panchakarma, Purvakarma, and other Ayurvedic therapies';
 
-create index idx_treatments_code on treatments(treatment_code);
-create index idx_treatments_category on treatments(category);
-create index idx_treatments_search on treatments using gin(search_vector);
-create index idx_treatments_active on treatments(is_active) where is_active = true;
+create index if not exists idx_treatments_code on treatments(treatment_code);
+create index if not exists idx_treatments_category on treatments(category);
+create index if not exists idx_treatments_search on treatments using gin(search_vector);
+create index if not exists idx_treatments_active on treatments(is_active) where is_active = true;
 
+drop trigger if exists update_treatments_search_vector_trigger on treatments;
 create trigger update_treatments_search_vector_trigger
   before insert or update on treatments
   for each row
@@ -1237,7 +1358,7 @@ create trigger update_treatments_search_vector_trigger
 -- KNOWLEDGE BASE: CHARAK SAMHITA CHAPTERS
 -- All 120 chapters with structured content
 -- ============================================
-create table charak_chapters (
+create table if not exists charak_chapters (
   id uuid primary key default uuid_generate_v4(),
   chapter_number integer not null,
   sthana text not null check (sthana in (
@@ -1271,11 +1392,12 @@ create table charak_chapters (
 comment on table charak_chapters is 'Charak Samhita - all 120 chapters across 8 Sthanas';
 comment on column charak_chapters.sthana is 'One of 8 sections: Sutra, Nidana, Vimana, Sharira, Indriya, Chikitsa, Kalpa, Siddhi';
 
-create index idx_charak_chapters_number on charak_chapters(sthana, chapter_number);
-create index idx_charak_chapters_sthana on charak_chapters(sthana);
-create index idx_charak_chapters_search on charak_chapters using gin(search_vector);
-create index idx_charak_chapters_relevance on charak_chapters using gin(relevance_tags);
+create index if not exists idx_charak_chapters_number on charak_chapters(sthana, chapter_number);
+create index if not exists idx_charak_chapters_sthana on charak_chapters(sthana);
+create index if not exists idx_charak_chapters_search on charak_chapters using gin(search_vector);
+create index if not exists idx_charak_chapters_relevance on charak_chapters using gin(relevance_tags);
 
+drop trigger if exists update_charak_chapters_search_vector_trigger on charak_chapters;
 create trigger update_charak_chapters_search_vector_trigger
   before insert or update on charak_chapters
   for each row
@@ -1285,7 +1407,7 @@ create trigger update_charak_chapters_search_vector_trigger
 -- KNOWLEDGE BASE: ALLOPATHY INTEGRATION
 -- Drug-herb interactions and combined protocols
 -- ============================================
-create table allopathy_integration (
+create table if not exists allopathy_integration (
   id uuid primary key default uuid_generate_v4(),
   condition_name text not null,
   allopathic_drug text not null,
@@ -1312,13 +1434,14 @@ create table allopathy_integration (
 
 comment on table allopathy_integration is 'Drug-herb interactions and combined treatment protocols';
 
-create index idx_allopathy_condition on allopathy_integration(condition_name);
-create index idx_allopathy_drug on allopathy_integration(allopathic_drug);
-create index idx_allopathy_herb on allopathy_integration(ayurvedic_herb);
-create index idx_allopathy_interaction_type on allopathy_integration(interaction_type);
-create index idx_allopathy_severity on allopathy_integration(severity);
-create index idx_allopathy_search on allopathy_integration using gin(search_vector);
+create index if not exists idx_allopathy_condition on allopathy_integration(condition_name);
+create index if not exists idx_allopathy_drug on allopathy_integration(allopathic_drug);
+create index if not exists idx_allopathy_herb on allopathy_integration(ayurvedic_herb);
+create index if not exists idx_allopathy_interaction_type on allopathy_integration(interaction_type);
+create index if not exists idx_allopathy_severity on allopathy_integration(severity);
+create index if not exists idx_allopathy_search on allopathy_integration using gin(search_vector);
 
+drop trigger if exists update_allopathy_integration_search_vector_trigger on allopathy_integration;
 create trigger update_allopathy_integration_search_vector_trigger
   before insert or update on allopathy_integration
   for each row
@@ -1328,7 +1451,7 @@ create trigger update_allopathy_integration_search_vector_trigger
 -- KNOWLEDGE BASE: COMBINED TREATMENT PROTOCOLS
 -- Integrated Ayurveda-Allopathy protocols
 -- ============================================
-create table combined_protocols (
+create table if not exists combined_protocols (
   id uuid primary key default uuid_generate_v4(),
   condition_name text not null,
   protocol_name text not null,
@@ -1360,10 +1483,11 @@ create table combined_protocols (
 
 comment on table combined_protocols is 'Integrated Ayurveda-Allopathy treatment protocols';
 
-create index idx_combined_protocols_condition on combined_protocols(condition_name);
-create index idx_combined_protocols_search on combined_protocols using gin(search_vector);
-create index idx_combined_protocols_active on combined_protocols(is_active) where is_active = true;
+create index if not exists idx_combined_protocols_condition on combined_protocols(condition_name);
+create index if not exists idx_combined_protocols_search on combined_protocols using gin(search_vector);
+create index if not exists idx_combined_protocols_active on combined_protocols(is_active) where is_active = true;
 
+drop trigger if exists update_combined_protocols_search_vector_trigger on combined_protocols;
 create trigger update_combined_protocols_search_vector_trigger
   before insert or update on combined_protocols
   for each row
@@ -1373,7 +1497,7 @@ create trigger update_combined_protocols_search_vector_trigger
 -- RAG: VECTOR EMBEDDINGS
 -- Semantic search across all knowledge base content
 -- ============================================
-create table knowledge_embeddings (
+create table if not exists knowledge_embeddings (
   id uuid primary key default uuid_generate_v4(),
   source_table text not null check (source_table in (
     'who_terminology', 'diseases', 'herbs', 'treatments',
@@ -1398,15 +1522,15 @@ comment on column knowledge_embeddings.source_table is 'Which knowledge table th
 comment on column knowledge_embeddings.source_id is 'UUID of the source record';
 comment on column knowledge_embeddings.embedding is '1536-dimension vector embedding for semantic search';
 
-create index idx_knowledge_embeddings_source on knowledge_embeddings(source_table, source_id);
-create index idx_knowledge_embeddings_content_type on knowledge_embeddings(content_type);
-create index idx_knowledge_embeddings_embedding on knowledge_embeddings using hnsw (embedding vector_cosine_ops);
+create index if not exists idx_knowledge_embeddings_source on knowledge_embeddings(source_table, source_id);
+create index if not exists idx_knowledge_embeddings_content_type on knowledge_embeddings(content_type);
+create index if not exists idx_knowledge_embeddings_embedding on knowledge_embeddings using hnsw (embedding vector_cosine_ops);
 
 -- ============================================
 -- RAG: SEARCH HISTORY
 -- Track RAG queries for analytics and improvement
 -- ============================================
-create table rag_search_history (
+create table if not exists rag_search_history (
   id uuid primary key default uuid_generate_v4(),
   doctor_id uuid references profiles(id) on delete set null,
   case_id uuid references cases(id) on delete set null,
@@ -1422,49 +1546,57 @@ create table rag_search_history (
 
 comment on table rag_search_history is 'Track RAG queries for analytics and continuous improvement';
 
-create index idx_rag_search_doctor on rag_search_history(doctor_id);
-create index idx_rag_search_case on rag_search_history(case_id);
-create index idx_rag_search_type on rag_search_history(query_type);
-create index idx_rag_search_created on rag_search_history(created_at desc);
+create index if not exists idx_rag_search_doctor on rag_search_history(doctor_id);
+create index if not exists idx_rag_search_case on rag_search_history(case_id);
+create index if not exists idx_rag_search_type on rag_search_history(query_type);
+create index if not exists idx_rag_search_created on rag_search_history(created_at desc);
 
 -- ============================================
 -- TRIGGERS
 -- ============================================
+drop trigger if exists update_who_terminology_updated_at on who_terminology;
 create trigger update_who_terminology_updated_at
   before update on who_terminology
   for each row
   execute function update_updated_at_column();
 
+drop trigger if exists update_diseases_updated_at on diseases;
 create trigger update_diseases_updated_at
   before update on diseases
   for each row
   execute function update_updated_at_column();
 
+drop trigger if exists update_herbs_updated_at on herbs;
 create trigger update_herbs_updated_at
   before update on herbs
   for each row
   execute function update_updated_at_column();
 
+drop trigger if exists update_treatments_updated_at on treatments;
 create trigger update_treatments_updated_at
   before update on treatments
   for each row
   execute function update_updated_at_column();
 
+drop trigger if exists update_charak_chapters_updated_at on charak_chapters;
 create trigger update_charak_chapters_updated_at
   before update on charak_chapters
   for each row
   execute function update_updated_at_column();
 
+drop trigger if exists update_allopathy_integration_updated_at on allopathy_integration;
 create trigger update_allopathy_integration_updated_at
   before update on allopathy_integration
   for each row
   execute function update_updated_at_column();
 
+drop trigger if exists update_combined_protocols_updated_at on combined_protocols;
 create trigger update_combined_protocols_updated_at
   before update on combined_protocols
   for each row
   execute function update_updated_at_column();
 
+drop trigger if exists update_knowledge_embeddings_updated_at on knowledge_embeddings;
 create trigger update_knowledge_embeddings_updated_at
   before update on knowledge_embeddings
   for each row
@@ -1504,14 +1636,17 @@ alter table rag_search_history enable row level security;
 -- ============================================
 -- PROFILES POLICIES
 -- ============================================
+drop policy if exists "Users can view own profile" on profiles;
 create policy "Users can view own profile"
   on profiles for select
   using (auth.uid() = auth_user_id);
 
+drop policy if exists "Users can update own profile" on profiles;
 create policy "Users can update own profile"
   on profiles for update
   using (auth.uid() = auth_user_id);
 
+drop policy if exists "Users can insert own profile" on profiles;
 create policy "Users can insert own profile"
   on profiles for insert
   with check (auth.uid() = auth_user_id);
@@ -1519,18 +1654,22 @@ create policy "Users can insert own profile"
 -- ============================================
 -- PATIENTS POLICIES
 -- ============================================
+drop policy if exists "Doctors can view own patients" on patients;
 create policy "Doctors can view own patients"
   on patients for select
   using (doctor_id = (select id from profiles where auth_user_id = auth.uid()));
 
+drop policy if exists "Doctors can insert own patients" on patients;
 create policy "Doctors can insert own patients"
   on patients for insert
   with check (doctor_id = (select id from profiles where auth_user_id = auth.uid()));
 
+drop policy if exists "Doctors can update own patients" on patients;
 create policy "Doctors can update own patients"
   on patients for update
   using (doctor_id = (select id from profiles where auth_user_id = auth.uid()));
 
+drop policy if exists "Doctors can delete own patients" on patients;
 create policy "Doctors can delete own patients"
   on patients for delete
   using (doctor_id = (select id from profiles where auth_user_id = auth.uid()));
@@ -1538,18 +1677,22 @@ create policy "Doctors can delete own patients"
 -- ============================================
 -- CASES POLICIES
 -- ============================================
+drop policy if exists "Doctors can view own cases" on cases;
 create policy "Doctors can view own cases"
   on cases for select
   using (doctor_id = (select id from profiles where auth_user_id = auth.uid()));
 
+drop policy if exists "Doctors can insert own cases" on cases;
 create policy "Doctors can insert own cases"
   on cases for insert
   with check (doctor_id = (select id from profiles where auth_user_id = auth.uid()));
 
+drop policy if exists "Doctors can update own cases" on cases;
 create policy "Doctors can update own cases"
   on cases for update
   using (doctor_id = (select id from profiles where auth_user_id = auth.uid()));
 
+drop policy if exists "Doctors can delete own cases" on cases;
 create policy "Doctors can delete own cases"
   on cases for delete
   using (doctor_id = (select id from profiles where auth_user_id = auth.uid()));
@@ -1557,6 +1700,7 @@ create policy "Doctors can delete own cases"
 -- ============================================
 -- CHIEF COMPLAINTS POLICIES
 -- ============================================
+drop policy if exists "Doctors can view complaints from own cases" on chief_complaints;
 create policy "Doctors can view complaints from own cases"
   on chief_complaints for select
   using (
@@ -1567,6 +1711,7 @@ create policy "Doctors can view complaints from own cases"
     )
   );
 
+drop policy if exists "Doctors can insert complaints to own cases" on chief_complaints;
 create policy "Doctors can insert complaints to own cases"
   on chief_complaints for insert
   with check (
@@ -1577,6 +1722,7 @@ create policy "Doctors can insert complaints to own cases"
     )
   );
 
+drop policy if exists "Doctors can update complaints from own cases" on chief_complaints;
 create policy "Doctors can update complaints from own cases"
   on chief_complaints for update
   using (
@@ -1587,6 +1733,7 @@ create policy "Doctors can update complaints from own cases"
     )
   );
 
+drop policy if exists "Doctors can delete complaints from own cases" on chief_complaints;
 create policy "Doctors can delete complaints from own cases"
   on chief_complaints for delete
   using (
@@ -1600,6 +1747,7 @@ create policy "Doctors can delete complaints from own cases"
 -- ============================================
 -- INVESTIGATION FINDINGS POLICIES
 -- ============================================
+drop policy if exists "Doctors can view findings from own cases" on investigation_findings;
 create policy "Doctors can view findings from own cases"
   on investigation_findings for select
   using (
@@ -1610,6 +1758,7 @@ create policy "Doctors can view findings from own cases"
     )
   );
 
+drop policy if exists "Doctors can insert findings to own cases" on investigation_findings;
 create policy "Doctors can insert findings to own cases"
   on investigation_findings for insert
   with check (
@@ -1620,6 +1769,7 @@ create policy "Doctors can insert findings to own cases"
     )
   );
 
+drop policy if exists "Doctors can update findings from own cases" on investigation_findings;
 create policy "Doctors can update findings from own cases"
   on investigation_findings for update
   using (
@@ -1630,6 +1780,7 @@ create policy "Doctors can update findings from own cases"
     )
   );
 
+drop policy if exists "Doctors can delete findings from own cases" on investigation_findings;
 create policy "Doctors can delete findings from own cases"
   on investigation_findings for delete
   using (
@@ -1643,6 +1794,7 @@ create policy "Doctors can delete findings from own cases"
 -- ============================================
 -- TREATMENT PROTOCOLS POLICIES
 -- ============================================
+drop policy if exists "Doctors can view protocols from own cases" on treatment_protocols;
 create policy "Doctors can view protocols from own cases"
   on treatment_protocols for select
   using (
@@ -1653,6 +1805,7 @@ create policy "Doctors can view protocols from own cases"
     )
   );
 
+drop policy if exists "Doctors can insert protocols to own cases" on treatment_protocols;
 create policy "Doctors can insert protocols to own cases"
   on treatment_protocols for insert
   with check (
@@ -1663,6 +1816,7 @@ create policy "Doctors can insert protocols to own cases"
     )
   );
 
+drop policy if exists "Doctors can update protocols from own cases" on treatment_protocols;
 create policy "Doctors can update protocols from own cases"
   on treatment_protocols for update
   using (
@@ -1673,6 +1827,7 @@ create policy "Doctors can update protocols from own cases"
     )
   );
 
+drop policy if exists "Doctors can delete protocols from own cases" on treatment_protocols;
 create policy "Doctors can delete protocols from own cases"
   on treatment_protocols for delete
   using (
@@ -1686,18 +1841,22 @@ create policy "Doctors can delete protocols from own cases"
 -- ============================================
 -- CONVERSATIONS POLICIES
 -- ============================================
+drop policy if exists "Doctors can view own conversations" on conversations;
 create policy "Doctors can view own conversations"
   on conversations for select
   using (doctor_id = (select id from profiles where auth_user_id = auth.uid()));
 
+drop policy if exists "Doctors can insert own conversations" on conversations;
 create policy "Doctors can insert own conversations"
   on conversations for insert
   with check (doctor_id = (select id from profiles where auth_user_id = auth.uid()));
 
+drop policy if exists "Doctors can update own conversations" on conversations;
 create policy "Doctors can update own conversations"
   on conversations for update
   using (doctor_id = (select id from profiles where auth_user_id = auth.uid()));
 
+drop policy if exists "Doctors can delete own conversations" on conversations;
 create policy "Doctors can delete own conversations"
   on conversations for delete
   using (doctor_id = (select id from profiles where auth_user_id = auth.uid()));
@@ -1705,6 +1864,7 @@ create policy "Doctors can delete own conversations"
 -- ============================================
 -- MESSAGES POLICIES
 -- ============================================
+drop policy if exists "Doctors can view messages from own conversations" on messages;
 create policy "Doctors can view messages from own conversations"
   on messages for select
   using (
@@ -1715,6 +1875,7 @@ create policy "Doctors can view messages from own conversations"
     )
   );
 
+drop policy if exists "Doctors can insert messages to own conversations" on messages;
 create policy "Doctors can insert messages to own conversations"
   on messages for insert
   with check (
@@ -1725,6 +1886,7 @@ create policy "Doctors can insert messages to own conversations"
     )
   );
 
+drop policy if exists "Doctors can update messages from own conversations" on messages;
 create policy "Doctors can update messages from own conversations"
   on messages for update
   using (
@@ -1735,6 +1897,7 @@ create policy "Doctors can update messages from own conversations"
     )
   );
 
+drop policy if exists "Doctors can delete messages from own conversations" on messages;
 create policy "Doctors can delete messages from own conversations"
   on messages for delete
   using (
@@ -1748,18 +1911,22 @@ create policy "Doctors can delete messages from own conversations"
 -- ============================================
 -- ATTACHMENTS POLICIES
 -- ============================================
+drop policy if exists "Doctors can view own attachments" on attachments;
 create policy "Doctors can view own attachments"
   on attachments for select
   using (doctor_id = (select id from profiles where auth_user_id = auth.uid()));
 
+drop policy if exists "Doctors can insert own attachments" on attachments;
 create policy "Doctors can insert own attachments"
   on attachments for insert
   with check (doctor_id = (select id from profiles where auth_user_id = auth.uid()));
 
+drop policy if exists "Doctors can update own attachments" on attachments;
 create policy "Doctors can update own attachments"
   on attachments for update
   using (doctor_id = (select id from profiles where auth_user_id = auth.uid()));
 
+drop policy if exists "Doctors can delete own attachments" on attachments;
 create policy "Doctors can delete own attachments"
   on attachments for delete
   using (doctor_id = (select id from profiles where auth_user_id = auth.uid()));
@@ -1767,42 +1934,52 @@ create policy "Doctors can delete own attachments"
 -- ============================================
 -- KNOWLEDGE BASE POLICIES (Read-only for all authenticated users)
 -- ============================================
+drop policy if exists "Anyone can read WHO terminology" on who_terminology;
 create policy "Anyone can read WHO terminology"
   on who_terminology for select
   using (auth.role() = 'authenticated');
 
+drop policy if exists "Anyone can read diseases" on diseases;
 create policy "Anyone can read diseases"
   on diseases for select
   using (auth.role() = 'authenticated');
 
+drop policy if exists "Anyone can read herbs" on herbs;
 create policy "Anyone can read herbs"
   on herbs for select
   using (auth.role() = 'authenticated');
 
+drop policy if exists "Anyone can read treatments" on treatments;
 create policy "Anyone can read treatments"
   on treatments for select
   using (auth.role() = 'authenticated');
 
+drop policy if exists "Anyone can read Charak chapters" on charak_chapters;
 create policy "Anyone can read Charak chapters"
   on charak_chapters for select
   using (auth.role() = 'authenticated');
 
+drop policy if exists "Anyone can read allopathy integration" on allopathy_integration;
 create policy "Anyone can read allopathy integration"
   on allopathy_integration for select
   using (auth.role() = 'authenticated');
 
+drop policy if exists "Anyone can read combined protocols" on combined_protocols;
 create policy "Anyone can read combined protocols"
   on combined_protocols for select
   using (auth.role() = 'authenticated');
 
+drop policy if exists "Anyone can read knowledge embeddings" on knowledge_embeddings;
 create policy "Anyone can read knowledge embeddings"
   on knowledge_embeddings for select
   using (auth.role() = 'authenticated');
 
+drop policy if exists "Anyone can insert RAG search history" on rag_search_history;
 create policy "Anyone can insert RAG search history"
   on rag_search_history for insert
   with check (auth.role() = 'authenticated');
 
+drop policy if exists "Anyone can read RAG search history" on rag_search_history;
 create policy "Anyone can read RAG search history"
   on rag_search_history for select
   using (auth.role() = 'authenticated');
@@ -1810,6 +1987,7 @@ create policy "Anyone can read RAG search history"
 -- ============================================
 -- CASE OUTCOMES POLICIES
 -- ============================================
+drop policy if exists "Doctors can view outcomes from own cases" on case_outcomes;
 create policy "Doctors can view outcomes from own cases"
   on case_outcomes for select
   using (
@@ -1820,6 +1998,7 @@ create policy "Doctors can view outcomes from own cases"
     )
   );
 
+drop policy if exists "Doctors can insert outcomes to own cases" on case_outcomes;
 create policy "Doctors can insert outcomes to own cases"
   on case_outcomes for insert
   with check (
@@ -1830,6 +2009,7 @@ create policy "Doctors can insert outcomes to own cases"
     )
   );
 
+drop policy if exists "Doctors can update outcomes from own cases" on case_outcomes;
 create policy "Doctors can update outcomes from own cases"
   on case_outcomes for update
   using (
@@ -1843,6 +2023,7 @@ create policy "Doctors can update outcomes from own cases"
 -- ============================================
 -- CASE LEARNINGS POLICIES
 -- ============================================
+drop policy if exists "Doctors can view learnings from own cases" on case_learnings;
 create policy "Doctors can view learnings from own cases"
   on case_learnings for select
   using (
@@ -1853,6 +2034,7 @@ create policy "Doctors can view learnings from own cases"
     )
   );
 
+drop policy if exists "Doctors can insert learnings to own cases" on case_learnings;
 create policy "Doctors can insert learnings to own cases"
   on case_learnings for insert
   with check (
@@ -1863,6 +2045,7 @@ create policy "Doctors can insert learnings to own cases"
     )
   );
 
+drop policy if exists "Doctors can update learnings from own cases" on case_learnings;
 create policy "Doctors can update learnings from own cases"
   on case_learnings for update
   using (
@@ -1876,14 +2059,17 @@ create policy "Doctors can update learnings from own cases"
 -- ============================================
 -- INTAKE SESSIONS POLICIES
 -- ============================================
+drop policy if exists "Doctors can view own intake sessions" on intake_sessions;
 create policy "Doctors can view own intake sessions"
   on intake_sessions for select
   using (doctor_id = (select id from profiles where auth_user_id = auth.uid()));
 
+drop policy if exists "Doctors can insert own intake sessions" on intake_sessions;
 create policy "Doctors can insert own intake sessions"
   on intake_sessions for insert
   with check (doctor_id = (select id from profiles where auth_user_id = auth.uid()));
 
+drop policy if exists "Doctors can update own intake sessions" on intake_sessions;
 create policy "Doctors can update own intake sessions"
   on intake_sessions for update
   using (doctor_id = (select id from profiles where auth_user_id = auth.uid()));
@@ -1891,6 +2077,7 @@ create policy "Doctors can update own intake sessions"
 -- ============================================
 -- TREATMENT ADHERENCE POLICIES
 -- ============================================
+drop policy if exists "Doctors can view adherence from own cases" on treatment_adherence;
 create policy "Doctors can view adherence from own cases"
   on treatment_adherence for select
   using (
@@ -1901,6 +2088,7 @@ create policy "Doctors can view adherence from own cases"
     )
   );
 
+drop policy if exists "Doctors can insert adherence to own cases" on treatment_adherence;
 create policy "Doctors can insert adherence to own cases"
   on treatment_adherence for insert
   with check (
@@ -1911,6 +2099,7 @@ create policy "Doctors can insert adherence to own cases"
     )
   );
 
+drop policy if exists "Doctors can update adherence from own cases" on treatment_adherence;
 create policy "Doctors can update adherence from own cases"
   on treatment_adherence for update
   using (
@@ -1926,7 +2115,7 @@ create policy "Doctors can update adherence from own cases"
 -- ============================================
 
 -- Patient summary view
-create view v_patient_summary as
+create or replace view v_patient_summary as
 select
   p.id,
   p.patient_code,
@@ -1950,7 +2139,7 @@ group by p.id, p.patient_code, p.name, p.age, p.gender, p.phone, p.area, p.bmi;
 comment on view v_patient_summary is 'Patient summary with visit counts and outcomes';
 
 -- Case analytics view
-create view v_case_analytics as
+create or replace view v_case_analytics as
 select
   c.id,
   c.case_number,
@@ -1984,7 +2173,7 @@ group by c.id, c.case_number, c.visit_date, c.visit_type, c.visit_number,
 comment on view v_case_analytics is 'Case analytics with patient info and outcome metrics';
 
 -- Doctor dashboard view
-create view v_doctor_dashboard as
+create or replace view v_doctor_dashboard as
 select
   pr.id as doctor_id,
   pr.full_name,
@@ -2009,7 +2198,7 @@ group by pr.id, pr.full_name, pr.specialization, pr.clinic_name;
 comment on view v_doctor_dashboard is 'Doctor dashboard with practice statistics';
 
 -- Treatment effectiveness view
-create view v_treatment_effectiveness as
+create or replace view v_treatment_effectiveness as
 select
   tp.id as protocol_id,
   tp.protocol_name,
@@ -2035,7 +2224,7 @@ left join treatment_adherence ta on c.id = ta.case_id;
 comment on view v_treatment_effectiveness is 'Treatment effectiveness correlated with outcomes';
 
 -- RAG search analytics view
-create view v_rag_analytics as
+create or replace view v_rag_analytics as
 select
   query_type,
   count(*) as total_searches,
@@ -2054,6 +2243,11 @@ comment on view v_rag_analytics is 'RAG search analytics by query type';
 -- ============================================
 
 -- Get patient case history
+DO $$ BEGIN
+  DROP FUNCTION IF EXISTS get_patient_case_history(uuid) CASCADE;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
 create or replace function get_patient_case_history(patient_uuid uuid)
 returns table (
   case_id uuid,
@@ -2090,6 +2284,11 @@ end;
 $$ language plpgsql security definer;
 
 -- Get doctor statistics
+DO $$ BEGIN
+  DROP FUNCTION IF EXISTS get_doctor_stats(uuid) CASCADE;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
 create or replace function get_doctor_stats(doctor_uuid uuid)
 returns jsonb as $$
 declare
@@ -2119,6 +2318,11 @@ end;
 $$ language plpgsql security definer;
 
 -- Search knowledge base with full-text search
+DO $$ BEGIN
+  DROP FUNCTION IF EXISTS search_knowledge_base(text, text[], integer) CASCADE;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
 create or replace function search_knowledge_base(
   search_query text,
   source_tables text[] default array['who_terminology', 'diseases', 'herbs', 'treatments', 'charak_chapters'],
@@ -2175,6 +2379,11 @@ end;
 $$ language plpgsql security definer;
 
 -- Semantic search using vector embeddings
+DO $$ BEGIN
+  DROP FUNCTION IF EXISTS semantic_search(vector(1024), float, int, text) CASCADE;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
 create or replace function semantic_search(
   query_embedding vector(1024),
   match_threshold float default 0.8,
@@ -2207,6 +2416,11 @@ end;
 $$ language plpgsql security definer;
 
 -- Get critical investigation findings
+DO $$ BEGIN
+  DROP FUNCTION IF EXISTS get_critical_findings(uuid, integer) CASCADE;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
 create or replace function get_critical_findings(doctor_uuid uuid, days_back integer default 30)
 returns table (
   finding_id uuid,
@@ -2242,6 +2456,11 @@ end;
 $$ language plpgsql security definer;
 
 -- Archive completed cases older than X days
+DO $$ BEGIN
+  DROP FUNCTION IF EXISTS archive_old_cases(integer) CASCADE;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
 create or replace function archive_old_cases(days_threshold integer default 365)
 returns integer as $$
 declare
@@ -2254,6 +2473,6 @@ begin
   and completed_at < current_date - (days_threshold || ' days')::interval;
   
   get diagnostics archived_count = row_count;
-  return archived_count;
+  return archived_count; 
 end;
 $$ language plpgsql security definer;

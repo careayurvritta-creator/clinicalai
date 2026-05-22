@@ -51,7 +51,7 @@ export const AYURVEDA_KNOWLEDGE = {
 
 export function searchKnowledge(query: string): string {
   const lowerQuery = query.toLowerCase()
-  let results: string[] = []
+  const results: string[] = []
   
   // Search diseases
   for (const disease of DISEASES) {
