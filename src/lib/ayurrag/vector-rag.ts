@@ -41,10 +41,14 @@ const SOURCE_TABLE_CATEGORY_MAP: Record<string, string> = {
   herbs: 'Herb',
   treatments: 'Treatment',
   charak_chapters: 'Classical Text',
+  sushruta_chapters: 'Classical Text',
   allopathy_integration: 'Allopathy Integration',
   combined_protocols: 'Combined Protocol',
   diagnostics: 'Diagnostic Method',
   fundamentals: 'Fundamental Concept',
+  clinical_evidence: 'Clinical Evidence',
+  external_qa: 'Ayurveda Q&A',
+  modern_medicines: 'Modern Medicine',
 }
 
 function mapSourceTableToCategory(sourceTable: string): string {
@@ -140,6 +144,26 @@ function detectQueryIntent(query: string): { boostCategories: string[]; keywords
   if (lower.match(/\b(interaction|allopathy|modern|combine|safe|contraindic)\b/)) {
     boostCategories.push('Allopathy Integration')
     keywords.push('interaction', 'safety')
+  }
+  // Research/evidence queries
+  if (lower.match(/\b(research|study|trial|evidence|pubmed|clinical|journal|systematic|meta)\b/)) {
+    boostCategories.push('Clinical Evidence')
+    keywords.push('research', 'evidence')
+  }
+  // Modern medicine queries
+  if (lower.match(/\b(tablet|capsule|injection|pharmaceutical|allopathic drug|paracetamol|metformin|aspirin)\b/)) {
+    boostCategories.push('Modern Medicine', 'Allopathy Integration')
+    keywords.push('modern medicine')
+  }
+  // Sushruta-specific queries
+  if (lower.match(/\b(sushruta|surgery|shalya|shalakya|wound|operation|surgical)\b/)) {
+    boostCategories.push('Classical Text')
+    keywords.push('sushruta', 'surgery')
+  }
+  // Q&A / general knowledge queries
+  if (lower.match(/\b(what is|explain|describe|define|meaning|significance)\b/)) {
+    boostCategories.push('Ayurveda Q&A', 'Classical Text')
+    keywords.push('explanation')
   }
 
   return { boostCategories: [...new Set(boostCategories)], keywords: [...new Set(keywords)] }
@@ -241,7 +265,7 @@ export async function vectorSearch(
   if (results.length < config.maxResults) {
     try {
       const remaining = config.maxResults - results.length
-      const sourceTables = ['diseases', 'herbs', 'treatments', 'charak_chapters', 'allopathy_integration']
+      const sourceTables = ['diseases', 'herbs', 'treatments', 'charak_chapters', 'sushruta_chapters', 'allopathy_integration', 'clinical_evidence', 'external_qa', 'modern_medicines']
       if (config.includeWHO) sourceTables.push('who_terminology')
 
       const { data: textResults, error: textError } = await searchKnowledgeBase(
@@ -325,11 +349,12 @@ export function formatVectorResultsForContext(results: VectorSearchResult[]): st
     byCategory.set(r.category, list)
   }
 
-  // Priority order: Diseases > Treatments > Herbs > Classical Text > WHO > Others
+  // Priority order: Diseases > Treatments > Herbs > Classical Text > Clinical Evidence > Others
   const categoryPriority = [
     'Disease', 'Treatment', 'Herb', 'Classical Text',
-    'Allopathy Integration', 'Combined Protocol',
-    'Diagnostic Method', 'Fundamental Concept', 'WHO Terminology',
+    'Clinical Evidence', 'Allopathy Integration', 'Modern Medicine',
+    'Combined Protocol', 'Diagnostic Method', 'Fundamental Concept',
+    'Ayurveda Q&A', 'WHO Terminology',
   ]
 
   const sortedCategories = [...byCategory.entries()].sort((a, b) => {

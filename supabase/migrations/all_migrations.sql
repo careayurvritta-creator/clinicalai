@@ -1502,7 +1502,8 @@ create table if not exists knowledge_embeddings (
   source_table text not null check (source_table in (
     'who_terminology', 'diseases', 'herbs', 'treatments',
     'charak_chapters', 'allopathy_integration', 'combined_protocols',
-    'diagnostics', 'fundamentals'
+    'diagnostics', 'fundamentals',
+    'sushruta_chapters', 'clinical_evidence', 'external_qa', 'modern_medicines'
   )),
   source_id uuid not null,
   source_title text not null,
@@ -2386,7 +2387,7 @@ EXCEPTION WHEN OTHERS THEN
 END $$;
 create or replace function semantic_search(
   query_embedding vector(1024),
-  match_threshold float default 0.8,
+  match_threshold float default 0.5,
   match_count int default 10,
   source_table_filter text default null
 )
@@ -2396,6 +2397,7 @@ returns table (
   source_id uuid,
   source_title text,
   content text,
+  metadata jsonb,
   similarity float
 ) as $$
 begin
@@ -2406,6 +2408,7 @@ begin
     ke.source_id,
     ke.source_title,
     ke.content,
+    ke.metadata,
     1 - (ke.embedding <=> query_embedding) as similarity
   from knowledge_embeddings ke
   where 1 - (ke.embedding <=> query_embedding) > match_threshold
@@ -2473,6 +2476,253 @@ begin
   and completed_at < current_date - (days_threshold || ' days')::interval;
   
   get diagnostics archived_count = row_count;
-  return archived_count; 
+  return archived_count;
+end;
+$$ language plpgsql security definer;
+
+-- ============================================
+-- Migration 007: Fix semantic_search RPC vector dimension
+-- ============================================
+
+DO $$ BEGIN
+  DROP FUNCTION IF EXISTS semantic_search(vector(1024), float, int, text) CASCADE;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
+
+create or replace function semantic_search(
+  query_embedding vector(1024),
+  match_threshold float default 0.5,
+  match_count int default 10,
+  source_table_filter text default null
+)
+returns table (
+  id uuid,
+  source_table text,
+  source_id uuid,
+  source_title text,
+  content text,
+  metadata jsonb,
+  similarity float
+) as $$
+begin
+  return query
+  select
+    ke.id,
+    ke.source_table,
+    ke.source_id,
+    ke.source_title,
+    ke.content,
+    ke.metadata,
+    1 - (ke.embedding <=> query_embedding) as similarity
+  from knowledge_embeddings ke
+  where 1 - (ke.embedding <=> query_embedding) > match_threshold
+  and (source_table_filter is null or ke.source_table = source_table_filter)
+  order by ke.embedding <=> query_embedding
+  limit match_count;
+end;
+$$ language plpgsql security definer;
+
+-- ============================================
+-- Migration 008: External Knowledge Sources
+-- ============================================
+
+-- Extend knowledge_embeddings CHECK constraint
+ALTER TABLE knowledge_embeddings
+  DROP CONSTRAINT IF EXISTS knowledge_embeddings_source_table_check;
+
+ALTER TABLE knowledge_embeddings
+  ADD CONSTRAINT knowledge_embeddings_source_table_check
+  CHECK (source_table IN (
+    'who_terminology', 'diseases', 'herbs', 'treatments',
+    'charak_chapters', 'allopathy_integration', 'combined_protocols',
+    'diagnostics', 'fundamentals',
+    'sushruta_chapters', 'clinical_evidence', 'external_qa', 'modern_medicines'
+  ));
+
+-- Sushruta Samhita chapters
+CREATE TABLE IF NOT EXISTS sushruta_chapters (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  chapter_number integer NOT NULL,
+  sthana text NOT NULL,
+  chapter_name text NOT NULL,
+  sanskrit_name text,
+  english_title text,
+  summary text,
+  key_concepts text[],
+  verses_count integer,
+  content text,
+  key_formulas text[],
+  key_herbs text[],
+  key_diseases text[],
+  surgical_procedures jsonb,
+  anatomy_descriptions jsonb,
+  relevance_tags text[],
+  clinical_applications text[],
+  search_vector tsvector GENERATED ALWAYS AS (
+    setweight(to_tsvector('simple', chapter_name), 'A') ||
+    setweight(to_tsvector('simple', COALESCE(sanskrit_name, '')), 'A') ||
+    setweight(to_tsvector('simple', COALESCE(english_title, '')), 'A') ||
+    setweight(to_tsvector('simple', COALESCE(summary, '')), 'B') ||
+    setweight(to_tsvector('simple', COALESCE(content, '')), 'B') ||
+    setweight(to_tsvector('simple', COALESCE(array_to_string(key_concepts, ' '), '')), 'C')
+  ) STORED,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+-- Clinical evidence (PubMed)
+CREATE TABLE IF NOT EXISTS clinical_evidence (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  pmid text UNIQUE NOT NULL,
+  title text NOT NULL,
+  authors text[],
+  journal text,
+  publication_date date,
+  abstract text,
+  doi text,
+  mesh_terms text[],
+  study_type text,
+  evidence_level text CHECK (evidence_level IN ('systematic_review', 'rct', 'cohort', 'case_control', 'case_series', 'expert_opinion')),
+  ayurveda_relevance text,
+  herbs_mentioned text[],
+  conditions_mentioned text[],
+  search_vector tsvector GENERATED ALWAYS AS (
+    setweight(to_tsvector('simple', title), 'A') ||
+    setweight(to_tsvector('simple', COALESCE(abstract, '')), 'B') ||
+    setweight(to_tsvector('simple', COALESCE(array_to_string(mesh_terms, ' '), '')), 'C')
+  ) STORED,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+-- External Q&A (HuggingFace datasets)
+CREATE TABLE IF NOT EXISTS external_qa (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  source_dataset text NOT NULL,
+  question text NOT NULL,
+  answer text NOT NULL,
+  context text,
+  category text,
+  classical_reference text,
+  search_vector tsvector GENERATED ALWAYS AS (
+    setweight(to_tsvector('simple', question), 'A') ||
+    setweight(to_tsvector('simple', COALESCE(answer, '')), 'B') ||
+    setweight(to_tsvector('simple', COALESCE(context, '')), 'C')
+  ) STORED,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+-- Modern medicines (1mg.com)
+CREATE TABLE IF NOT EXISTS modern_medicines (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  medicine_name text NOT NULL,
+  composition text NOT NULL,
+  manufacturer text,
+  uses text NOT NULL,
+  side_effects text,
+  precautions text,
+  drug_interactions text,
+  therapeutic_class text,
+  ayurvedic_alternatives text[],
+  search_vector tsvector GENERATED ALWAYS AS (
+    setweight(to_tsvector('simple', medicine_name), 'A') ||
+    setweight(to_tsvector('simple', COALESCE(composition, '')), 'B') ||
+    setweight(to_tsvector('simple', COALESCE(uses, '')), 'B') ||
+    setweight(to_tsvector('simple', COALESCE(side_effects, '')), 'C')
+  ) STORED,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
+-- Indexes for new tables
+CREATE INDEX IF NOT EXISTS idx_sushruta_chapters_number ON sushruta_chapters(sthana, chapter_number);
+CREATE INDEX IF NOT EXISTS idx_sushruta_chapters_search ON sushruta_chapters USING gin(search_vector);
+CREATE INDEX IF NOT EXISTS idx_clinical_evidence_pmid ON clinical_evidence(pmid);
+CREATE INDEX IF NOT EXISTS idx_clinical_evidence_mesh ON clinical_evidence USING gin(mesh_terms);
+CREATE INDEX IF NOT EXISTS idx_clinical_evidence_search ON clinical_evidence USING gin(search_vector);
+CREATE INDEX IF NOT EXISTS idx_external_qa_source ON external_qa(source_dataset);
+CREATE INDEX IF NOT EXISTS idx_external_qa_search ON external_qa USING gin(search_vector);
+CREATE INDEX IF NOT EXISTS idx_modern_medicines_name ON modern_medicines USING gin(search_vector);
+CREATE INDEX IF NOT EXISTS idx_modern_medicines_class ON modern_medicines(therapeutic_class);
+
+-- RLS for new tables
+ALTER TABLE sushruta_chapters ENABLE ROW LEVEL SECURITY;
+ALTER TABLE clinical_evidence ENABLE ROW LEVEL SECURITY;
+ALTER TABLE external_qa ENABLE ROW LEVEL SECURITY;
+ALTER TABLE modern_medicines ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can read Sushruta chapters" ON sushruta_chapters FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Anyone can read clinical evidence" ON clinical_evidence FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Anyone can read external Q&A" ON external_qa FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Anyone can read modern medicines" ON modern_medicines FOR SELECT USING (auth.role() = 'authenticated');
+
+-- Triggers for new tables
+CREATE TRIGGER update_sushruta_chapters_updated_at BEFORE UPDATE ON sushruta_chapters FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_clinical_evidence_updated_at BEFORE UPDATE ON clinical_evidence FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_external_qa_updated_at BEFORE UPDATE ON external_qa FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_modern_medicines_updated_at BEFORE UPDATE ON modern_medicines FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Extended search_knowledge_base RPC
+DO $$ BEGIN
+  DROP FUNCTION IF EXISTS search_knowledge_base(text, text[], integer) CASCADE;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
+
+create or replace function search_knowledge_base(
+  search_query text,
+  source_tables text[] DEFAULT ARRAY['who_terminology', 'diseases', 'herbs', 'treatments', 'charak_chapters', 'sushruta_chapters', 'clinical_evidence', 'external_qa', 'modern_medicines'],
+  limit_results integer DEFAULT 10
+)
+returns table (
+  source_table text,
+  source_id uuid,
+  title text,
+  content text,
+  rank real
+) as $$
+begin
+  return query
+  SELECT 'who_terminology' AS source_table, id AS source_id, term AS title,
+    COALESCE(definition, '') AS content,
+    ts_rank(search_vector, plainto_tsquery('simple', search_query)) AS rank
+  FROM who_terminology
+  WHERE search_vector @@ plainto_tsquery('simple', search_query) AND 'who_terminology' = ANY(source_tables)
+  UNION ALL
+  SELECT 'diseases', id, name, COALESCE(samprapti, modern_correlation, ''),
+    ts_rank(search_vector, plainto_tsquery('simple', search_query))
+  FROM diseases WHERE search_vector @@ plainto_tsquery('simple', search_query) AND 'diseases' = ANY(source_tables) AND is_active = true
+  UNION ALL
+  SELECT 'herbs', id, name, COALESCE(prabhava, array_to_string(indications, ', '), ''),
+    ts_rank(search_vector, plainto_tsquery('simple', search_query))
+  FROM herbs WHERE search_vector @@ plainto_tsquery('simple', search_query) AND 'herbs' = ANY(source_tables) AND is_active = true
+  UNION ALL
+  SELECT 'treatments', id, name, COALESCE(description, array_to_string(indications, ', '), ''),
+    ts_rank(search_vector, plainto_tsquery('simple', search_query))
+  FROM treatments WHERE search_vector @@ plainto_tsquery('simple', search_query) AND 'treatments' = ANY(source_tables) AND is_active = true
+  UNION ALL
+  SELECT 'charak_chapters', id, chapter_name, COALESCE(summary, ''),
+    ts_rank(search_vector, plainto_tsquery('simple', search_query))
+  FROM charak_chapters WHERE search_vector @@ plainto_tsquery('simple', search_query) AND 'charak_chapters' = ANY(source_tables)
+  UNION ALL
+  SELECT 'sushruta_chapters', id, chapter_name, COALESCE(summary, ''),
+    ts_rank(search_vector, plainto_tsquery('simple', search_query))
+  FROM sushruta_chapters WHERE search_vector @@ plainto_tsquery('simple', search_query) AND 'sushruta_chapters' = ANY(source_tables)
+  UNION ALL
+  SELECT 'clinical_evidence', id, title, COALESCE(abstract, ''),
+    ts_rank(search_vector, plainto_tsquery('simple', search_query))
+  FROM clinical_evidence WHERE search_vector @@ plainto_tsquery('simple', search_query) AND 'clinical_evidence' = ANY(source_tables)
+  UNION ALL
+  SELECT 'external_qa', id, question, COALESCE(answer, ''),
+    ts_rank(search_vector, plainto_tsquery('simple', search_query))
+  FROM external_qa WHERE search_vector @@ plainto_tsquery('simple', search_query) AND 'external_qa' = ANY(source_tables)
+  UNION ALL
+  SELECT 'modern_medicines', id, medicine_name, COALESCE(uses, ''),
+    ts_rank(search_vector, plainto_tsquery('simple', search_query))
+  FROM modern_medicines WHERE search_vector @@ plainto_tsquery('simple', search_query) AND 'modern_medicines' = ANY(source_tables)
+  ORDER BY rank DESC
+  LIMIT limit_results;
 end;
 $$ language plpgsql security definer;

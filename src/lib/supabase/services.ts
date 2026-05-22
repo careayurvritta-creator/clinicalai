@@ -373,7 +373,7 @@ export async function searchKnowledgeBase(query: string, sourceTables?: string[]
   return getSupabase()
     .rpc('search_knowledge_base', {
       search_query: query,
-      source_tables: sourceTables || ['who_terminology', 'diseases', 'herbs', 'treatments', 'charak_chapters'],
+      source_tables: sourceTables || ['who_terminology', 'diseases', 'herbs', 'treatments', 'charak_chapters', 'sushruta_chapters', 'clinical_evidence', 'external_qa', 'modern_medicines'],
       limit_results: limit,
     })
 }

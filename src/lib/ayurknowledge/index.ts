@@ -6,6 +6,10 @@ export * from './treatments'
 export * from './allopathy'
 export * from './charak-samhita'
 export * from './charak'
+export * from './sushruta'
+export * from './clinical-evidence'
+export * from './external-qa'
+export * from './modern-medicines'
 
 import { FUNDAMENTALS, ASHTANGAS } from './fundamentals'
 import { DIAGNOSTIC_METHODS } from './diagnostics'
@@ -15,6 +19,10 @@ import { TREATMENTS, PURVAKARMA, RASAYANA_THERAPIES, PATHYA_APATHYA, DINACHARYA,
 import { ALLOPATHY_INTEGRATION, DRUG_INTERACTION_DATABASE, PRESCRIBING_GUIDELINES, SAFETY_WARNINGS } from './allopathy'
 import { CHARAK_SAMHITA, KEY_CONCEPTS, CHAPTER_SUMMARY } from './charak-samhita'
 import { CHARAK_SAMHITA_COMPLETE, searchCharakSamhita, getCharakTreatmentProtocols, getCharakDiseaseDescriptions } from './charak'
+import { SUSHruta_CHAPTERS } from './sushruta'
+import { CLINICAL_EVIDENCE } from './clinical-evidence'
+import { EXTERNAL_QA } from './external-qa'
+import { MODERN_MEDICINES } from './modern-medicines'
 
 export const AYURVEDA_KNOWLEDGE = {
   fundamentals: FUNDAMENTALS,
@@ -46,7 +54,14 @@ export const AYURVEDA_KNOWLEDGE = {
   charakProtocols: getCharakTreatmentProtocols,
   charakDiseases: getCharakDiseaseDescriptions,
   charakMetadata: { totalChapters: 120, totalSthanas: 8 },
-  whoMetadata: { totalTerms: 3545, source: 'WHO' }
+  whoMetadata: { totalTerms: 3545, source: 'WHO' },
+  // External sources (populated by ingestion scripts)
+  sushrutaChapters: SUSHruta_CHAPTERS,
+  clinicalEvidence: CLINICAL_EVIDENCE,
+  externalQA: EXTERNAL_QA,
+  modernMedicines: MODERN_MEDICINES,
+  sushrutaMetadata: { totalChapters: SUSHruta_CHAPTERS.length, source: 'Sushruta Samhita' },
+  clinicalEvidenceMetadata: { totalPapers: CLINICAL_EVIDENCE.length, source: 'PubMed' },
 }
 
 export function searchKnowledge(query: string): string {
@@ -84,7 +99,18 @@ export function searchKnowledge(query: string): string {
       results.push(`Treatment: ${treatment.name} (${treatment.sanskrit}) - ${treatment.category}`)
     }
   }
-  
+
+  // Search modern medicines
+  for (const med of MODERN_MEDICINES) {
+    if (
+      med.medicineName.toLowerCase().includes(lowerQuery) ||
+      med.composition.toLowerCase().includes(lowerQuery) ||
+      med.uses.toLowerCase().includes(lowerQuery)
+    ) {
+      results.push(`Modern Medicine: ${med.medicineName} - ${med.uses.slice(0, 80)}`)
+    }
+  }
+
   return results.length > 0 ? results.join('\n') : 'No direct matches found. Please try different search terms.'
 }
 

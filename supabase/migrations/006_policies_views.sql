@@ -651,7 +651,7 @@ $$ language plpgsql security definer;
 -- Search knowledge base with full-text search
 create or replace function search_knowledge_base(
   search_query text,
-  source_tables text[] default array['who_terminology', 'diseases', 'herbs', 'treatments', 'charak_chapters'],
+  source_tables text[] default array['who_terminology', 'diseases', 'herbs', 'treatments', 'charak_chapters', 'sushruta_chapters', 'clinical_evidence', 'external_qa', 'modern_medicines'],
   limit_results integer default 10
 )
 returns table (
@@ -667,38 +667,66 @@ begin
   from who_terminology
   where search_vector @@ plainto_tsquery('simple', search_query)
   and 'who_terminology' = any(source_tables)
-  
+
   union all
-  
+
   select 'diseases' as source_table, id as source_id, name as title, coalesce(samprapti, modern_correlation, '') as content, ts_rank(search_vector, plainto_tsquery('simple', search_query)) as rank
   from diseases
   where search_vector @@ plainto_tsquery('simple', search_query)
   and 'diseases' = any(source_tables)
   and is_active = true
-  
+
   union all
-  
+
   select 'herbs' as source_table, id as source_id, name as title, coalesce(prabhava, array_to_string(indications, ', '), '') as content, ts_rank(search_vector, plainto_tsquery('simple', search_query)) as rank
   from herbs
   where search_vector @@ plainto_tsquery('simple', search_query)
   and 'herbs' = any(source_tables)
   and is_active = true
-  
+
   union all
-  
+
   select 'treatments' as source_table, id as source_id, name as title, coalesce(description, array_to_string(indications, ', '), '') as content, ts_rank(search_vector, plainto_tsquery('simple', search_query)) as rank
   from treatments
   where search_vector @@ plainto_tsquery('simple', search_query)
   and 'treatments' = any(source_tables)
   and is_active = true
-  
+
   union all
-  
+
   select 'charak_chapters' as source_table, id as source_id, chapter_name as title, coalesce(summary, '') as content, ts_rank(search_vector, plainto_tsquery('simple', search_query)) as rank
   from charak_chapters
   where search_vector @@ plainto_tsquery('simple', search_query)
   and 'charak_chapters' = any(source_tables)
-  
+
+  union all
+
+  select 'sushruta_chapters' as source_table, id as source_id, chapter_name as title, coalesce(summary, '') as content, ts_rank(search_vector, plainto_tsquery('simple', search_query)) as rank
+  from sushruta_chapters
+  where search_vector @@ plainto_tsquery('simple', search_query)
+  and 'sushruta_chapters' = any(source_tables)
+
+  union all
+
+  select 'clinical_evidence' as source_table, id as source_id, title as title, coalesce(abstract, '') as content, ts_rank(search_vector, plainto_tsquery('simple', search_query)) as rank
+  from clinical_evidence
+  where search_vector @@ plainto_tsquery('simple', search_query)
+  and 'clinical_evidence' = any(source_tables)
+
+  union all
+
+  select 'external_qa' as source_table, id as source_id, question as title, coalesce(answer, '') as content, ts_rank(search_vector, plainto_tsquery('simple', search_query)) as rank
+  from external_qa
+  where search_vector @@ plainto_tsquery('simple', search_query)
+  and 'external_qa' = any(source_tables)
+
+  union all
+
+  select 'modern_medicines' as source_table, id as source_id, medicine_name as title, coalesce(uses, '') as content, ts_rank(search_vector, plainto_tsquery('simple', search_query)) as rank
+  from modern_medicines
+  where search_vector @@ plainto_tsquery('simple', search_query)
+  and 'modern_medicines' = any(source_tables)
+
   order by rank desc
   limit limit_results;
 end;
@@ -706,8 +734,8 @@ $$ language plpgsql security definer;
 
 -- Semantic search using vector embeddings
 create or replace function semantic_search(
-  query_embedding vector(1536),
-  match_threshold float default 0.8,
+  query_embedding vector(1024),
+  match_threshold float default 0.5,
   match_count int default 10,
   source_table_filter text default null
 )
@@ -717,6 +745,7 @@ returns table (
   source_id uuid,
   source_title text,
   content text,
+  metadata jsonb,
   similarity float
 ) as $$
 begin
@@ -727,6 +756,7 @@ begin
     ke.source_id,
     ke.source_title,
     ke.content,
+    ke.metadata,
     1 - (ke.embedding <=> query_embedding) as similarity
   from knowledge_embeddings ke
   where 1 - (ke.embedding <=> query_embedding) > match_threshold

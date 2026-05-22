@@ -542,6 +542,300 @@ async function chunkWHO(): Promise<Chunk[]> {
   return chunks
 }
 
+// ─── Chunk Sushruta Samhita ──────────────────────────────────────────────────
+
+interface SushrutaChapterLike {
+  id: string
+  sthana: string
+  chapterNumber: number
+  name: string
+  summary?: string
+  keyConcepts?: string[]
+  shlokas?: Array<{ number: string; translation: string; commentary?: string }>
+  topics?: Array<{ title: string; content: string }>
+  doshaDiscussion?: string[]
+  treatmentProtocols?: Array<{ condition: string; treatment: string; herbs: string[] }>
+  surgicalProcedures?: Array<{ name: string; sanskrit: string; indication: string; procedure: string[] }>
+  anatomyDescriptions?: Array<{ structure: string; description: string }>
+  clinicalApplications?: string[]
+}
+
+function chunkSushrutaChapter(chapter: SushrutaChapterLike): Chunk[] {
+  const chunks: Chunk[] = []
+  const baseMeta = { sthana: chapter.sthana, chapter: chapter.chapterNumber, name: chapter.name }
+  const sourceTitle = `Sushruta Samhita ${chapter.sthana} Ch.${chapter.chapterNumber}: ${chapter.name}`
+
+  // Summary
+  if (chapter.summary) {
+    chunks.push({
+      content: `${sourceTitle}\n\n${chapter.summary}`,
+      metadata: { ...baseMeta, section: 'summary' },
+      sourceTable: 'sushruta_chapters',
+      sourceId: deterministicUuid(`sushruta:${chapter.id}:summary`),
+      sourceTitle,
+      contentType: 'description',
+    })
+  }
+
+  // Key concepts — batch 6 per chunk
+  if (chapter.keyConcepts?.length) {
+    for (const batch of batchItems(chapter.keyConcepts, 6)) {
+      chunks.push({
+        content: `${sourceTitle} - Key Concepts:\n${batch.map(c => `- ${c}`).join('\n')}`,
+        metadata: { ...baseMeta, section: 'keyConcepts' },
+        sourceTable: 'sushruta_chapters',
+        sourceId: deterministicUuid(`sushruta:${chapter.id}:keyConcepts:${batch[0].slice(0, 30)}`),
+        sourceTitle,
+        contentType: 'concept',
+      })
+    }
+  }
+
+  // Shlokas — batch 2 per chunk
+  if (chapter.shlokas?.length) {
+    for (const batch of batchItems(chapter.shlokas, 2)) {
+      const text = batch.map(s =>
+        `[${s.number}] ${s.translation}${s.commentary ? ` -- ${s.commentary}` : ''}`
+      ).join('\n\n')
+      chunks.push({
+        content: `${sourceTitle} - Verses:\n${text}`,
+        metadata: { ...baseMeta, section: 'shlokas' },
+        sourceTable: 'sushruta_chapters',
+        sourceId: deterministicUuid(`sushruta:${chapter.id}:shlokas:${batch[0].number}`),
+        sourceTitle,
+        contentType: 'concept',
+      })
+    }
+  }
+
+  // Topics
+  if (chapter.topics?.length) {
+    for (const topic of chapter.topics) {
+      chunks.push({
+        content: `${sourceTitle} - ${topic.title}: ${topic.content}`,
+        metadata: { ...baseMeta, section: 'topics', topicTitle: topic.title },
+        sourceTable: 'sushruta_chapters',
+        sourceId: deterministicUuid(`sushruta:${chapter.id}:topic:${topic.title.slice(0, 40)}`),
+        sourceTitle,
+        contentType: 'description',
+      })
+    }
+  }
+
+  // Surgical procedures (Sushruta-specific)
+  if (chapter.surgicalProcedures?.length) {
+    for (const proc of chapter.surgicalProcedures) {
+      chunks.push({
+        content: `${sourceTitle} - Surgical Procedure: ${proc.name} (${proc.sanskrit})\nIndication: ${proc.indication}\nProcedure: ${proc.procedure.join('; ')}`,
+        metadata: { ...baseMeta, section: 'surgicalProcedure', procedure: proc.name },
+        sourceTable: 'sushruta_chapters',
+        sourceId: deterministicUuid(`sushruta:${chapter.id}:procedure:${proc.name.slice(0, 40)}`),
+        sourceTitle,
+        contentType: 'procedure',
+      })
+    }
+  }
+
+  // Anatomy descriptions (Sushruta-specific)
+  if (chapter.anatomyDescriptions?.length) {
+    for (const desc of chapter.anatomyDescriptions) {
+      chunks.push({
+        content: `${sourceTitle} - Anatomy: ${desc.structure}\n${desc.description}`,
+        metadata: { ...baseMeta, section: 'anatomy', structure: desc.structure },
+        sourceTable: 'sushruta_chapters',
+        sourceId: deterministicUuid(`sushruta:${chapter.id}:anatomy:${desc.structure.slice(0, 40)}`),
+        sourceTitle,
+        contentType: 'description',
+      })
+    }
+  }
+
+  // Treatment protocols
+  if (chapter.treatmentProtocols?.length) {
+    for (const protocol of chapter.treatmentProtocols) {
+      chunks.push({
+        content: `${sourceTitle} - Treatment: ${protocol.condition}\n${protocol.treatment}\nHerbs: ${protocol.herbs.join(', ')}`,
+        metadata: { ...baseMeta, section: 'treatmentProtocols', condition: protocol.condition },
+        sourceTable: 'sushruta_chapters',
+        sourceId: deterministicUuid(`sushruta:${chapter.id}:protocol:${protocol.condition.slice(0, 40)}`),
+        sourceTitle,
+        contentType: 'procedure',
+      })
+    }
+  }
+
+  // Dosha discussion — batch 4 per chunk
+  if (chapter.doshaDiscussion?.length) {
+    for (const batch of batchItems(chapter.doshaDiscussion, 4)) {
+      chunks.push({
+        content: `${sourceTitle} - Dosha Discussion:\n${batch.map(d => `- ${d}`).join('\n')}`,
+        metadata: { ...baseMeta, section: 'doshaDiscussion' },
+        sourceTable: 'sushruta_chapters',
+        sourceId: deterministicUuid(`sushruta:${chapter.id}:dosha:${batch[0].slice(0, 30)}`),
+        sourceTitle,
+        contentType: 'concept',
+      })
+    }
+  }
+
+  // Clinical applications — batch 4 per chunk
+  if (chapter.clinicalApplications?.length) {
+    for (const batch of batchItems(chapter.clinicalApplications, 4)) {
+      chunks.push({
+        content: `${sourceTitle} - Clinical Applications:\n${batch.map(a => `- ${a}`).join('\n')}`,
+        metadata: { ...baseMeta, section: 'clinicalApplications' },
+        sourceTable: 'sushruta_chapters',
+        sourceId: deterministicUuid(`sushruta:${chapter.id}:clinical:${batch[0].slice(0, 30)}`),
+        sourceTitle,
+        contentType: 'indication',
+      })
+    }
+  }
+
+  return chunks
+}
+
+// ─── Chunk Clinical Evidence (from Supabase) ─────────────────────────────────
+
+interface ClinicalEvidenceRow {
+  pmid: string
+  title: string
+  journal?: string
+  publication_date?: string
+  abstract?: string
+  study_type?: string
+  evidence_level?: string
+  ayurveda_relevance?: string
+  herbs_mentioned?: string[]
+  conditions_mentioned?: string[]
+  mesh_terms?: string[]
+}
+
+function chunkClinicalEvidence(e: ClinicalEvidenceRow): Chunk[] {
+  const chunks: Chunk[] = []
+  const prefix = `Clinical Evidence [PMID: ${e.pmid}]:`
+
+  // Chunk 1: Abstract + relevance
+  const abstractText = e.abstract || 'No abstract available'
+  chunks.push({
+    content: `${prefix} ${e.title}\nJournal: ${e.journal || 'Unknown'} (${e.publication_date || 'N/A'})\nStudy Type: ${e.study_type || 'N/A'} | Evidence Level: ${e.evidence_level || 'N/A'}\nAbstract: ${abstractText}\nAyurveda Relevance: ${e.ayurveda_relevance || 'Ayurveda research'}`,
+    metadata: { pmid: e.pmid, studyType: e.study_type, evidenceLevel: e.evidence_level, section: 'abstract' },
+    sourceTable: 'clinical_evidence',
+    sourceId: deterministicUuid(`clinical_evidence:${e.pmid}:abstract`),
+    sourceTitle: e.title,
+    contentType: 'description',
+  })
+
+  // Chunk 2: Cross-references (herbs, conditions, MeSH)
+  const refs = []
+  if (e.herbs_mentioned?.length) refs.push(`Herbs: ${e.herbs_mentioned.join(', ')}`)
+  if (e.conditions_mentioned?.length) refs.push(`Conditions: ${e.conditions_mentioned.join(', ')}`)
+  if (e.mesh_terms?.length) refs.push(`MeSH Terms: ${e.mesh_terms.join(', ')}`)
+  if (refs.length > 0) {
+    chunks.push({
+      content: `${prefix} Cross-references.\n${refs.join('\n')}`,
+      metadata: { pmid: e.pmid, herbs: e.herbs_mentioned, conditions: e.conditions_mentioned, section: 'references' },
+      sourceTable: 'clinical_evidence',
+      sourceId: deterministicUuid(`clinical_evidence:${e.pmid}:refs`),
+      sourceTitle: e.title,
+      contentType: 'concept',
+    })
+  }
+
+  return chunks
+}
+
+// ─── Chunk External Q&A (from Supabase) ──────────────────────────────────────
+
+interface ExternalQARow {
+  id: string
+  source_dataset: string
+  question: string
+  answer: string
+  context?: string
+  category?: string
+}
+
+function chunkExternalQA(qa: ExternalQARow): Chunk {
+  const prefix = qa.source_dataset === 'sushruta_qa' ? 'Sushruta Samhita Q&A' : 'Ayurveda Q&A'
+  return {
+    content: `${prefix}: ${qa.question}\nAnswer: ${qa.answer}${qa.context ? `\nContext: ${qa.context}` : ''}`,
+    metadata: { source: qa.source_dataset, category: qa.category, section: 'qa' },
+    sourceTable: 'external_qa',
+    sourceId: deterministicUuid(`external_qa:${qa.source_dataset}:${qa.id}`),
+    sourceTitle: qa.question.slice(0, 100),
+    contentType: 'description',
+  }
+}
+
+// ─── Chunk Modern Medicines (from Supabase) ──────────────────────────────────
+
+interface ModernMedicineRow {
+  id: string
+  medicine_name: string
+  composition: string
+  uses: string
+  side_effects?: string
+  precautions?: string
+  drug_interactions?: string
+  ayurvedic_alternatives?: string[]
+  therapeutic_class?: string
+}
+
+function chunkModernMedicine(med: ModernMedicineRow): Chunk[] {
+  const chunks: Chunk[] = []
+  const prefix = `Modern Medicine: ${med.medicine_name}`
+
+  // Chunk 1: Uses + composition
+  chunks.push({
+    content: `${prefix}\nComposition: ${med.composition}\nUses: ${med.uses}\nTherapeutic Class: ${med.therapeutic_class || 'N/A'}`,
+    metadata: { id: med.id, section: 'uses' },
+    sourceTable: 'modern_medicines',
+    sourceId: deterministicUuid(`modern_medicines:${med.id}:uses`),
+    sourceTitle: med.medicine_name,
+    contentType: 'indication',
+  })
+
+  // Chunk 2: Safety + Ayurvedic alternatives
+  const safetyParts = []
+  if (med.side_effects) safetyParts.push(`Side Effects: ${med.side_effects}`)
+  if (med.precautions) safetyParts.push(`Precautions: ${med.precautions}`)
+  if (med.drug_interactions) safetyParts.push(`Drug Interactions: ${med.drug_interactions}`)
+  if (med.ayurvedic_alternatives?.length) safetyParts.push(`Ayurvedic Alternatives: ${med.ayurvedic_alternatives.join(', ')}`)
+
+  if (safetyParts.length > 0) {
+    chunks.push({
+      content: `${prefix} Safety Profile.\n${safetyParts.join('\n')}`,
+      metadata: { id: med.id, section: 'safety' },
+      sourceTable: 'modern_medicines',
+      sourceId: deterministicUuid(`modern_medicines:${med.id}:safety`),
+      sourceTitle: med.medicine_name,
+      contentType: 'description',
+    })
+  }
+
+  return chunks
+}
+
+// ─── Load External Sources from Supabase ─────────────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function loadSupabaseSources(supabase: any) {
+  const [sushrutaResult, clinicalResult, qaResult, medicineResult] = await Promise.all([
+    supabase.from('sushruta_chapters').select('*').limit(5000),
+    supabase.from('clinical_evidence').select('*').limit(10000),
+    supabase.from('external_qa').select('*').limit(20000),
+    supabase.from('modern_medicines').select('*').limit(20000),
+  ])
+
+  return {
+    sushrutaChapters: sushrutaResult.data || [],
+    clinicalEvidence: clinicalResult.data || [],
+    externalQA: qaResult.data || [],
+    modernMedicines: medicineResult.data || [],
+  }
+}
+
 // ─── Embedding Generation ────────────────────────────────────────────────────
 async function generateEmbeddings(openai: OpenAI, texts: string[]): Promise<number[][]> {
   const allEmbeddings: number[][] = []
@@ -701,6 +995,29 @@ async function main() {
   const whoChunks = await chunkWHO()
   console.log(`  ${whoChunks.length} chunks`)
 
+  // ── External sources (from Supabase tables, populated by ingestion scripts) ──
+  console.log('Loading external sources from Supabase...')
+  const externalSources = await loadSupabaseSources(supabase)
+
+  console.log('Chunking Sushruta chapters...')
+  const sushrutaChunks: Chunk[] = []
+  for (const chapter of externalSources.sushrutaChapters) {
+    sushrutaChunks.push(...chunkSushrutaChapter(chapter))
+  }
+  console.log(`  ${sushrutaChunks.length} chunks from ${externalSources.sushrutaChapters.length} chapters`)
+
+  console.log('Chunking clinical evidence...')
+  const clinicalChunks = externalSources.clinicalEvidence.flatMap(chunkClinicalEvidence)
+  console.log(`  ${clinicalChunks.length} chunks from ${externalSources.clinicalEvidence.length} papers`)
+
+  console.log('Chunking external Q&A...')
+  const qaChunks = externalSources.externalQA.map(chunkExternalQA)
+  console.log(`  ${qaChunks.length} chunks from ${externalSources.externalQA.length} Q&A pairs`)
+
+  console.log('Chunking modern medicines...')
+  const medicineChunks = externalSources.modernMedicines.flatMap(chunkModernMedicine)
+  console.log(`  ${medicineChunks.length} chunks from ${externalSources.modernMedicines.length} medicines`)
+
   const allChunks = [
     ...charakChunks,
     ...diseaseChunks,
@@ -710,6 +1027,10 @@ async function main() {
     ...allopathyChunks,
     ...fundamentalChunks,
     ...whoChunks,
+    ...sushrutaChunks,
+    ...clinicalChunks,
+    ...qaChunks,
+    ...medicineChunks,
   ]
 
   // Split oversized chunks to stay within 512-token limit
@@ -731,6 +1052,10 @@ async function main() {
     console.log(`  Allopathy: ${allopathyChunks.length}`)
     console.log(`  Fundamentals: ${fundamentalChunks.length}`)
     console.log(`  WHO terms: ${whoChunks.length}`)
+    console.log(`  Sushruta chapters: ${sushrutaChunks.length}`)
+    console.log(`  Clinical evidence: ${clinicalChunks.length}`)
+    console.log(`  External Q&A: ${qaChunks.length}`)
+    console.log(`  Modern medicines: ${medicineChunks.length}`)
     console.log(`  After splitting: ${sizedChunks.length}`)
     return
   }
