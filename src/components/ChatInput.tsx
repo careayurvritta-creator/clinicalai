@@ -21,7 +21,6 @@ export function ChatInput() {
   const addMessage = useChatStore((state) => state.addMessage)
   const updateLastMessage = useChatStore((state) => state.updateLastMessage)
   const setStreaming = useChatStore((state) => state.setStreaming)
-  const appendToCanvas = useChatStore((state) => state.appendToCanvas)
   const chatInputDraft = useChatStore((state) => state.chatInputDraft)
   const setChatInputDraft = useChatStore((state) => state.setChatInputDraft)
 
@@ -255,7 +254,6 @@ export function ChatInput() {
       }
 
       updateLastMessage(fullContent, 'complete')
-      appendToCanvas(fullContent)
     } catch (error) {
       console.error('Chat error:', error)
       updateLastMessage(

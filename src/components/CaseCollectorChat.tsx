@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useChatStore } from '@/lib/store'
 import { generateId } from '@/lib/utils'
 import type { CaseData, ChiefComplaint } from '@/lib/types'
@@ -20,10 +20,15 @@ interface Question {
   severityScale?: { min: number; max: number; default: string }
 }
 
+interface FollowupQuestion {
+  question: string
+  rationale: string
+  category: string
+}
+
 export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollectorChatProps) {
   const addMessage = useChatStore((state) => state.addMessage)
   const setCanvasContent = useChatStore((state) => state.setCanvasContent)
-  const appendToCanvas = useChatStore((state) => state.appendToCanvas)
 
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -33,6 +38,12 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null)
   const [progress, setProgress] = useState({ current: 0, total: 30, percentage: 0 })
   const [scaleValue, setScaleValue] = useState(5)
+
+  // Follow-up questions state
+  const [followupQuestions, setFollowupQuestions] = useState<FollowupQuestion[]>([])
+  const [followupAnswers, setFollowupAnswers] = useState<Record<string, string>>({})
+  const [followupStep, setFollowupStep] = useState(0)
+  const [isFollowupPhase, setIsFollowupPhase] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -90,6 +101,139 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
     }
   }
 
+  const generateFollowup = async () => {
+    setIsLoading(true)
+    addMessage({
+      id: generateId(),
+      role: 'assistant',
+      content: 'Analyzing case data to identify critical follow-up questions...',
+      timestamp: Date.now(),
+      status: 'complete',
+    })
+
+    try {
+      const response = await fetch('/api/intake', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'generateFollowup',
+          caseData,
+        }),
+      })
+
+      if (!response.ok) throw new Error(`Server error: ${response.status}`)
+
+      const data = await response.json()
+
+      if (data.type === 'followup_questions' && data.questions?.length > 0) {
+        setFollowupQuestions(data.questions)
+        setIsFollowupPhase(true)
+        setFollowupStep(0)
+
+        addMessage({
+          id: generateId(),
+          role: 'assistant',
+          content: `I have ${data.questions.length} targeted follow-up questions to improve diagnostic accuracy. These are based on the specific details of this case.`,
+          timestamp: Date.now(),
+          status: 'complete',
+        })
+
+        // Show first question
+        addMessage({
+          id: generateId(),
+          role: 'assistant',
+          content: `**${data.questions[0].question}**\n\n_${data.questions[0].rationale}_`,
+          timestamp: Date.now(),
+          status: 'complete',
+        })
+      } else {
+        // No follow-up questions, proceed to confirmation
+        setShowDiagnosis(true)
+        addMessage({
+          id: generateId(),
+          role: 'assistant',
+          content: 'All information collected. Ready to generate diagnosis.',
+          timestamp: Date.now(),
+          status: 'complete',
+        })
+      }
+
+      if (data.caseData) setCaseData(data.caseData)
+    } catch {
+      addMessage({
+        id: generateId(),
+        role: 'assistant',
+        content: 'Error generating follow-up questions. Proceeding to diagnosis.',
+        timestamp: Date.now(),
+        status: 'error',
+      })
+      setShowDiagnosis(true)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const sendFollowupAnswer = async (answer: string) => {
+    if (!answer.trim() || followupQuestions.length === 0) return
+
+    const currentQ = followupQuestions[followupStep]
+    const newAnswers = { ...followupAnswers, [currentQ.question]: answer }
+    setFollowupAnswers(newAnswers)
+
+    addMessage({
+      id: generateId(),
+      role: 'user',
+      content: answer,
+      timestamp: Date.now(),
+      status: 'complete',
+    })
+
+    const nextStep = followupStep + 1
+    if (nextStep < followupQuestions.length) {
+      setFollowupStep(nextStep)
+      const nextQ = followupQuestions[nextStep]
+      addMessage({
+        id: generateId(),
+        role: 'assistant',
+        content: `**${nextQ.question}**\n\n_${nextQ.rationale}_`,
+        timestamp: Date.now(),
+        status: 'complete',
+      })
+    } else {
+      // All follow-up questions answered, send to API
+      setIsLoading(true)
+      try {
+        const response = await fetch('/api/intake', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'answerFollowup',
+            caseData,
+            followupAnswers: newAnswers,
+          }),
+        })
+
+        const data = await response.json()
+        if (data.caseData) setCaseData(data.caseData)
+
+        setIsFollowupPhase(false)
+        setShowDiagnosis(true)
+        addMessage({
+          id: generateId(),
+          role: 'assistant',
+          content: 'Follow-up information recorded. Ready to generate diagnosis.',
+          timestamp: Date.now(),
+          status: 'complete',
+        })
+      } catch {
+        setIsFollowupPhase(false)
+        setShowDiagnosis(true)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+  }
+
   const generateTreatmentProtocol = async () => {
     setIsLoading(true)
     addMessage({
@@ -105,17 +249,6 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
       const complaintsText = complaints.map(c => c.complaint).join(', ')
       const duration = complaints[0]?.duration || ''
       const associatedSymptoms = complaints.flatMap(c => c.associatedSymptoms || []).join(', ')
-
-      const progressMsgId = generateId()
-      setTimeout(() => {
-        addMessage({
-          id: progressMsgId,
-          role: 'assistant',
-          content: 'Analyzing research papers with AI... This may take a moment.',
-          timestamp: Date.now(),
-          status: 'complete',
-        })
-      }, 3000)
 
       const response = await fetch('/api/treatment-protocol', {
         method: 'POST',
@@ -135,6 +268,17 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
             mootra: caseData.mootra || '',
             mala: caseData.mala || '',
             jivha: caseData.jivha || '',
+            drik: caseData.drik || '',
+            shabda: caseData.shabda || '',
+            sparsh: caseData.sparsh || '',
+            aakriti: caseData.aakriti || '',
+            satva: caseData.satva || '',
+            aharaShakti: caseData.aharaShakti || '',
+            vyayamaShakti: caseData.vyayamaShakti || '',
+            occupation: caseData.occupation || '',
+            comorbidities: caseData.comorbidities?.join(', ') || '',
+            medications: caseData.ongoingMedications || '',
+            allergies: caseData.allergies || '',
             complaintsArray: complaints.map(c => ({
               complaint: c.complaint,
               duration: c.duration || '',
@@ -153,15 +297,80 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
 
       if (!response.ok) throw new Error(`Server error: ${response.status}`)
 
-      const data = await response.json()
+      // Handle SSE streaming response
+      const reader = response.body?.getReader()
+      if (!reader) throw new Error('No response body')
 
-      if (data.protocol) {
-        appendToCanvas(data.protocol)
+      const decoder = new TextDecoder()
+      let fullProtocol = ''
+      let metadata: { paperCount?: number; webCount?: number; ragCount?: number } = {}
+      let buffer = ''
 
-        const paperCount = data.paperCount || 0
-        const researchMsg = paperCount > 0
-          ? `Treatment protocol generated with ${paperCount} research papers analyzed from PubMed.`
-          : 'Treatment protocol generated. Limited research papers found for this condition.'
+      // Clear canvas for new protocol
+      setCanvasContent('')
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || '' // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue
+          const data = line.slice(6).trim()
+
+          if (data === '[DONE]') break
+
+          try {
+            const parsed = JSON.parse(data)
+
+            if (parsed.type === 'metadata') {
+              metadata = parsed
+              const infoParts: string[] = []
+              if (parsed.paperCount > 0) infoParts.push(`${parsed.paperCount} PubMed papers`)
+              if (parsed.webCount > 0) infoParts.push(`${parsed.webCount} web sources`)
+              if (parsed.ragCount > 0) infoParts.push(`${parsed.ragCount} knowledge base entries`)
+
+              if (infoParts.length > 0) {
+                addMessage({
+                  id: generateId(),
+                  role: 'assistant',
+                  content: `Research gathered: ${infoParts.join(', ')}. Now generating comprehensive treatment protocol...`,
+                  timestamp: Date.now(),
+                  status: 'complete',
+                })
+              }
+            } else if (parsed.content) {
+              fullProtocol += parsed.content
+              // Update canvas progressively with accumulated content
+              setCanvasContent(fullProtocol)
+            } else if (parsed.error) {
+              throw new Error(parsed.error)
+            }
+          } catch (parseErr) {
+            // Skip non-JSON lines
+            if (parseErr instanceof Error && parseErr.message !== 'Stream interrupted') {
+              console.warn('SSE parse error:', parseErr)
+            }
+          }
+        }
+      }
+
+      if (fullProtocol.length > 0) {
+        // Set final complete protocol
+        setCanvasContent(fullProtocol)
+
+        const paperCount = metadata.paperCount || 0
+        const summaryParts: string[] = []
+        if (paperCount > 0) summaryParts.push(`${paperCount} research papers from PubMed`)
+        if (metadata.webCount && metadata.webCount > 0) summaryParts.push(`${metadata.webCount} web sources`)
+        if (metadata.ragCount && metadata.ragCount > 0) summaryParts.push(`${metadata.ragCount} knowledge base references`)
+
+        const researchMsg = summaryParts.length > 0
+          ? `Treatment protocol generated. Evidence base: ${summaryParts.join(', ')}.`
+          : 'Treatment protocol generated.'
 
         addMessage({
           id: generateId(),
@@ -197,8 +406,6 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
       timestamp: Date.now(),
       status: 'complete',
     })
-
-    // Server handles all step-to-field mapping and returns updated caseData
 
     try {
       const response = await fetch('/api/intake', {
@@ -247,7 +454,8 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
           timestamp: Date.now(),
           status: 'complete',
         })
-        setShowDiagnosis(true)
+        // Trigger AI follow-up questions before showing diagnosis
+        generateFollowup()
       }
 
       if (data.progress) {
@@ -330,8 +538,38 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
   }, [])
 
   const handleSuggestionClick = (suggestion: string) => {
-    sendAnswer(suggestion)
+    if (isFollowupPhase) {
+      sendFollowupAnswer(suggestion)
+    } else {
+      sendAnswer(suggestion)
+    }
   }
+
+  const handleInputSubmit = () => {
+    if (!input.trim()) return
+    if (isFollowupPhase) {
+      sendFollowupAnswer(input)
+    } else {
+      sendAnswer(input)
+    }
+    setInput('')
+  }
+
+  const skipFollowup = () => {
+    setIsFollowupPhase(false)
+    setShowDiagnosis(true)
+    addMessage({
+      id: generateId(),
+      role: 'assistant',
+      content: 'Skipping follow-up questions. Ready to generate diagnosis.',
+      timestamp: Date.now(),
+      status: 'complete',
+    })
+  }
+
+  const currentFollowupQ = isFollowupPhase && followupQuestions.length > 0
+    ? followupQuestions[followupStep]
+    : null
 
   return (
     <div className="flex flex-col h-full">
@@ -374,7 +612,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
           </div>
         ))}
 
-        {showDiagnosis && !diagnosisShown && (
+        {showDiagnosis && !diagnosisShown && !isFollowupPhase && (
           <div className="mt-4 flex flex-wrap gap-2">
             <button
               onClick={handleShowDiagnosis}
@@ -385,7 +623,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
           </div>
         )}
 
-        {diagnosisShown && (
+        {diagnosisShown && !isFollowupPhase && (
           <div className="mt-4 flex flex-wrap gap-2">
             <button
               onClick={handleConfirmDiagnosis}
@@ -421,9 +659,26 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Input area — shown during intake questions and follow-up phase */}
       {!diagnosisShown && messages.length > 0 && (
         <div className="border-t border-border p-3 bg-muted/30">
-          {currentQuestion?.options && currentQuestion.options.length > 0 && (
+          {/* Follow-up progress indicator */}
+          {isFollowupPhase && followupQuestions.length > 0 && (
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-muted-foreground">
+                Follow-up question {followupStep + 1} of {followupQuestions.length}
+              </span>
+              <button
+                onClick={skipFollowup}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Skip follow-up
+              </button>
+            </div>
+          )}
+
+          {/* Options buttons */}
+          {currentQuestion?.options && currentQuestion.options.length > 0 && !isFollowupPhase && (
             <div className="flex flex-wrap gap-2 mb-2">
               {currentQuestion.options.map((opt) => (
                 <button
@@ -438,7 +693,8 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
             </div>
           )}
 
-          {currentQuestion?.type === 'scale' && (
+          {/* Scale input */}
+          {currentQuestion?.type === 'scale' && !isFollowupPhase && (
             <div className="mb-3">
               <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
                 <span>{currentQuestion.severityScale?.min || 1} - Mild</span>
@@ -463,9 +719,14 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
             </div>
           )}
 
-          {currentQuestion?.suggestions && currentQuestion.suggestions.length > 0 && (
+          {/* Suggestions */}
+          {((currentQuestion?.suggestions && currentQuestion.suggestions.length > 0 && !isFollowupPhase) ||
+            (currentFollowupQ && !currentQuestion?.options?.length)) && (
             <div className="flex flex-wrap gap-2 mb-2">
-              {currentQuestion.suggestions.map((suggestion, i) => (
+              {(isFollowupPhase && currentFollowupQ
+                ? getCategorySuggestions(currentFollowupQ.category)
+                : currentQuestion?.suggestions || []
+              ).map((suggestion, i) => (
                 <button
                   key={i}
                   onClick={() => handleSuggestionClick(suggestion)}
@@ -478,7 +739,8 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
             </div>
           )}
 
-          {(!currentQuestion?.options || currentQuestion.options.length === 0) && currentQuestion?.type !== 'scale' && (
+          {/* Text input */}
+          {((!currentQuestion?.options || currentQuestion.options.length === 0) && currentQuestion?.type !== 'scale') || isFollowupPhase ? (
             <div className="flex gap-2">
               <input
                 type="text"
@@ -486,30 +748,24 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && input.trim()) {
-                    sendAnswer(input)
-                    setInput('')
+                    handleInputSubmit()
                   }
                 }}
-                placeholder="Type your answer..."
+                placeholder={isFollowupPhase ? 'Type your answer...' : 'Type your answer...'}
                 className="flex-1 px-4 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-primary"
                 disabled={isLoading}
               />
               <button
-                onClick={() => {
-                  if (input.trim()) {
-                    sendAnswer(input)
-                    setInput('')
-                  }
-                }}
+                onClick={handleInputSubmit}
                 disabled={!input.trim() || isLoading}
                 className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
               >
                 Send
               </button>
             </div>
-          )}
+          ) : null}
 
-          {currentStep >= 5 && !showDiagnosis && (
+          {currentStep >= 5 && !showDiagnosis && !isFollowupPhase && (
             <button
               onClick={handleShowDiagnosis}
               className="mt-2 w-full px-4 py-2 text-sm bg-muted border border-border rounded-lg hover:border-primary/50 transition-colors"
@@ -521,4 +777,23 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
       )}
     </div>
   )
+}
+
+function getCategorySuggestions(category: string): string[] {
+  switch (category) {
+    case 'symptom_detail':
+      return ['Worse in morning', 'Worse at night', 'Constant', 'Intermittent', 'Getting worse', 'Stable']
+    case 'aggravating_factor':
+      return ['Stress', 'Cold weather', 'Hot weather', 'Certain foods', 'Physical activity', 'Sitting long']
+    case 'medical_history':
+      return ['Previous surgery', 'Chronic illness', 'Hospitalization', 'Family history', 'None', 'Not sure']
+    case 'lifestyle':
+      return ['Sedentary', 'Active', 'Night shift worker', 'Travel frequently', 'High stress job', 'Regular exercise']
+    case 'diagnostic_clarification':
+      return ['Yes', 'No', 'Sometimes', 'Not sure', 'Need more tests', 'Under treatment']
+    case 'treatment_history':
+      return ['No previous treatment', 'Ayurvedic treatment', 'Allopathic treatment', 'Home remedies', 'Both Ayurvedic and Allopathic', 'Physiotherapy']
+    default:
+      return ['Yes', 'No', 'Not sure', 'Need more information']
+  }
 }

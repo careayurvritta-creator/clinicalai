@@ -8,9 +8,6 @@ import { useEffect, useRef } from 'react'
 
 export function CanvasPanel() {
   const canvasContent = useChatStore((state) => state.canvasContent)
-  const completedAssistantCount = useChatStore(
-    (state) => state.messages.filter(m => m.role === 'assistant' && m.status === 'complete').length
-  )
   const isStreaming = useChatStore((state) => state.isStreaming)
   const contentEndRef = useRef<HTMLDivElement>(null)
 
@@ -29,10 +26,24 @@ export function CanvasPanel() {
   return (
     <div className="flex flex-col h-full bg-panel-canvas">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <h2 className="text-sm font-semibold text-foreground">Canvas</h2>
-        <span className="text-xs text-muted-foreground">
-          {completedAssistantCount} response{completedAssistantCount !== 1 ? 's' : ''}
-        </span>
+        <div className="flex items-center gap-2">
+          {/* Mobile back button */}
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('canvas:back-to-chat'))}
+            className="md:hidden p-1 -ml-1 rounded-md hover:bg-secondary transition-colors"
+            aria-label="Back to chat"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <h2 className="text-sm font-semibold text-foreground">Output</h2>
+        </div>
+        {hasContent && (
+          <span className="text-xs text-muted-foreground truncate max-w-[200px]">
+            {canvasContent.length > 2000 ? 'Treatment Protocol' : 'Diagnosis'}
+          </span>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto scrollbar-thin">
@@ -43,9 +54,9 @@ export function CanvasPanel() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-foreground mb-2">Canvas</h3>
+            <h3 className="text-lg font-medium text-foreground mb-2">Output Canvas</h3>
             <p className="text-sm text-muted-foreground max-w-md">
-              Formatted AI responses and treatment protocols will appear here as you chat.
+              Diagnosis results and treatment protocols will appear here as formatted documents.
             </p>
             {isStreaming && (
               <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">

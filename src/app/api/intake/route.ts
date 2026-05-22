@@ -7,9 +7,11 @@ import { sanitizeInput } from '@/lib/utils'
 import { searchKnowledge, AYURVEDA_KNOWLEDGE } from '@/lib/ayurknowledge'
 import { analyzeProvisionalDiagnosis, formatDiagnosisForDisplay } from '@/lib/diagnosis-engine'
 import { createServerClient } from '@/lib/supabase/client'
+import { getNvidiaClient } from '@/lib/nvidia-client'
+import { buildFollowupPrompt } from '@/lib/treatment-prompts'
 
 const intakeRequestSchema = z.object({
-  action: z.enum(['start', 'answer', 'getQuestion', 'showDiagnosis', 'reset']),
+  action: z.enum(['start', 'answer', 'getQuestion', 'showDiagnosis', 'reset', 'generateFollowup', 'answerFollowup']),
   answer: z.string().optional(),
   currentStep: z.number().optional(),
   caseData: z.object({
@@ -62,10 +64,11 @@ const intakeRequestSchema = z.object({
     provisionalReasoning: z.string().optional(),
   }).optional(),
   pendingComplaints: z.array(z.string()).optional(),
+  followupAnswers: z.record(z.string(), z.string()).optional(),
 })
 
 interface IntakeResponse {
-  type: 'question' | 'diagnosis' | 'confirmation' | 'welcome'
+  type: 'question' | 'diagnosis' | 'confirmation' | 'welcome' | 'followup_questions'
   question?: {
     id: string
     field: string
@@ -75,6 +78,7 @@ interface IntakeResponse {
     suggestions?: string[]
     severityScale?: { min: number; max: number; default: string }
   }
+  questions?: Array<{ question: string; rationale: string; category: string }>
   message?: string
   progress?: {
     current: number
@@ -788,6 +792,74 @@ async function persistCaseData(caseData: Partial<CaseData>, diagnosis: string) {
   }
 }
 
+interface FollowupQuestion {
+  question: string
+  rationale: string
+  category: string
+}
+
+async function generateFollowupQuestions(caseData: Partial<CaseData>): Promise<FollowupQuestion[]> {
+  try {
+    const client = getNvidiaClient()
+
+    // Build a flat record from caseData for the prompt builder
+    const flatData: Record<string, unknown> = {
+      name: caseData.name,
+      age: caseData.age,
+      gender: caseData.gender,
+      occupation: caseData.occupation,
+      prakriti: caseData.prakritiDetail || caseData.prakriti,
+      comorbidities: caseData.comorbidities?.join(', '),
+      medications: caseData.ongoingMedications,
+      allergies: caseData.allergies,
+      nadi: caseData.nadi,
+      mootra: caseData.mootra,
+      mala: caseData.mala,
+      jivha: caseData.jivha,
+      drik: caseData.drik,
+      shabda: caseData.shabda,
+      sparsh: caseData.sparsh,
+      aakriti: caseData.aakriti,
+      satva: caseData.satva,
+      aharaShakti: caseData.aharaShakti,
+      vyayamaShakti: caseData.vyayamaShakti,
+    }
+
+    // Add chief complaint details
+    if (caseData.chiefComplaints && caseData.chiefComplaints.length > 0) {
+      const primary = caseData.chiefComplaints[0]
+      flatData.chiefComplaint = primary.complaint
+      flatData.duration = primary.duration
+      flatData.severity = String(primary.severity)
+      flatData.location = primary.location
+      flatData.onset = primary.onset
+      flatData.aggravatingFactors = primary.aggravatingFactors?.join(', ')
+      flatData.relievingFactors = primary.relievingFactors?.join(', ')
+      flatData.associatedSymptoms = primary.associatedSymptoms?.join(', ')
+    }
+
+    const prompt = buildFollowupPrompt(flatData)
+
+    const response = await client.chat.completions.create({
+      model: 'meta/llama-3.3-70b-instruct',
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 1500,
+      temperature: 0.4,
+    })
+
+    const content = response.choices[0]?.message?.content || '[]'
+    const jsonMatch = content.match(/\[[\s\S]*\]/)
+    if (jsonMatch) {
+      const questions = JSON.parse(jsonMatch[0])
+      return questions.slice(0, 5) as FollowupQuestion[]
+    }
+    return []
+  } catch (error) {
+    console.error('[Intake API] Follow-up generation error:', error)
+    return []
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -984,6 +1056,50 @@ export async function POST(req: NextRequest) {
           diagnosis,
           progress: calculateProgress(fullCaseData as Partial<CaseData>),
           caseData: fullCaseData,
+        })
+      }
+
+      case 'generateFollowup': {
+        const fullCaseData = buildCaseDataFromAnswers(caseData as Partial<CaseData>)
+        const questions = await generateFollowupQuestions(fullCaseData)
+
+        if (questions.length === 0) {
+          // No follow-up questions generated, go straight to confirmation
+          return NextResponse.json({
+            type: 'confirmation',
+            progress: calculateProgress(fullCaseData as Partial<CaseData>),
+            caseData: fullCaseData,
+            message: 'All information collected. Ready to generate provisional diagnosis.',
+          })
+        }
+
+        return NextResponse.json({
+          type: 'followup_questions',
+          questions,
+          progress: calculateProgress(fullCaseData as Partial<CaseData>),
+          caseData: fullCaseData,
+        })
+      }
+
+      case 'answerFollowup': {
+        const fullCaseData = buildCaseDataFromAnswers(caseData as Partial<CaseData>)
+        const answers = validated.followupAnswers || {}
+
+        // Store follow-up answers in medicalHistory field (append)
+        const followupSummary = Object.entries(answers)
+          .map(([q, a]) => `Q: ${q}\nA: ${a}`)
+          .join('\n\n')
+
+        const existingHistory = fullCaseData.medicalHistory || ''
+        fullCaseData.medicalHistory = existingHistory
+          ? `${existingHistory}\n\n--- AI Follow-up ---\n${followupSummary}`
+          : `--- AI Follow-up ---\n${followupSummary}`
+
+        return NextResponse.json({
+          type: 'confirmation',
+          progress: calculateProgress(fullCaseData as Partial<CaseData>),
+          caseData: fullCaseData,
+          message: 'Follow-up information recorded. Ready to generate provisional diagnosis.',
         })
       }
 

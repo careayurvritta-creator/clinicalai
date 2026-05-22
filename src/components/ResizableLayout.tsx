@@ -1,6 +1,7 @@
 'use client'
 
 import { ReactNode, useState, useRef, useCallback, useEffect } from 'react'
+import { useChatStore } from '@/lib/store'
 
 interface ResizableLayoutProps {
   chatPanel: ReactNode
@@ -14,6 +15,7 @@ export function ResizableLayout({ chatPanel, canvasPanel }: ResizableLayoutProps
   })
   const [isMobile, setIsMobile] = useState(false)
   const [activeTab, setActiveTab] = useState<'chat' | 'canvas'>('chat')
+  const prevCanvasLength = useRef(0)
   const containerRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
   const listenersRef = useRef<{ move: ((e: MouseEvent) => void) | null; up: (() => void) | null }>({ move: null, up: null })
@@ -24,6 +26,22 @@ export function ResizableLayout({ chatPanel, canvasPanel }: ResizableLayoutProps
     checkMobile()
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  // Auto-switch to canvas tab on mobile when new artifact content arrives
+  const canvasContent = useChatStore((state) => state.canvasContent)
+  useEffect(() => {
+    if (isMobile && canvasContent.length > 0 && prevCanvasLength.current === 0) {
+      setActiveTab('canvas')
+    }
+    prevCanvasLength.current = canvasContent.length
+  }, [canvasContent, isMobile])
+
+  // Listen for back-to-chat event from CanvasPanel mobile button
+  useEffect(() => {
+    const handleBack = () => setActiveTab('chat')
+    window.addEventListener('canvas:back-to-chat', handleBack)
+    return () => window.removeEventListener('canvas:back-to-chat', handleBack)
   }, [])
 
   // Cleanup lingering listeners on unmount
@@ -116,7 +134,7 @@ export function ResizableLayout({ chatPanel, canvasPanel }: ResizableLayoutProps
                 : 'text-muted-foreground'
             }`}
           >
-            Canvas
+            Output
           </button>
         </div>
 

@@ -113,15 +113,12 @@ export default function Home() {
 
         {/* Main content */}
         <div className="flex-1 min-w-0">
-          {activeModule === 'chat' ? (
+          {activeModule === 'chat' || activeModule === 'intake' || activeModule === 'treatment-protocol' ? (
             <ResizableLayout
-              chatPanel={<ChatPanel />}
+              key={activeModule}
+              chatPanel={<ChatPanel key={activeModule} />}
               canvasPanel={<CanvasPanel />}
             />
-          ) : activeModule === 'intake' ? (
-            <ChatPanel key="intake" />
-          ) : activeModule === 'treatment-protocol' ? (
-            <ChatPanel key="treatment-protocol" />
           ) : (
             <div className="flex items-center justify-center h-full text-muted-foreground p-4 text-center">
               <div>

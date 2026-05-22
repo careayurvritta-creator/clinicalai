@@ -1,14 +1,13 @@
 export const dynamic = 'force-dynamic'
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { z } from 'zod'
-import { TREATMENTS, PURVAKARMA } from '@/lib/ayurknowledge/treatments'
-import { HERBS } from '@/lib/ayurknowledge/herbs'
-import { DISEASES } from '@/lib/ayurknowledge/diseases'
-import { getResearchContext, formatResearchForProtocol, type ResearchContext, type ResearchPaper } from '@/lib/research-analyzer'
+import { getComprehensiveResearchContext, type ResearchPaper } from '@/lib/research-analyzer'
 import { vectorSearch, initializeVectorRAG, formatVectorResultsForContext } from '@/lib/ayurrag/vector-rag'
 import { getCharakTreatmentProtocols, getCharakDiseaseDescriptions } from '@/lib/ayurknowledge/charak'
+import { createChatStream } from '@/lib/nvidia-client'
 import { createServerClient } from '@/lib/supabase/client'
+import { buildProtocolPrompt } from '@/lib/treatment-prompts'
 
 interface PatientInfo {
   name: string
@@ -24,6 +23,17 @@ interface PatientInfo {
   mootra?: string
   mala?: string
   jivha?: string
+  drik?: string
+  shabda?: string
+  sparsh?: string
+  aakriti?: string
+  satva?: string
+  aharaShakti?: string
+  vyayamaShakti?: string
+  occupation?: string
+  comorbidities?: string
+  medications?: string
+  allergies?: string
   complaintsArray?: Array<{ complaint: string; duration: string; severity: number }>
 }
 
@@ -33,168 +43,6 @@ interface TreatmentSelection {
   selectedHerbs: string[]
   treatmentDuration: string
   budget: string
-}
-
-interface RequestBody {
-  patientInfo: PatientInfo
-  treatmentSelection: TreatmentSelection
-}
-
-function generateProtocol(
-  patientInfo: PatientInfo,
-  treatmentSelection: TreatmentSelection,
-  researchContext: ResearchContext | null = null
-): string {
-  const selectedTreatments = TREATMENTS.filter(t => treatmentSelection.selectedPanchakarma.includes(t.id))
-  const selectedPurvakarma = PURVAKARMA.filter(p => treatmentSelection.selectedPurvakarma.includes(p.id))
-  const selectedHerbs = HERBS.filter(h => treatmentSelection.selectedHerbs.includes(h.id))
-  const selectedDisease = DISEASES.find(d => d.name === patientInfo.diagnosis)
-
-  let protocol = `# TREATMENT PROTOCOL\n`
-  protocol += `=====================================\n\n`
-  protocol += `**Patient:** ${patientInfo.name || 'Not specified'}\n`
-  protocol += `**Age/Gender:** ${patientInfo.age || '-'}/${patientInfo.gender || '-'}\n`
-  protocol += `**Prakriti:** ${patientInfo.prakriti || 'To be assessed'}\n`
-  protocol += `**Chief Complaints:** ${patientInfo.chiefComplaints || '-'}\n`
-  protocol += `**Diagnosis:** ${patientInfo.diagnosis || '-'}\n`
-  protocol += `**Duration:** ${patientInfo.duration || '-'}\n`
-
-  if (patientInfo.nadi || patientInfo.mootra || patientInfo.mala || patientInfo.jivha) {
-    protocol += `\n### Ashtavidha Pariksha\n`
-    if (patientInfo.nadi) protocol += `- **Nadi:** ${patientInfo.nadi}\n`
-    if (patientInfo.mootra) protocol += `- **Mootra:** ${patientInfo.mootra}\n`
-    if (patientInfo.mala) protocol += `- **Mala:** ${patientInfo.mala}\n`
-    if (patientInfo.jivha) protocol += `- **Jivha:** ${patientInfo.jivha}\n`
-  }
-
-  if (patientInfo.complaintsArray && patientInfo.complaintsArray.length > 0) {
-    protocol += `\n### Complaint Details\n`
-    patientInfo.complaintsArray.forEach((c, i) => {
-      protocol += `${i + 1}. **${c.complaint}** — Duration: ${c.duration || 'N/A'}, Severity: ${c.severity}/10\n`
-    })
-  }
-
-  protocol += `\n## Treatment Duration: ${treatmentSelection.treatmentDuration} days\n`
-  protocol += `## Budget Category: ${treatmentSelection.budget}\n\n`
-
-  if (selectedDisease) {
-    protocol += `## Disease Understanding\n`
-    protocol += `- **Description:** ${selectedDisease.modernCorrelation}\n`
-    protocol += `- **Samprapti:** ${selectedDisease.samprapti || 'Traditional pathogenesis'}\n`
-    protocol += `- **Affected Doshas:** ${selectedDisease.doshaInvolvement?.join(', ') || 'V, P, K'}\n`
-    protocol += `- **Clinical Features:** ${selectedDisease.clinicalFeatures?.join(', ') || 'As per classical texts'}\n\n`
-  }
-
-  if (selectedPurvakarma.length > 0) {
-    protocol += `## Phase 1: Purvakarma (Pre-treatment)\n`
-    selectedPurvakarma.forEach((p, index) => {
-      protocol += `### ${index + 1}. ${p.name}\n`
-      protocol += `- **ID:** ${p.id}\n`
-      protocol += `- **Duration:** ${p.duration}\n`
-      protocol += `- **Description:** ${p.description}\n`
-      protocol += `- **Indications:** ${p.indications?.join(', ') || 'General preparation'}\n`
-      if (p.types) {
-        protocol += `- **Types:** ${p.types.join(', ')}\n`
-      }
-      protocol += `\n`
-    })
-  }
-
-  if (selectedTreatments.length > 0) {
-    protocol += `## Phase 2: Main Panchakarma Therapy\n`
-    selectedTreatments.forEach((t, index) => {
-      protocol += `### ${selectedPurvakarma.length + index + 1}. ${t.name}\n`
-      protocol += `- **Sanskrit:** ${t.sanskrit}\n`
-      protocol += `- **Category:** ${t.category}\n`
-      protocol += `- **Description:** ${t.description}\n`
-      protocol += `- **Duration:** ${t.duration}\n`
-      protocol += `- **Indications:** ${t.indications.join(', ')}\n`
-      protocol += `- **Contraindications:** ${t.contraindications.join(', ')}\n\n`
-      protocol += `**Procedure:**\n`
-      t.procedure.forEach((step, i) => {
-        protocol += `${i + 1}. ${step}\n`
-      })
-      protocol += `\n**Preparation:**\n`
-      t.preparation.forEach((step, i) => {
-        protocol += `- ${step}\n`
-      })
-      protocol += `\n**Post-Treatment Care:**\n`
-      t.postTreatment.forEach((step, i) => {
-        protocol += `- ${step}\n`
-      })
-      protocol += `\n`
-    })
-  }
-
-  if (selectedHerbs.length > 0) {
-    protocol += `## Phase 3: Adjuvant Herbs & Formulations\n`
-    selectedHerbs.forEach((h, index) => {
-      protocol += `### ${selectedPurvakarma.length + selectedTreatments.length + index + 1}. ${h.name}\n`
-      protocol += `- **Botanical:** ${h.botanicalName}\n`
-      protocol += `- **Rasa:** ${h.rasa?.join(', ') || 'Madhura (Sweet)'}\n`
-      protocol += `- **Virya:** ${h.virya || 'Sheeta (Cooling)'}\n`
-      protocol += `- **Vipaka:** ${h.vipaka || 'Madhura (Sweet)'}\n`
-      protocol += `- **Indications:** ${h.indications?.join(', ') || 'General tonic'}\n`
-      protocol += `- **Dosage:** ${h.dosage || '3-5 grams daily'}\n`
-      if (h.contraindications && h.contraindications.length > 0) {
-        protocol += `- **Cautions:** ${h.contraindications.join(', ')}\n`
-      }
-      protocol += `\n`
-    })
-  }
-
-  // Add research evidence section
-  if (researchContext && researchContext.papers.length > 0) {
-    protocol += `\n${formatResearchForProtocol(researchContext)}\n`
-
-    protocol += `\n## Evidence-Based Recommendations\n\n`
-    protocol += `Based on analysis of ${researchContext.papers.length} research papers:\n\n`
-
-    const highRelevance = researchContext.papers.filter(p => p.relevanceScore >= 7)
-    if (highRelevance.length > 0) {
-      protocol += `### High-Relevance Evidence\n`
-      for (const paper of highRelevance) {
-        protocol += `- **${paper.title.slice(0, 80)}**: ${paper.keyFindings}\n`
-      }
-      protocol += `\n`
-    }
-  }
-
-  protocol += `## Daily Regimen (Dinacharya)\n`
-  protocol += `- **Morning (4-6 AM):** Wake up, drink warm water\n`
-  protocol += `- **Morning (6-7 AM):** Abhyanga (self-massage) with sesame oil\n`
-  protocol += `- **Morning (7-8 AM):** Light breakfast\n`
-  protocol += `- **Mid-day (12-1 PM):** Main meal\n`
-  protocol += `- **Evening (6-7 PM):** Light dinner before sunset\n`
-  protocol += `- **Night (9-10 PM):** Sleep time\n\n`
-
-  protocol += `## Diet Guidelines (Ahara)\n`
-  if (patientInfo.prakriti?.includes('Vata')) {
-    protocol += `- **Favor:** Warm, moist, nourishing foods\n`
-    protocol += `- **Avoid:** Dry, cold, light foods\n`
-  } else if (patientInfo.prakriti?.includes('Pitta')) {
-    protocol += `- **Favor:** Cool, sweet, light foods\n`
-    protocol += `- **Avoid:** Spicy, sour, hot foods\n`
-  } else if (patientInfo.prakriti?.includes('Kapha')) {
-    protocol += `- **Favor:** Light, dry, warm foods\n`
-    protocol += `- **Avoid:** Heavy, oily, sweet foods\n`
-  } else {
-    protocol += `- **Favor:** Balanced, seasonal, whole foods\n`
-    protocol += `- **Avoid:** Processed foods, extreme temperatures\n`
-  }
-  protocol += `- **Water:** Warm water throughout the day\n`
-  protocol += `- **Avoid:** Cold drinks, processed foods, leftovers\n\n`
-
-  protocol += `## Follow-up Schedule\n`
-  protocol += `- **Day 3:** Initial assessment\n`
-  protocol += `- **Day 7:** Mid-course evaluation\n`
-  protocol += `- **Day ${treatmentSelection.treatmentDuration}:** Final assessment & next steps\n\n`
-
-  protocol += `---\n`
-  protocol += `*This is a preliminary protocol. Adjust based on patient response.*\n`
-  protocol += `*Generated by Clinical AI*\n`
-
-  return protocol
 }
 
 const RequestSchema = z.object({
@@ -212,6 +60,17 @@ const RequestSchema = z.object({
     mootra: z.string().optional(),
     mala: z.string().optional(),
     jivha: z.string().optional(),
+    drik: z.string().optional(),
+    shabda: z.string().optional(),
+    sparsh: z.string().optional(),
+    aakriti: z.string().optional(),
+    satva: z.string().optional(),
+    aharaShakti: z.string().optional(),
+    vyayamaShakti: z.string().optional(),
+    occupation: z.string().optional(),
+    comorbidities: z.string().optional(),
+    medications: z.string().optional(),
+    allergies: z.string().optional(),
     complaintsArray: z.array(z.object({
       complaint: z.string(),
       duration: z.string(),
@@ -240,7 +99,55 @@ async function ensureRAGInitialized() {
   }
 }
 
-// Fire-and-forget protocol persistence
+function formatPatientData(patientInfo: PatientInfo, treatmentSelection: TreatmentSelection): string {
+  let data = ``
+  data += `**Name:** ${patientInfo.name || 'Not specified'}\n`
+  data += `**Age:** ${patientInfo.age || 'Not specified'}\n`
+  data += `**Gender:** ${patientInfo.gender || 'Not specified'}\n`
+  data += `**Occupation:** ${patientInfo.occupation || 'Not specified'}\n`
+  data += `**Prakriti:** ${patientInfo.prakriti || 'To be assessed'}\n`
+  data += `**Chief Complaints:** ${patientInfo.chiefComplaints || 'Not specified'}\n`
+  data += `**Duration:** ${patientInfo.duration || 'Not specified'}\n`
+  data += `**Severity:** ${patientInfo.associatedSymptoms || 'Not specified'}\n`
+  data += `**Diagnosis:** ${patientInfo.diagnosis || 'Not specified'}\n`
+  data += `**Investigation:** ${patientInfo.investigation || 'Not specified'}\n`
+
+  if (patientInfo.comorbidities) data += `**Comorbidities:** ${patientInfo.comorbidities}\n`
+  if (patientInfo.medications) data += `**Current Medications:** ${patientInfo.medications}\n`
+  if (patientInfo.allergies) data += `**Allergies:** ${patientInfo.allergies}\n`
+
+  if (patientInfo.complaintsArray && patientInfo.complaintsArray.length > 0) {
+    data += `\n**Complaint Details:**\n`
+    patientInfo.complaintsArray.forEach((c, i) => {
+      data += `${i + 1}. ${c.complaint} — Duration: ${c.duration || 'N/A'}, Severity: ${c.severity}/10\n`
+    })
+  }
+
+  data += `\n### Ashtavidha Pariksha\n`
+  if (patientInfo.nadi) data += `- Nadi (Pulse): ${patientInfo.nadi}\n`
+  if (patientInfo.mootra) data += `- Mootra (Urine): ${patientInfo.mootra}\n`
+  if (patientInfo.mala) data += `- Mala (Stool): ${patientInfo.mala}\n`
+  if (patientInfo.jivha) data += `- Jivha (Tongue): ${patientInfo.jivha}\n`
+  if (patientInfo.drik) data += `- Drik (Eyes): ${patientInfo.drik}\n`
+  if (patientInfo.shabda) data += `- Shabda (Voice): ${patientInfo.shabda}\n`
+  if (patientInfo.sparsh) data += `- Sparsh (Skin/Touch): ${patientInfo.sparsh}\n`
+  if (patientInfo.aakriti) data += `- Aakriti (Build): ${patientInfo.aakriti}\n`
+
+  data += `\n### Dashavidha Pariksha\n`
+  if (patientInfo.satva) data += `- Satva (Mental Strength): ${patientInfo.satva}\n`
+  if (patientInfo.aharaShakti) data += `- Ahara Shakti (Diet Capacity): ${patientInfo.aharaShakti}\n`
+  if (patientInfo.vyayamaShakti) data += `- Vyayama Shakti (Exercise Tolerance): ${patientInfo.vyayamaShakti}\n`
+
+  data += `\n### Treatment Parameters\n`
+  data += `- Selected Panchakarma: ${treatmentSelection.selectedPanchakarma.join(', ') || 'None selected'}\n`
+  data += `- Selected Purvakarma: ${treatmentSelection.selectedPurvakarma.join(', ') || 'None selected'}\n`
+  data += `- Selected Herbs: ${treatmentSelection.selectedHerbs.join(', ') || 'None selected'}\n`
+  data += `- Treatment Duration: ${treatmentSelection.treatmentDuration} days\n`
+  data += `- Budget: ${treatmentSelection.budget}\n`
+
+  return data
+}
+
 async function persistProtocol(
   patientInfo: PatientInfo,
   protocol: string,
@@ -251,7 +158,6 @@ async function persistProtocol(
     const supabase = createServerClient()
     const protocolNumber = `PROTO-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
 
-    // Check if treatment_protocols table exists, if not skip
     const { error } = await supabase
       .from('treatment_protocols')
       .insert({
@@ -260,7 +166,7 @@ async function persistProtocol(
         diagnosis: patientInfo.diagnosis || null,
         prakriti: patientInfo.prakriti || null,
         protocol_content: protocol,
-        research_papers: researchPapers.map(p => ({ pmid: p.pmid, title: p.title })),
+        research_papers: researchPapers.map(p => ({ pmid: p.pmid, title: p.title, journal: p.journal, year: p.year })),
         charak_references: charakRefs,
         created_at: new Date().toISOString(),
       })
@@ -280,24 +186,23 @@ export async function POST(req: NextRequest) {
     const body = RequestSchema.parse(await req.json())
     const { patientInfo, treatmentSelection } = body
 
-    // Extract complaints text for research
     const complaintsText = patientInfo.chiefComplaints || 'General health'
     const durationText = patientInfo.duration || 'Not specified'
     const diagnosisText = patientInfo.diagnosis || 'Not specified'
 
-    // Fetch research papers and RAG context in parallel
-    const [researchContext, ragResults] = await Promise.all([
-      getResearchContext(complaintsText, durationText, diagnosisText, patientInfo.prakriti).catch(err => {
+    // Gather all context in parallel: research papers + web search + RAG + Charak
+    const [researchCtx, ragResults, charakProtocols, charakDiseases] = await Promise.all([
+      getComprehensiveResearchContext(complaintsText, durationText, diagnosisText, patientInfo.prakriti).catch(err => {
         console.error('[Treatment Protocol] Research fetch failed:', err)
         return null
       }),
       (async () => {
         try {
           await ensureRAGInitialized()
-          const searchQuery = `${diagnosisText} ${complaintsText} treatment protocol`
+          const searchQuery = `${diagnosisText} ${complaintsText} treatment protocol ayurvedic`
           return await vectorSearch(searchQuery, {
-            maxResults: 5,
-            minRelevance: 0.3,
+            maxResults: 8,
+            minRelevance: 0.25,
             includeWHO: false,
             includeAyurKnowledge: true,
           })
@@ -306,48 +211,96 @@ export async function POST(req: NextRequest) {
           return []
         }
       })(),
+      Promise.resolve(getCharakTreatmentProtocols(patientInfo.diagnosis || '')),
+      Promise.resolve(getCharakDiseaseDescriptions(patientInfo.diagnosis || '')),
     ])
 
-    console.log('[Treatment Protocol] Research:', researchContext?.papers.length || 0, 'papers, RAG:', ragResults.length, 'results')
-
-    // Get Charak Samhita references for the diagnosis
-    const charakProtocols = getCharakTreatmentProtocols(patientInfo.diagnosis || '')
-    const charakDiseases = getCharakDiseaseDescriptions(patientInfo.diagnosis || '')
     const charakRefs = [
       ...charakProtocols.map(c => `${c.chapter}: ${c.condition} — ${c.treatment}`),
       ...charakDiseases.map(c => `${c.chapter}: ${c.name} — ${c.treatment}`),
     ]
 
-    // Build RAG context for protocol enhancement
-    let ragContext = ''
-    if (ragResults.length > 0) {
-      ragContext = formatVectorResultsForContext(ragResults)
-    }
+    const ragContext = ragResults.length > 0 ? formatVectorResultsForContext(ragResults) : ''
+    const patientData = formatPatientData(patientInfo, treatmentSelection)
 
-    const protocol = generateProtocol(patientInfo, treatmentSelection, researchContext)
+    // Build the comprehensive LLM prompt
+    const systemPrompt = buildProtocolPrompt(
+      patientData,
+      researchCtx?.formattedResearch || 'No research papers found for this condition.',
+      ragContext || 'No additional knowledge base context available.',
+      charakRefs.length > 0 ? charakRefs.join('\n') : 'No specific Charak Samhita references found.',
+      researchCtx?.formattedWeb || ''
+    )
 
-    // Persist protocol (fire-and-forget)
-    persistProtocol(patientInfo, protocol, researchContext?.papers || [], charakRefs)
+    console.log('[Treatment Protocol] Generating with LLM. Papers:', researchCtx?.papers.length || 0, 'Web:', researchCtx?.webResults.length || 0, 'RAG:', ragResults.length)
 
-    return NextResponse.json({
-      protocol,
-      researchPapers: researchContext?.papers || [],
-      researchSummary: researchContext?.summary || '',
-      paperCount: researchContext?.papers.length || 0,
-      charakReferences: charakRefs.length > 0 ? charakRefs.slice(0, 5) : undefined,
-      ragContext: ragContext || undefined,
+    // Stream the LLM response
+    const stream = await createChatStream(
+      [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: 'Generate the complete treatment protocol for this patient now.' },
+      ],
+      'meta/llama-3.1-405b-instruct'
+    )
+
+    const encoder = new TextEncoder()
+    let fullProtocol = ''
+
+    const readable = new ReadableStream({
+      async start(controller) {
+        // Send metadata event first
+        const metadata = {
+          type: 'metadata',
+          paperCount: researchCtx?.papers.length || 0,
+          webCount: researchCtx?.webResults.length || 0,
+          ragCount: ragResults.length,
+          charakCount: charakRefs.length,
+        }
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(metadata)}\n\n`))
+
+        try {
+          for await (const chunk of stream) {
+            const content = chunk.choices?.[0]?.delta?.content || ''
+            if (content) {
+              fullProtocol += content
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`))
+            }
+          }
+
+          // Persist after streaming completes
+          if (fullProtocol.length > 100) {
+            persistProtocol(patientInfo, fullProtocol, researchCtx?.papers || [], charakRefs)
+          }
+
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'))
+        } catch (error) {
+          console.error('[Treatment Protocol] Streaming error:', error)
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: 'Stream interrupted' })}\n\n`))
+        } finally {
+          controller.close()
+        }
+      },
+    })
+
+    return new Response(readable, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+        'X-Accel-Buffering': 'no',
+      },
     })
   } catch (error) {
     console.error('[Treatment Protocol] Error:', error)
 
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
+      return Response.json(
         { error: 'Invalid request', details: error.issues },
         { status: 400 }
       )
     }
 
-    return NextResponse.json(
+    return Response.json(
       { error: 'Failed to generate protocol' },
       { status: 500 }
     )

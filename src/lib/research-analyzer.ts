@@ -1,5 +1,6 @@
 import 'server-only'
 import { getNvidiaClient } from './nvidia-client'
+import { searchWebMultiple, formatWebResultsForContext, type WebSearchResult } from './web-search'
 
 export interface ResearchPaper {
   pmid: string
@@ -14,11 +15,14 @@ export interface ResearchPaper {
   ayurvedicRelevance: string
 }
 
-export interface ResearchContext {
+export interface ComprehensiveResearchContext {
   papers: ResearchPaper[]
   summary: string
   searchQueries: string[]
   totalFound: number
+  webResults: WebSearchResult[]
+  formattedResearch: string
+  formattedWeb: string
 }
 
 const PUBMED_SEARCH_URL = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi'
@@ -327,69 +331,23 @@ Only include papers with relevance score >= 5. Prioritize clinical trials, syste
     }
   }
 
-  return analyzedPapers
-    .sort((a, b) => b.relevanceScore - a.relevanceScore)
-    .slice(0, 15) // Top 15 papers with journal priority
+  const sorted = analyzedPapers.sort((a, b) => b.relevanceScore - a.relevanceScore)
+
+  // Ensure at least 10 papers: lower threshold to 4 if needed
+  const highRelevance = sorted.filter(p => p.relevanceScore >= 5)
+  if (highRelevance.length >= 10) {
+    return highRelevance.slice(0, 15)
+  }
+
+  // Lower threshold to get more papers
+  const broaderSet = sorted.filter(p => p.relevanceScore >= 4)
+  return broaderSet.slice(0, 15)
 }
 
-export async function getResearchContext(
-  complaints: string,
-  duration: string,
-  diagnosis: string,
-  prakriti: string = ''
-): Promise<ResearchContext> {
-  console.log('[Research] Starting research analysis for:', { complaints, diagnosis })
-
-  const patientContext = `Complaints: ${complaints}, Duration: ${duration}, Diagnosis: ${diagnosis}, Prakriti: ${prakriti}`
-
-  const queries = generateSearchQueries(complaints, duration, diagnosis)
-  console.log('[Research] Generated', queries.length, 'search queries')
-
-  const allPmids = new Set<string>()
-  for (const query of queries) {
-    const pmids = await searchPubMed(query, 15)
-    for (const pmid of pmids) {
-      allPmids.add(pmid)
-    }
-    console.log('[Research] Query found', pmids.length, 'papers')
-  }
-
-  const uniquePmids = Array.from(allPmids).slice(0, 40) // Increased from 30 for better coverage
-  console.log('[Research] Total unique papers found:', uniquePmids.length)
-
-  if (uniquePmids.length === 0) {
-    return {
-      papers: [],
-      summary: 'No relevant research papers found in PubMed for this condition.',
-      searchQueries: queries,
-      totalFound: 0,
-    }
-  }
-
-  const papers = await fetchAbstracts(uniquePmids)
-  console.log('[Research] Fetched', papers.length, 'abstracts')
-
-  const analyzedPapers = await analyzePapersWithLLM(papers, patientContext)
-  console.log('[Research] Analyzed and selected', analyzedPapers.length, 'relevant papers')
-
-  const summary = analyzedPapers.length > 0
-    ? `Found ${analyzedPapers.length} relevant research papers from PubMed. Key themes: ${
-      [...new Set(analyzedPapers.map(p => p.ayurvedicRelevance))].slice(0, 3).join('; ')
-    }`
-    : 'Limited research available for this specific condition.'
-
-  return {
-    papers: analyzedPapers,
-    summary,
-    searchQueries: queries,
-    totalFound: allPmids.size,
-  }
-}
-
-export function formatResearchForProtocol(context: ResearchContext): string {
+export function formatResearchForProtocol(context: { papers: ResearchPaper[]; summary: string }): string {
   if (context.papers.length === 0) return ''
 
-  let output = `## Research Evidence (${context.papers.length} papers analyzed)\n\n`
+  let output = `## Research Evidence (${context.papers.length} papers analyzed from PubMed)\n\n`
   output += `*${context.summary}*\n\n`
 
   output += `| # | Paper | Journal | Year | Relevance |\n`
@@ -400,19 +358,80 @@ export function formatResearchForProtocol(context: ResearchContext): string {
     output += `| ${i + 1} | ${p.title.slice(0, 80)}${p.title.length > 80 ? '...' : ''} | ${p.journal} | ${p.year} | ${p.relevanceScore}/10 |\n`
   }
 
-  output += `\n### Key Research Findings\n\n`
-  for (const paper of context.papers.slice(0, 10)) {
-    output += `**${paper.title.slice(0, 80)}** (${paper.authors}, ${paper.year})\n`
-    output += `- Journal: ${paper.journal}\n`
-    output += `- Findings: ${paper.keyFindings}\n`
+  output += `\n### Detailed Research Findings\n\n`
+  for (let i = 0; i < context.papers.length; i++) {
+    const paper = context.papers[i]
+    output += `**[${i + 1}] ${paper.title}**\n`
+    output += `- Authors: ${paper.authors}\n`
+    output += `- Journal: ${paper.journal} (${paper.year})\n`
+    if (paper.abstract) {
+      output += `- Abstract: ${paper.abstract.slice(0, 500)}${paper.abstract.length > 500 ? '...' : ''}\n`
+    }
+    output += `- Key Findings: ${paper.keyFindings}\n`
     output += `- Ayurvedic Relevance: ${paper.ayurvedicRelevance}\n`
     if (paper.doi) {
-      output += `- [DOI](https://doi.org/${paper.doi})\n`
-    } else {
-      output += `- [PMID](https://pubmed.ncbi.nlm.nih.gov/${paper.pmid})\n`
+      output += `- DOI: https://doi.org/${paper.doi}\n`
     }
+    output += `- PMID: ${paper.pmid}\n`
     output += `\n`
   }
 
   return output
+}
+
+export async function getComprehensiveResearchContext(
+  complaints: string,
+  duration: string,
+  diagnosis: string,
+  prakriti: string = ''
+): Promise<ComprehensiveResearchContext> {
+  console.log('[Research] Starting comprehensive research analysis for:', { complaints, diagnosis })
+
+  // Run PubMed search (reuse existing logic inline)
+  const patientContext = `Complaints: ${complaints}, Duration: ${duration}, Diagnosis: ${diagnosis}, Prakriti: ${prakriti}`
+  const queries = generateSearchQueries(complaints, duration, diagnosis)
+  console.log('[Research] Generated', queries.length, 'search queries')
+
+  const allPmids = new Set<string>()
+  for (const query of queries) {
+    const pmids = await searchPubMed(query, 20)
+    for (const pmid of pmids) allPmids.add(pmid)
+  }
+  const uniquePmids = Array.from(allPmids).slice(0, 40)
+  console.log('[Research] Total unique papers found:', uniquePmids.length)
+
+  // Run PubMed and web search in parallel
+  const [papers, webResults] = await Promise.all([
+    (async () => {
+      if (uniquePmids.length === 0) return []
+      const rawPapers = await fetchAbstracts(uniquePmids)
+      return analyzePapersWithLLM(rawPapers, patientContext)
+    })(),
+    searchWebMultiple(
+      [
+        `${complaints} ayurvedic treatment evidence`,
+        `${diagnosis || complaints} panchakarma clinical study`,
+        `${complaints} integrative medicine systematic review`,
+      ],
+      3
+    ),
+  ])
+
+  console.log('[Research] Analyzed', papers.length, 'papers and found', webResults.length, 'web results')
+
+  const summary = papers.length > 0
+    ? `Found ${papers.length} relevant research papers from PubMed and ${webResults.length} supplementary web sources. Key themes: ${
+      [...new Set(papers.map(p => p.ayurvedicRelevance))].slice(0, 3).join('; ')
+    }`
+    : `Limited PubMed research available. Found ${webResults.length} supplementary web sources.`
+
+  return {
+    papers,
+    summary,
+    searchQueries: queries,
+    totalFound: allPmids.size,
+    webResults,
+    formattedResearch: formatResearchForProtocol({ papers, summary }),
+    formattedWeb: formatWebResultsForContext(webResults),
+  }
 }
