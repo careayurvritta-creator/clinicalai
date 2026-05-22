@@ -59,12 +59,7 @@ create table patients (
   blood_group text check (blood_group in ('A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-')),
   height_cm numeric check (height_cm > 0 and height_cm <= 300),
   weight_kg numeric check (weight_kg > 0 and weight_kg <= 500),
-  bmi numeric generated always as (
-    case when height_cm > 0 and weight_kg > 0 
-      then round(weight_kg / ((height_cm/100.0)^2), 2) 
-      else null 
-    end
-  ) stored,
+  bmi numeric,
   profile_image_url text,
   notes text,
   is_archived boolean default false,
@@ -201,6 +196,21 @@ begin
 end;
 $$ language plpgsql;
 
+-- ============================================
+-- AUTO-CALCULATE BMI
+-- ============================================
+create or replace function calculate_bmi()
+returns trigger as $$
+begin
+  if new.height_cm > 0 and new.weight_kg > 0 then
+    new.bmi := round(new.weight_kg / ((new.height_cm / 100.0) ^ 2), 2);
+  else
+    new.bmi := null;
+  end if;
+  return new;
+end;
+$$ language plpgsql;
+
 create trigger update_profiles_updated_at
   before update on profiles
   for each row
@@ -210,6 +220,11 @@ create trigger update_patients_updated_at
   before update on patients
   for each row
   execute function update_updated_at_column();
+
+create trigger calculate_patient_bmi
+  before insert or update of height_cm, weight_kg on patients
+  for each row
+  execute function calculate_bmi();
 
 create trigger update_cases_updated_at
   before update on cases
