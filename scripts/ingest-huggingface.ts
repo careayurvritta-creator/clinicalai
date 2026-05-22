@@ -10,9 +10,10 @@
  *   - dmedhi/indian-medicines → Modern medicines (modern_medicines)
  *
  * Usage:
- *   npx tsx scripts/ingest-huggingface.ts             # download + insert
- *   npx tsx scripts/ingest-huggingface.ts --dry-run   # show what would be inserted
- *   npx tsx scripts/ingest-huggingface.ts --force     # re-download everything
+ *   npx tsx scripts/ingest-huggingface.ts                       # download + insert
+ *   npx tsx scripts/ingest-huggingface.ts --dry-run             # show what would be inserted
+ *   npx tsx scripts/ingest-huggingface.ts --force               # re-download everything
+ *   npx tsx scripts/ingest-huggingface.ts --start-offset=5000   # resume medicines from offset
  */
 
 import { createClient } from '@supabase/supabase-js'
@@ -49,7 +50,7 @@ function batchItems<T>(items: T[], size: number): T[][] {
   return batches
 }
 
-async function fetchWithRetry(url: string, retries = 3): Promise<Response> {
+async function fetchWithRetry(url: string, retries = 5): Promise<Response> {
   for (let attempt = 0; attempt <= retries; attempt++) {
     const response = await fetch(url)
     if (response.status === 429 && attempt < retries) {
@@ -235,7 +236,7 @@ async function main() {
         offset += PAGE_SIZE
         hasMore = data.length === PAGE_SIZE
         // Delay to avoid HF rate limiting (429)
-        await new Promise(r => setTimeout(r, 1500))
+        await new Promise(r => setTimeout(r, 3000))
       } catch (e) {
         console.log(`  Stopped at offset ${offset}: ${(e as Error).message}`)
         break

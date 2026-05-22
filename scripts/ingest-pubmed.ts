@@ -103,8 +103,11 @@ function parseArticleXml(articleXml: string): ClinicalEvidenceRow | null {
   if (pubDateXml) {
     const year = extractXmlTag(pubDateXml[0], 'Year')
     const month = extractXmlTag(pubDateXml[0], 'Month')
+    const day = extractXmlTag(pubDateXml[0], 'Day')
     if (year) {
-      publicationDate = `${year}${month ? '-' + month : ''}`
+      const m = month ? String(month).padStart(2, '0') : '01'
+      const d = day ? String(day).padStart(2, '0') : '01'
+      publicationDate = `${year}-${m}-${d}`
     }
   }
 
