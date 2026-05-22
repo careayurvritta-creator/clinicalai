@@ -2653,16 +2653,46 @@ ALTER TABLE clinical_evidence ENABLE ROW LEVEL SECURITY;
 ALTER TABLE external_qa ENABLE ROW LEVEL SECURITY;
 ALTER TABLE modern_medicines ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Anyone can read Sushruta chapters" ON sushruta_chapters FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Anyone can read clinical evidence" ON clinical_evidence FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Anyone can read external Q&A" ON external_qa FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY "Anyone can read modern medicines" ON modern_medicines FOR SELECT USING (auth.role() = 'authenticated');
+DO $$ BEGIN
+  CREATE POLICY "Anyone can read Sushruta chapters" ON sushruta_chapters FOR SELECT USING (auth.role() = 'authenticated');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE POLICY "Anyone can read clinical evidence" ON clinical_evidence FOR SELECT USING (auth.role() = 'authenticated');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE POLICY "Anyone can read external Q&A" ON external_qa FOR SELECT USING (auth.role() = 'authenticated');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE POLICY "Anyone can read modern medicines" ON modern_medicines FOR SELECT USING (auth.role() = 'authenticated');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Triggers for new tables
-CREATE TRIGGER update_sushruta_chapters_updated_at BEFORE UPDATE ON sushruta_chapters FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_clinical_evidence_updated_at BEFORE UPDATE ON clinical_evidence FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_external_qa_updated_at BEFORE UPDATE ON external_qa FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER update_modern_medicines_updated_at BEFORE UPDATE ON modern_medicines FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DO $$ BEGIN
+  CREATE TRIGGER update_sushruta_chapters_updated_at BEFORE UPDATE ON sushruta_chapters FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TRIGGER update_clinical_evidence_updated_at BEFORE UPDATE ON clinical_evidence FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TRIGGER update_external_qa_updated_at BEFORE UPDATE ON external_qa FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TRIGGER update_modern_medicines_updated_at BEFORE UPDATE ON modern_medicines FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Extended search_knowledge_base RPC
 DO $$ BEGIN
