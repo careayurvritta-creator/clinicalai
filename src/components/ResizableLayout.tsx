@@ -8,7 +8,10 @@ interface ResizableLayoutProps {
 }
 
 export function ResizableLayout({ chatPanel, canvasPanel }: ResizableLayoutProps) {
-  const [chatWidth, setChatWidth] = useState(450)
+  const [chatWidth, setChatWidth] = useState(() => {
+    if (typeof window === 'undefined') return 450
+    return Math.min(450, Math.floor(window.innerWidth * 0.45))
+  })
   const [isMobile, setIsMobile] = useState(false)
   const [activeTab, setActiveTab] = useState<'chat' | 'canvas'>('chat')
   const containerRef = useRef<HTMLDivElement>(null)
@@ -59,14 +62,13 @@ export function ResizableLayout({ chatPanel, canvasPanel }: ResizableLayoutProps
       listenersRef.current = { move: null, up: null }
     }
 
-    // Store refs for cleanup
     listenersRef.current = { move: handleMouseMove, up: handleMouseUp }
 
     document.addEventListener('mousemove', handleMouseMove)
     document.addEventListener('mouseup', handleMouseUp)
   }, [])
 
-  // Touch event support for mobile
+  // Touch event support for mobile resize
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     isDragging.current = true
     document.body.style.userSelect = 'none'
@@ -93,8 +95,8 @@ export function ResizableLayout({ chatPanel, canvasPanel }: ResizableLayoutProps
   // Mobile: stacked layout with tab bar
   if (isMobile) {
     return (
-      <div className="flex flex-col h-full w-full">
-        {/* Mobile tab bar */}
+      <div className="flex flex-col flex-1 min-h-0 h-full">
+        {/* Mobile tab bar — replaces ChatPanel header on mobile */}
         <div className="flex border-b border-border bg-panel-chat flex-shrink-0">
           <button
             onClick={() => setActiveTab('chat')}
@@ -128,9 +130,9 @@ export function ResizableLayout({ chatPanel, canvasPanel }: ResizableLayoutProps
 
   // Desktop: resizable side-by-side layout
   return (
-    <div ref={containerRef} className="flex h-full w-full">
+    <div ref={containerRef} className="flex flex-1 min-h-0 h-full w-full">
       <div
-        className="flex flex-col flex-shrink-0 border-r border-border bg-panel-chat"
+        className="flex flex-col flex-shrink-0 border-r border-border bg-panel-chat min-h-0"
         style={{ width: chatWidth, minWidth: 300, maxWidth: 700 }}
       >
         {chatPanel}
@@ -145,7 +147,7 @@ export function ResizableLayout({ chatPanel, canvasPanel }: ResizableLayoutProps
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-10 bg-muted-foreground/20 rounded-full group-hover:bg-primary/50 transition-colors" />
       </div>
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0">
         {canvasPanel}
       </div>
     </div>

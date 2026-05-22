@@ -30,9 +30,25 @@ export function ChatInput() {
     if (chatInputDraft) {
       setInput(chatInputDraft)
       setChatInputDraft('')
-      textareaRef.current?.focus()
+      // Focus textarea after setting draft
+      requestAnimationFrame(() => {
+        textareaRef.current?.focus()
+        // Move cursor to end
+        const el = textareaRef.current
+        if (el) {
+          el.selectionStart = el.selectionEnd = el.value.length
+        }
+      })
     }
   }, [chatInputDraft, setChatInputDraft])
+
+  // Auto-resize textarea
+  useEffect(() => {
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = Math.min(el.scrollHeight, 150) + 'px'
+  }, [input])
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const newAttachments: Attachment[] = []
@@ -63,8 +79,9 @@ export function ChatInput() {
           }
         } catch (err) {
           console.error('PDF extraction failed:', err)
+        } finally {
+          setIsProcessing(false)
         }
-        setIsProcessing(false)
       }
     }
 
@@ -88,14 +105,17 @@ export function ChatInput() {
     const text = input.trim()
     if ((!text && attachments.length === 0) || useChatStore.getState().isStreaming || isProcessing) return
 
+    // Capture attachments before clearing (React batches state updates)
+    const currentAttachments = [...attachments]
+
     const userMessage: Message = {
       id: generateId(),
       role: 'user' as const,
       content: text,
       timestamp: Date.now(),
       status: 'complete' as const,
-      ...(attachments.length > 0 ? {
-        attachments: attachments.map((a) => ({
+      ...(currentAttachments.length > 0 ? {
+        attachments: currentAttachments.map((a) => ({
           type: a.type as 'image' | 'pdf',
           name: a.name,
         })),
@@ -104,8 +124,8 @@ export function ChatInput() {
 
     addMessage(userMessage)
     setInput('')
-    // Revoke object URLs before clearing attachments to prevent memory leak
-    attachments.forEach(a => { if (a.preview) URL.revokeObjectURL(a.preview) })
+    // Revoke object URLs before clearing attachments
+    currentAttachments.forEach(a => { if (a.preview) URL.revokeObjectURL(a.preview) })
     setAttachments([])
     setStreaming(true)
 
@@ -123,19 +143,9 @@ export function ChatInput() {
       const apiMessages = currentMessages
         .map((m) => ({ role: m.role, content: m.content }))
 
-      // Brief attachment indicators for display (actual content handled server-side)
-      const attachmentContext = attachments
-        .map(a => {
-          if (a.type === 'pdf') return `\n\n[📄 Attached PDF: ${a.name}]`
-          if (a.type === 'image') return `\n\n[📷 Attached Image: ${a.name}]`
-          return ''
-        })
-        .filter(Boolean)
-        .join('')
-
       // For images, make a vision API call to get description
       let imageDescription = ''
-      const imageAttachments = attachments.filter(a => a.type === 'image' && a.text)
+      const imageAttachments = currentAttachments.filter(a => a.type === 'image' && a.text)
       if (imageAttachments.length > 0) {
         try {
           const visionPrompts = imageAttachments.map(async (img) => {
@@ -161,16 +171,13 @@ export function ChatInput() {
         }
       }
 
-      // Combine attachment context with message content
+      // Build message with image analysis context (PDF text handled server-side)
       let messageWithContext = text
       if (imageDescription) {
         messageWithContext += `\n\n[Image Analysis]\n${imageDescription}`
       }
-      if (attachmentContext) {
-        messageWithContext += attachmentContext
-      }
 
-      // Update the last user message with attachment context
+      // Update the last user message with image context
       if (messageWithContext !== text && apiMessages.length > 0) {
         const lastMsg = apiMessages[apiMessages.length - 1]
         if (lastMsg.role === 'user') {
@@ -181,7 +188,7 @@ export function ChatInput() {
       const body: any = {
         messages: apiMessages,
         model: selectedModel,
-        attachments: attachments.map(a => ({
+        attachments: currentAttachments.map(a => ({
           type: a.type,
           name: a.name,
           ...(a.type === 'pdf' && a.text ? { text: a.text } : {}),
@@ -189,15 +196,11 @@ export function ChatInput() {
         })),
       }
 
-      console.log('[Chat] Sending request:', { model: selectedModel, messageCount: apiMessages.length })
-
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
-
-      console.log('[Chat] Response status:', response.status)
 
       if (!response.ok) {
         const errorBody = await response.json().catch(() => null)
@@ -211,14 +214,11 @@ export function ChatInput() {
       const decoder = new TextDecoder()
       let fullContent = ''
       let buffer = ''
-      let chunkCount = 0
-      let sampleData = ''
 
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
 
-        chunkCount++
         buffer += decoder.decode(value, { stream: true })
         const lines = buffer.split(/\r?\n/)
         buffer = lines.pop() || ''
@@ -227,23 +227,14 @@ export function ChatInput() {
           const trimmed = line.trim()
           if (!trimmed.startsWith('data:')) continue
           const data = trimmed.slice(5).trim()
-          
-          if (data === '[DONE]') {
-            console.log('[Chat] Received [DONE]')
-            continue
-          }
-          if (!data) continue
 
-          // Save first non-empty data for debugging
-          if (!sampleData && data.length < 500) {
-            sampleData = data
-          }
+          if (data === '[DONE]') continue
+          if (!data) continue
 
           try {
             const json = JSON.parse(data)
-            // Try multiple possible paths for content
-            const content = 
-              json.choices?.[0]?.delta?.content ?? 
+            const content =
+              json.choices?.[0]?.delta?.content ??
               json.choices?.[0]?.delta?.text ??
               json.choices?.[0]?.message?.content ??
               json.content ??
@@ -258,12 +249,6 @@ export function ChatInput() {
           }
         }
       }
-
-      console.log('[Chat] Stream complete:', { 
-        chunks: chunkCount, 
-        contentLength: fullContent.length,
-        sampleData: sampleData.substring(0, 300)
-      })
 
       if (!fullContent.trim()) {
         throw new Error('AI returned empty response. Check NVIDIA_API_KEY in Vercel settings.')
@@ -298,17 +283,13 @@ export function ChatInput() {
     })
   }
 
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto'
-      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px'
-    }
-  }, [input])
+  const isDisabled = (!input.trim() && attachments.length === 0) || isStreaming || isProcessing
 
   return (
-    <div {...getRootProps()} className="border-t border-border flex-shrink-0">
+    <div {...getRootProps()} className="border-t border-border flex-shrink-0 bg-panel-chat">
       <input {...getInputProps()} />
 
+      {/* Attachments preview */}
       {attachments.length > 0 && (
         <div className="flex gap-2 px-3 pt-3 overflow-x-auto scrollbar-thin pb-1">
           {attachments.map((att, i) => (
@@ -322,20 +303,22 @@ export function ChatInput() {
                   />
                   <button
                     onClick={(e) => { e.stopPropagation(); removeAttachment(i) }}
-                    className="absolute -top-1.5 -right-1.5 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white text-xs opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity touch-target"
+                    className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                    aria-label={`Remove ${att.name}`}
                   >
                     x
                   </button>
                 </div>
               ) : (
                 <div className="flex items-center gap-2 bg-muted rounded-lg px-3 py-2 text-xs">
-                  <svg className="w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-4 h-4 text-muted-foreground flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                   </svg>
                   <span className="text-muted-foreground max-w-[100px] truncate">{att.name}</span>
                   <button
                     onClick={(e) => { e.stopPropagation(); removeAttachment(i) }}
-                    className="text-red-400 hover:text-red-300 touch-target"
+                    className="text-red-400 hover:text-red-300 ml-1"
+                    aria-label={`Remove ${att.name}`}
                   >
                     x
                   </button>
@@ -346,13 +329,15 @@ export function ChatInput() {
         </div>
       )}
 
+      {/* Input area */}
       <div className="p-2 md:p-3">
         <div className="flex items-end gap-1.5 md:gap-2">
-          {/* Attach button - larger touch target on mobile */}
+          {/* Attach button */}
           <button
             onClick={() => fileInputRef.current?.click()}
+            disabled={isStreaming || isProcessing}
             aria-label="Attach file"
-            className="touch-target flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-10 h-10 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-40"
             title="Attach file"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -383,8 +368,9 @@ export function ChatInput() {
               }
               input.click()
             }}
+            disabled={isStreaming || isProcessing}
             aria-label="Take photo"
-            className="touch-target flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors flex-shrink-0 md:hidden focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-10 h-10 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors flex-shrink-0 md:hidden focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-40"
             title="Take photo"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -393,25 +379,27 @@ export function ChatInput() {
             </svg>
           </button>
 
-          <div className="flex-1 relative">
+          {/* Textarea */}
+          <div className="flex-1 min-w-0">
             <textarea
               ref={textareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={isDragActive ? 'Drop files here...' : 'Ask about Ayurvedic health...'}
-              className="w-full bg-muted border border-border rounded-xl px-3 md:px-4 py-2 md:py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 resize-none focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50 scrollbar-thin"
+              className="w-full bg-muted border border-border rounded-xl px-3 md:px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 resize-none focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50 scrollbar-thin leading-relaxed"
               rows={1}
               disabled={isStreaming || isProcessing}
+              style={{ maxHeight: '150px' }}
             />
           </div>
 
-          {/* Send button - larger touch target */}
+          {/* Send button */}
           <button
             onClick={handleSend}
-            disabled={(!input.trim() && attachments.length === 0) || isStreaming || isProcessing}
+            disabled={isDisabled}
             aria-label="Send message"
-            className="touch-target flex items-center justify-center bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-10 h-10 flex items-center justify-center bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-primary/50"
           >
             {isProcessing ? (
               <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -426,11 +414,14 @@ export function ChatInput() {
           </button>
         </div>
 
-        <div className="flex items-center justify-between mt-1.5 md:mt-2 px-1">
+        {/* Bottom bar */}
+        <div className="flex items-center justify-between mt-1.5 px-1">
           <span className="text-[10px] text-muted-foreground/70 hidden md:inline">
             Enter to send, Shift+Enter for new line
           </span>
-          <ModelSelector />
+          <div className="flex-shrink-0">
+            <ModelSelector />
+          </div>
         </div>
       </div>
     </div>

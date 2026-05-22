@@ -41,6 +41,11 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Safe area for devices with notches/status bars */
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
 @layer utilities {
   .scrollbar-thin {
     scrollbar-width: thin;
@@ -85,37 +90,47 @@ body {
 
 /* Mobile-specific styles */
 @media (max-width: 767px) {
-  /* Prevent iOS zoom on input focus */
-  input[type="text"],
-  input[type="number"],
-  textarea,
-  select {
-    font-size: 16px !important;
-  }
-
-  /* Smaller scrollbar on mobile */
-  ::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
-  }
-  ::-webkit-scrollbar-thumb {
-    background: hsl(var(--muted-foreground) / 0.2);
-    border-radius: 2px;
-  }
-
-  /* Touch-friendly option buttons */
-  .touch-option {
+  /* Minimum touch target size */
+  .touch-target {
     min-height: 44px;
-    padding: 10px 16px;
+    min-width: 44px;
+  }
+
+  /* Hide ChatPanel header on mobile — ResizableLayout tab bar handles it */
+  .mobile-header-hidden > div:first-child {
+    display: none;
+  }
+
+  /* Ensure smooth scrolling on iOS */
+  .overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
   }
 }
 
-/* Safe area support for notched devices */
-.safe-top { padding-top: env(safe-area-inset-top); }
-.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+/* Prevent iOS zoom on input focus (16px minimum) */
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="tel"],
+input[type="search"],
+input[type="url"],
+input[type="password"],
+select,
+textarea {
+  font-size: 16px !important;
+}
 
-/* Touch target minimum size */
-.touch-target {
-  min-height: 44px;
-  min-width: 44px;
+/* Override on desktop where zoom isn't an issue */
+@media (min-width: 768px) {
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="search"],
+  input[type="url"],
+  input[type="password"],
+  select,
+  textarea {
+    font-size: 0.875rem !important;
+  }
 }
