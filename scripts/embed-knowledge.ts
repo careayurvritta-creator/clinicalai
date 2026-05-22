@@ -20,7 +20,7 @@ const EMBEDDING_DIM = 1024
 const BATCH_SIZE = 20
 const UPSERT_BATCH = 50
 const DELAY_BETWEEN_BATCHES_MS = 1000
-const MAX_CHUNK_CHARS = 2000 // ~500 tokens, safe for 512-token limit
+const MAX_CHUNK_CHARS = 1500 // ~375 tokens, safe for 512-token limit
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Chunk {
@@ -124,6 +124,8 @@ async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3, baseDelay = 10
       return await fn()
     } catch (error: unknown) {
       const err = error as { status?: number; message?: string }
+      // Don't retry on 400 (bad request, e.g., oversized input)
+      if (err?.status === 400) throw error
       if (attempt === maxRetries - 1) throw error
       const delay = err?.status === 429
         ? baseDelay * Math.pow(2, attempt) + Math.random() * 1000
@@ -839,30 +841,57 @@ async function loadSupabaseSources(supabase: any) {
 // ─── Embedding Generation ────────────────────────────────────────────────────
 async function generateEmbeddings(openai: OpenAI, texts: string[]): Promise<number[][]> {
   const allEmbeddings: number[][] = []
+  let skipped = 0
 
   for (let i = 0; i < texts.length; i += BATCH_SIZE) {
     const batch = texts.slice(i, i + BATCH_SIZE)
-    const response = await withRetry(() =>
-      openai.embeddings.create({
-        model: EMBEDDING_MODEL,
-        input: batch,
-        encoding_format: 'float',
-        // @ts-expect-error -- NVIDIA NIM requires input_type for asymmetric models
-        input_type: 'passage',
-      })
-    )
+    try {
+      const response = await withRetry(() =>
+        openai.embeddings.create({
+          model: EMBEDDING_MODEL,
+          input: batch,
+          encoding_format: 'float',
+          // @ts-expect-error -- NVIDIA NIM requires input_type for asymmetric models
+          input_type: 'passage',
+        })
+      )
 
-    for (const item of response.data) {
-      const emb = item.embedding as number[]
-      if (!validateEmbedding(emb)) {
-        console.warn(`  Invalid embedding at index ${i + response.data.indexOf(item)}, using zero vector`)
-        allEmbeddings.push(new Array(EMBEDDING_DIM).fill(0))
+      for (const item of response.data) {
+        const emb = item.embedding as number[]
+        if (!validateEmbedding(emb)) {
+          console.warn(`  Invalid embedding at index ${i + response.data.indexOf(item)}, using zero vector`)
+          allEmbeddings.push(new Array(EMBEDDING_DIM).fill(0))
+        } else {
+          allEmbeddings.push(emb)
+        }
+      }
+    } catch (error: unknown) {
+      const err = error as { status?: number; message?: string }
+      if (err?.status === 400 && batch.length > 1) {
+        // Batch failed, try individual texts to skip oversized ones
+        console.warn(`\n  Batch at offset ${i} failed (oversized input), trying individually...`)
+        for (const text of batch) {
+          try {
+            const resp = await openai.embeddings.create({
+              model: EMBEDDING_MODEL,
+              input: [text],
+              encoding_format: 'float',
+              input_type: 'passage',
+            })
+            const emb = resp.data[0].embedding as number[]
+            allEmbeddings.push(validateEmbedding(emb) ? emb : new Array(EMBEDDING_DIM).fill(0))
+          } catch {
+            console.warn(`  Skipped oversized chunk (${text.length} chars)`)
+            allEmbeddings.push(new Array(EMBEDDING_DIM).fill(0))
+            skipped++
+          }
+        }
       } else {
-        allEmbeddings.push(emb)
+        throw error
       }
     }
 
-    process.stdout.write(`  Embedded ${Math.min(i + BATCH_SIZE, texts.length)}/${texts.length}\r`)
+    process.stdout.write(`  Embedded ${Math.min(i + BATCH_SIZE, texts.length)}/${texts.length}${skipped > 0 ? ` (${skipped} skipped)` : ''}\r`)
 
     if (i + BATCH_SIZE < texts.length) {
       await new Promise(r => setTimeout(r, DELAY_BETWEEN_BATCHES_MS))
@@ -870,6 +899,7 @@ async function generateEmbeddings(openai: OpenAI, texts: string[]): Promise<numb
   }
 
   console.log()
+  if (skipped > 0) console.log(`  Skipped ${skipped} oversized chunks (zero vectors used)`)
   return allEmbeddings
 }
 
