@@ -44,6 +44,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
   const [followupAnswers, setFollowupAnswers] = useState<Record<string, string>>({})
   const [followupStep, setFollowupStep] = useState(0)
   const [isFollowupPhase, setIsFollowupPhase] = useState(false)
+  const [protocolPhase, setProtocolPhase] = useState('')
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -236,6 +237,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
 
   const generateTreatmentProtocol = async () => {
     setIsLoading(true)
+    setProtocolPhase('Searching PubMed for research papers...')
     addMessage({
       id: generateId(),
       role: 'assistant',
@@ -346,6 +348,15 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
               fullProtocol += parsed.content
               // Update canvas progressively with accumulated content
               setCanvasContent(fullProtocol)
+
+              // Detect current section being generated
+              const lastHeader = parsed.content.match(/## (.+)/)?.[1]
+              if (lastHeader) {
+                const phase = getPhaseLabel(lastHeader.trim())
+                if (phase !== protocolPhase) {
+                  setProtocolPhase(phase)
+                }
+              }
             } else if (parsed.error) {
               throw new Error(parsed.error)
             }
@@ -391,6 +402,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
       })
     } finally {
       setIsLoading(false)
+      setProtocolPhase('')
     }
   }
 
@@ -647,10 +659,15 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
         {isLoading && (
           <div className="flex justify-start">
             <div className="bg-muted border border-border rounded-lg px-4 py-3">
-              <div className="flex gap-1">
-                <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1">
+                  <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+                {protocolPhase && (
+                  <span className="text-xs text-muted-foreground">{protocolPhase}</span>
+                )}
               </div>
             </div>
           </div>
@@ -777,6 +794,25 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
       )}
     </div>
   )
+}
+
+function getPhaseLabel(section: string): string {
+  const s = section.toLowerCase()
+  if (s.includes('case summary') || s.includes('patient')) return 'Analyzing patient data...'
+  if (s.includes('samprapti') || s.includes('pathogenesis')) return 'Analyzing Ayurvedic pathogenesis...'
+  if (s.includes('literature') || s.includes('research') || s.includes('evidence')) return 'Reviewing research evidence...'
+  if (s.includes('classical') || s.includes('charak')) return 'Referencing classical texts...'
+  if (s.includes('treatment protocol') || s.includes('detailed treatment')) return 'Formulating treatment protocol...'
+  if (s.includes('purvakarma')) return 'Designing preparatory procedures...'
+  if (s.includes('pradhana') || s.includes('panchakarma')) return 'Planning Panchakarma procedures...'
+  if (s.includes('paschat')) return 'Planning post-treatment recovery...'
+  if (s.includes('herbal') || s.includes('formulation')) return 'Selecting herbal formulations...'
+  if (s.includes('diet') || s.includes('pathya')) return 'Preparing diet protocol...'
+  if (s.includes('dinacharya') || s.includes('lifestyle')) return 'Designing lifestyle plan...'
+  if (s.includes('monitoring') || s.includes('follow')) return 'Creating monitoring schedule...'
+  if (s.includes('precaution') || s.includes('safety')) return 'Assessing precautions...'
+  if (s.includes('reference')) return 'Compiling references...'
+  return 'Generating protocol...'
 }
 
 function getCategorySuggestions(category: string): string[] {

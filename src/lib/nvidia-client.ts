@@ -19,18 +19,32 @@ export function getNvidiaClient(): OpenAI {
   return client
 }
 
+export interface ChatParams {
+  max_tokens?: number
+  temperature?: number
+  top_p?: number
+}
+
+const DEFAULT_PARAMS: Required<ChatParams> = {
+  max_tokens: 4096,
+  temperature: 0.7,
+  top_p: 0.7,
+}
+
 export async function createChatStream(
   messages: ChatMessage[],
-  model: string
+  model: string,
+  params?: ChatParams
 ) {
   const client = getNvidiaClient()
+  const merged = { ...DEFAULT_PARAMS, ...params }
 
   return client.chat.completions.create({
     model,
     messages: messages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
-    max_tokens: 4096,
-    temperature: 0.7,
-    top_p: 0.7,
+    max_tokens: merged.max_tokens,
+    temperature: merged.temperature,
+    top_p: merged.top_p,
     stream: true,
   })
 }

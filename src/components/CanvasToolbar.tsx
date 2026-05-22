@@ -1,10 +1,13 @@
 'use client'
 
+import { useState } from 'react'
 import { useChatStore } from '@/lib/store'
+import { exportProtocolToPDF } from '@/lib/pdf-export'
 
 export function CanvasToolbar() {
   const canvasContent = useChatStore((state) => state.canvasContent)
   const clearMessages = useChatStore((state) => state.clearMessages)
+  const [isExporting, setIsExporting] = useState(false)
 
   const handleCopy = async () => {
     try {
@@ -19,15 +22,23 @@ export function CanvasToolbar() {
     }
   }
 
-  const handleExport = () => {
-    const blob = new Blob([canvasContent], { type: 'text/markdown' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `clinical-ai-${new Date().toISOString().slice(0, 10)}.md`
-    a.click()
-    URL.revokeObjectURL(url)
+  const handleDownloadPDF = async () => {
+    setIsExporting(true)
+    try {
+      // Extract patient name from content if available
+      const nameMatch = canvasContent.match(/\*\*Name:\*\*\s*(.+)/i)
+      const diagMatch = canvasContent.match(/\*\*Diagnosis:\*\*\s*(.+)/i)
+      const patientName = nameMatch?.[1]?.trim() || 'Patient'
+      const diagnosis = diagMatch?.[1]?.trim() || ''
+      await exportProtocolToPDF(patientName, diagnosis)
+    } catch (error) {
+      console.error('PDF export failed:', error)
+    } finally {
+      setIsExporting(false)
+    }
   }
+
+  const isProtocol = canvasContent.includes('## ') && canvasContent.length > 2000
 
   return (
     <div className="flex items-center gap-2 px-4 py-3 border-t border-border bg-panel-canvas">
@@ -43,17 +54,20 @@ export function CanvasToolbar() {
         Copy
       </button>
 
-      <button
-        onClick={handleExport}
-        aria-label="Export as markdown"
-        className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50"
-        title="Export as markdown"
-      >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-        Export
-      </button>
+      {isProtocol && (
+        <button
+          onClick={handleDownloadPDF}
+          disabled={isExporting}
+          aria-label="Download as PDF"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-primary hover:bg-primary/10 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
+          title="Download as PDF"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          {isExporting ? 'Generating PDF...' : 'Download PDF'}
+        </button>
+      )}
 
       <div className="flex-1" />
 

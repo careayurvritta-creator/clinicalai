@@ -2,6 +2,7 @@
 
 import { useChatStore } from '@/lib/store'
 import { CanvasToolbar } from './CanvasToolbar'
+import { ProtocolRenderer } from './ProtocolRenderer'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useEffect, useRef } from 'react'
@@ -17,11 +18,26 @@ export function CanvasPanel() {
 
   const hasContent = canvasContent.trim().length > 0
 
-  const isDiagnosisContent = hasContent && (
+  const isProtocol = hasContent && (
+    canvasContent.includes('## Case Summary') ||
+    canvasContent.includes('## Treatment Protocol') ||
+    canvasContent.includes('## Ayurvedic Pathogenesis') ||
+    canvasContent.includes('## Samprapti') ||
+    canvasContent.includes('## Detailed Treatment')
+  )
+
+  const isDiagnosis = hasContent && !isProtocol && (
     canvasContent.includes('Current Diagnostic Thinking') ||
     canvasContent.includes('PROVISIONAL DIAGNOSIS') ||
     canvasContent.includes('CASE PRESENTATION')
   )
+
+  const getContentType = () => {
+    if (isProtocol) return 'Treatment Protocol'
+    if (isDiagnosis) return 'Diagnosis'
+    if (hasContent) return 'Output'
+    return ''
+  }
 
   return (
     <div className="flex flex-col h-full bg-panel-canvas">
@@ -41,7 +57,7 @@ export function CanvasPanel() {
         </div>
         {hasContent && (
           <span className="text-xs text-muted-foreground truncate max-w-[200px]">
-            {canvasContent.length > 2000 ? 'Treatment Protocol' : 'Diagnosis'}
+            {getContentType()}
           </span>
         )}
       </div>
@@ -59,71 +75,59 @@ export function CanvasPanel() {
               Diagnosis results and treatment protocols will appear here as formatted documents.
             </p>
             {isStreaming && (
-              <div className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+              <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
                 <div className="flex gap-1">
                   <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                   <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                   <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
-                <span>Processing...</span>
+                Processing...
               </div>
             )}
           </div>
         ) : (
-          <div className={`px-4 py-4 ${isDiagnosisContent ? 'max-w-none' : 'max-w-4xl mx-auto'}`}>
-            <div className={`prose prose-invert ${isDiagnosisContent ? 'prose-lg' : 'prose-sm'} max-w-none
-              prose-headings:text-foreground prose-headings:font-semibold
-              prose-p:text-foreground/80 prose-p:leading-relaxed
-              prose-strong:text-foreground prose-strong:font-semibold
-              prose-code:text-primary prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded
-              prose-pre:bg-muted prose-pre:border prose-pre:border-border
-              prose-blockquote:border-l-primary prose-blockquote:text-muted-foreground
-              prose-ul:text-foreground/80 prose-ol:text-foreground/80
-              prose-li:text-foreground/80
-              prose-hr:border-border
-              prose-table:text-foreground/80 prose-th:text-foreground prose-td:text-foreground/80 prose-th:border-border prose-td:border-border prose-tr:border-border
-            `}>
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {canvasContent}
-              </ReactMarkdown>
-            </div>
-
-            {isDiagnosisContent && (
-              <div className="mt-6 p-4 bg-muted/30 border border-border rounded-lg">
-                <h4 className="text-sm font-semibold text-foreground mb-2">Actions</h4>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => useChatStore.getState().setChatInputDraft('I confirm this diagnosis. Please provide the treatment plan.')}
-                    className="px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-                  >
-                    Confirm Diagnosis
-                  </button>
-                  <button
-                    onClick={() => useChatStore.getState().setChatInputDraft('I need to add more clinical information about this case.')}
-                    className="px-3 py-1.5 text-xs bg-muted border border-border rounded-lg hover:border-primary/50 transition-colors"
-                  >
-                    Add More Information
-                  </button>
-                  <button
-                    onClick={() => useChatStore.getState().setChatInputDraft('Please generate a detailed treatment protocol for this diagnosis.')}
-                    className="px-3 py-1.5 text-xs bg-muted border border-border rounded-lg hover:border-primary/50 transition-colors"
-                  >
-                    Generate Treatment Plan
-                  </button>
-                </div>
+          <div className={`p-4 md:p-6 ${isProtocol ? '' : 'max-w-4xl mx-auto'}`}>
+            {isProtocol ? (
+              <ProtocolRenderer content={canvasContent} />
+            ) : (
+              <div className="prose prose-sm prose-invert max-w-none">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {canvasContent}
+                </ReactMarkdown>
               </div>
             )}
 
+            {/* Streaming cursor */}
             {isStreaming && (
-              <div className="mt-4 flex items-center gap-2">
-                <span className="inline-block w-2 h-4 bg-primary animate-blink" />
-                <span className="text-xs text-muted-foreground">Processing response...</span>
-              </div>
+              <span className="inline-block w-2 h-5 bg-primary animate-blink ml-0.5 align-middle" />
             )}
 
-            <div ref={contentEndRef} />
+            {/* Diagnosis action buttons */}
+            {isDiagnosis && (
+              <div className="mt-6 flex flex-wrap gap-3 pt-4 border-t border-border">
+                <button
+                  onClick={() => useChatStore.getState().setChatInputDraft('I confirm this diagnosis. Please provide the treatment plan.')}
+                  className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                >
+                  Confirm Diagnosis
+                </button>
+                <button
+                  onClick={() => useChatStore.getState().setChatInputDraft('I need to add more clinical information about this case.')}
+                  className="px-4 py-2 text-sm bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors"
+                >
+                  Add More Information
+                </button>
+                <button
+                  onClick={() => useChatStore.getState().setChatInputDraft('Please generate a detailed treatment protocol for this diagnosis.')}
+                  className="px-4 py-2 text-sm bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors"
+                >
+                  Generate Treatment Plan
+                </button>
+              </div>
+            )}
           </div>
         )}
+        <div ref={contentEndRef} />
       </div>
 
       {hasContent && <CanvasToolbar />}

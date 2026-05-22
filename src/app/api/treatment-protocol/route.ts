@@ -234,13 +234,14 @@ export async function POST(req: NextRequest) {
 
     console.log('[Treatment Protocol] Generating with LLM. Papers:', researchCtx?.papers.length || 0, 'Web:', researchCtx?.webResults.length || 0, 'RAG:', ragResults.length)
 
-    // Stream the LLM response
+    // Stream the LLM response with tuned parameters for precise, detailed output
     const stream = await createChatStream(
       [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: 'Generate the complete treatment protocol for this patient now.' },
       ],
-      'meta/llama-3.1-405b-instruct'
+      'meta/llama-3.1-405b-instruct',
+      { max_tokens: 8192, temperature: 0.4, top_p: 0.9 }
     )
 
     const encoder = new TextEncoder()

@@ -22,7 +22,6 @@ export interface ChatState {
   canvasContent: string
   activeModule: string
   chatInputDraft: string
-  intakeState?: IntakeState
 }
 
 export interface ModelOption {
@@ -238,36 +237,4 @@ export interface CaseData {
   desha: string
   provisionalDiagnosis: string
   provisionalReasoning: string
-}
-
-export interface IntakeState {
-  isCollecting: boolean
-  currentStep: number
-  totalSteps: number
-  caseData: CaseData
-  questionHistory: string[]
-  showProvisionalDiagnosis: boolean
-  pendingComplaints: string[]
-  currentComplaintIndex: number
-}
-
-export interface StoredCase {
-  id: string
-  date: string
-  caseData: CaseData
-  aiDiagnosis: string
-  doctorCorrection?: string
-  treatmentPlan?: string
-  outcome?: {
-    followUpDate: string
-    outcomeRating: 1 | 2 | 3 | 4 | 5
-    doctorNotes: string
-    whatWorked: string[]
-    whatDidntWork: string[]
-  }
-  learnings?: {
-    patternCorrected: string
-    correctionReason: string
-    frequency: number
-  }[]
 }
