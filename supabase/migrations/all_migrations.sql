@@ -170,7 +170,7 @@ create index idx_profiles_auth_user on profiles(auth_user_id);
 create index idx_profiles_active on profiles(is_active) where is_active = true;
 
 create index idx_patients_doctor on patients(doctor_id);
-create index idx_patients_name on patients using gin(to_tsvector('simple', name));
+create index idx_patients_name on patients(name);
 create index idx_patients_phone on patients(phone);
 create index idx_patients_code on patients(patient_code);
 create index idx_patients_archived on patients(is_archived) where is_archived = false;
@@ -180,7 +180,7 @@ create index idx_cases_doctor on cases(doctor_id);
 create index idx_cases_status on cases(status);
 create index idx_cases_visit_date on cases(visit_date);
 create index idx_cases_case_number on cases(case_number);
-create index idx_cases_provisional_diagnosis on cases using gin(to_tsvector('simple', coalesce(provisional_diagnosis, '')));
+create index idx_cases_provisional_diagnosis on cases(provisional_diagnosis);
 create index idx_cases_created_at on cases(created_at desc);
 create index idx_cases_visit_type on cases(visit_type);
 create index idx_cases_follow_up on cases(follow_up_date) where follow_up_date is not null;
@@ -438,7 +438,7 @@ comment on column chief_complaints.associated_symptoms is 'Array of related symp
 
 create index idx_chief_complaints_case on chief_complaints(case_id);
 create index idx_chief_complaints_severity on chief_complaints(severity);
-create index idx_chief_complaints_complaint on chief_complaints using gin(to_tsvector('simple', complaint));
+create index idx_chief_complaints_complaint on chief_complaints(complaint);
 
 -- ============================================
 -- INVESTIGATION FINDINGS TABLE
@@ -667,7 +667,7 @@ create index idx_messages_created_at on messages(created_at);
 create index idx_messages_is_question on messages(is_question) where is_question = true;
 
 -- Full text search on message content
-create index idx_messages_content_search on messages using gin(to_tsvector('simple', content));
+create index idx_messages_content_search on messages(content);
 
 -- ============================================
 -- ATTACHMENTS TABLE
@@ -719,7 +719,7 @@ create index idx_attachments_analysis_status on attachments(analysis_status);
 create index idx_attachments_created_at on attachments(created_at desc);
 
 -- Full text search on extracted text
-create index idx_attachments_text_search on attachments using gin(to_tsvector('simple', coalesce(extracted_text, '')));
+create index idx_attachments_text_search on attachments(extracted_text);
 
 -- ============================================
 -- TRIGGERS
@@ -1164,7 +1164,7 @@ create index idx_herbs_code on herbs(herb_code);
 create index idx_herbs_name on herbs using gin(search_vector);
 create index idx_herbs_family on herbs(family);
 create index idx_herbs_virya on herbs(virya);
-create index idx_herbs_indications on herbs using gin(to_tsvector('simple', array_to_string(indications, ' ')));
+create index idx_herbs_indications on herbs using gin(indications);
 create index idx_herbs_active on herbs(is_active) where is_active = true;
 
 create trigger update_herbs_search_vector_trigger
