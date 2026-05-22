@@ -1,12 +1,16 @@
 import { createServerClient } from './client'
 
-const supabase = createServerClient()
+let _supabase: ReturnType<typeof createServerClient> | null = null
+function getSupabase() {
+  if (!_supabase) _supabase = createServerClient()
+  return _supabase
+}
 
 // ============================================
 // PROFILES
 // ============================================
 export async function getProfile(userId: string) {
-  return supabase
+  return getSupabase()
     .from('profiles')
     .select('*')
     .eq('auth_user_id', userId)
@@ -14,7 +18,7 @@ export async function getProfile(userId: string) {
 }
 
 export async function updateProfile(userId: string, data: Record<string, unknown>) {
-  return supabase
+  return getSupabase()
     .from('profiles')
     .update(data)
     .eq('auth_user_id', userId)
@@ -26,7 +30,7 @@ export async function updateProfile(userId: string, data: Record<string, unknown
 // PATIENTS
 // ============================================
 export async function getPatients(doctorId: string) {
-  return supabase
+  return getSupabase()
     .from('patients')
     .select('*')
     .eq('doctor_id', doctorId)
@@ -35,7 +39,7 @@ export async function getPatients(doctorId: string) {
 }
 
 export async function getPatient(patientId: string) {
-  return supabase
+  return getSupabase()
     .from('patients')
     .select('*')
     .eq('id', patientId)
@@ -53,7 +57,7 @@ function calculateAndSetBMI(data: Record<string, unknown>): Record<string, unkno
 }
 
 export async function createPatient(data: Record<string, unknown>) {
-  return supabase
+  return getSupabase()
     .from('patients')
     .insert(calculateAndSetBMI(data))
     .select()
@@ -61,7 +65,7 @@ export async function createPatient(data: Record<string, unknown>) {
 }
 
 export async function updatePatient(patientId: string, data: Record<string, unknown>) {
-  return supabase
+  return getSupabase()
     .from('patients')
     .update(calculateAndSetBMI(data))
     .eq('id', patientId)
@@ -70,7 +74,7 @@ export async function updatePatient(patientId: string, data: Record<string, unkn
 }
 
 export async function searchPatients(doctorId: string, query: string) {
-  return supabase
+  return getSupabase()
     .from('patients')
     .select('*')
     .eq('doctor_id', doctorId)
@@ -82,7 +86,7 @@ export async function searchPatients(doctorId: string, query: string) {
 // CASES
 // ============================================
 export async function getCases(doctorId: string, status?: string) {
-  let query = supabase
+  let query = getSupabase()
     .from('cases')
     .select(`
       *,
@@ -99,7 +103,7 @@ export async function getCases(doctorId: string, status?: string) {
 }
 
 export async function getCase(caseId: string) {
-  return supabase
+  return getSupabase()
     .from('cases')
     .select(`
       *,
@@ -114,7 +118,7 @@ export async function getCase(caseId: string) {
 }
 
 export async function createCase(data: Record<string, unknown>) {
-  return supabase
+  return getSupabase()
     .from('cases')
     .insert(data)
     .select()
@@ -122,7 +126,7 @@ export async function createCase(data: Record<string, unknown>) {
 }
 
 export async function updateCase(caseId: string, data: Record<string, unknown>) {
-  return supabase
+  return getSupabase()
     .from('cases')
     .update(data)
     .eq('id', caseId)
@@ -131,7 +135,7 @@ export async function updateCase(caseId: string, data: Record<string, unknown>) 
 }
 
 export async function getCasesByPatient(patientId: string) {
-  return supabase
+  return getSupabase()
     .from('cases')
     .select('*')
     .eq('patient_id', patientId)
@@ -142,7 +146,7 @@ export async function getCasesByPatient(patientId: string) {
 // CHIEF COMPLAINTS
 // ============================================
 export async function getChiefComplaints(caseId: string) {
-  return supabase
+  return getSupabase()
     .from('chief_complaints')
     .select('*')
     .eq('case_id', caseId)
@@ -150,7 +154,7 @@ export async function getChiefComplaints(caseId: string) {
 }
 
 export async function createChiefComplaint(data: Record<string, unknown>) {
-  return supabase
+  return getSupabase()
     .from('chief_complaints')
     .insert(data)
     .select()
@@ -161,7 +165,7 @@ export async function createChiefComplaint(data: Record<string, unknown>) {
 // INVESTIGATION FINDINGS
 // ============================================
 export async function getInvestigationFindings(caseId: string) {
-  return supabase
+  return getSupabase()
     .from('investigation_findings')
     .select('*')
     .eq('case_id', caseId)
@@ -169,7 +173,7 @@ export async function getInvestigationFindings(caseId: string) {
 }
 
 export async function createInvestigationFinding(data: Record<string, unknown>) {
-  return supabase
+  return getSupabase()
     .from('investigation_findings')
     .insert(data)
     .select()
@@ -177,7 +181,7 @@ export async function createInvestigationFinding(data: Record<string, unknown>) 
 }
 
 export async function getCriticalFindings(doctorId: string, daysBack = 30) {
-  return supabase
+  return getSupabase()
     .rpc('get_critical_findings', { doctor_uuid: doctorId, days_back: daysBack })
 }
 
@@ -185,7 +189,7 @@ export async function getCriticalFindings(doctorId: string, daysBack = 30) {
 // TREATMENT PROTOCOLS
 // ============================================
 export async function getTreatmentProtocols(caseId: string) {
-  return supabase
+  return getSupabase()
     .from('treatment_protocols')
     .select('*')
     .eq('case_id', caseId)
@@ -193,7 +197,7 @@ export async function getTreatmentProtocols(caseId: string) {
 }
 
 export async function createTreatmentProtocol(data: Record<string, unknown>) {
-  return supabase
+  return getSupabase()
     .from('treatment_protocols')
     .insert(data)
     .select()
@@ -201,7 +205,7 @@ export async function createTreatmentProtocol(data: Record<string, unknown>) {
 }
 
 export async function updateTreatmentProtocol(protocolId: string, data: Record<string, unknown>) {
-  return supabase
+  return getSupabase()
     .from('treatment_protocols')
     .update(data)
     .eq('id', protocolId)
@@ -213,7 +217,7 @@ export async function updateTreatmentProtocol(protocolId: string, data: Record<s
 // CASE OUTCOMES
 // ============================================
 export async function getCaseOutcomes(caseId: string) {
-  return supabase
+  return getSupabase()
     .from('case_outcomes')
     .select('*')
     .eq('case_id', caseId)
@@ -221,7 +225,7 @@ export async function getCaseOutcomes(caseId: string) {
 }
 
 export async function createCaseOutcome(data: Record<string, unknown>) {
-  return supabase
+  return getSupabase()
     .from('case_outcomes')
     .insert(data)
     .select()
@@ -232,7 +236,7 @@ export async function createCaseOutcome(data: Record<string, unknown>) {
 // CASE LEARNINGS
 // ============================================
 export async function getCaseLearnings(caseId: string) {
-  return supabase
+  return getSupabase()
     .from('case_learnings')
     .select('*')
     .eq('case_id', caseId)
@@ -240,7 +244,7 @@ export async function getCaseLearnings(caseId: string) {
 }
 
 export async function createCaseLearning(data: Record<string, unknown>) {
-  return supabase
+  return getSupabase()
     .from('case_learnings')
     .insert(data)
     .select()
@@ -251,7 +255,7 @@ export async function createCaseLearning(data: Record<string, unknown>) {
 // CONVERSATIONS
 // ============================================
 export async function getConversations(doctorId: string) {
-  return supabase
+  return getSupabase()
     .from('conversations')
     .select('*')
     .eq('doctor_id', doctorId)
@@ -259,7 +263,7 @@ export async function getConversations(doctorId: string) {
 }
 
 export async function getConversation(sessionId: string) {
-  return supabase
+  return getSupabase()
     .from('conversations')
     .select('*')
     .eq('session_id', sessionId)
@@ -267,7 +271,7 @@ export async function getConversation(sessionId: string) {
 }
 
 export async function createConversation(data: Record<string, unknown>) {
-  return supabase
+  return getSupabase()
     .from('conversations')
     .insert(data)
     .select()
@@ -275,7 +279,7 @@ export async function createConversation(data: Record<string, unknown>) {
 }
 
 export async function updateConversation(conversationId: string, data: Record<string, unknown>) {
-  return supabase
+  return getSupabase()
     .from('conversations')
     .update(data)
     .eq('id', conversationId)
@@ -287,7 +291,7 @@ export async function updateConversation(conversationId: string, data: Record<st
 // MESSAGES
 // ============================================
 export async function getMessages(conversationId: string) {
-  return supabase
+  return getSupabase()
     .from('messages')
     .select('*')
     .eq('conversation_id', conversationId)
@@ -295,7 +299,7 @@ export async function getMessages(conversationId: string) {
 }
 
 export async function createMessage(data: Record<string, unknown>) {
-  return supabase
+  return getSupabase()
     .from('messages')
     .insert(data)
     .select()
@@ -303,7 +307,7 @@ export async function createMessage(data: Record<string, unknown>) {
 }
 
 export async function updateMessage(messageId: string, data: Record<string, unknown>) {
-  return supabase
+  return getSupabase()
     .from('messages')
     .update(data)
     .eq('id', messageId)
@@ -315,7 +319,7 @@ export async function updateMessage(messageId: string, data: Record<string, unkn
 // ATTACHMENTS
 // ============================================
 export async function getAttachments(caseId?: string, conversationId?: string) {
-  let query = supabase
+  let query = getSupabase()
     .from('attachments')
     .select('*')
     .order('created_at', { ascending: false })
@@ -327,7 +331,7 @@ export async function getAttachments(caseId?: string, conversationId?: string) {
 }
 
 export async function createAttachment(data: Record<string, unknown>) {
-  return supabase
+  return getSupabase()
     .from('attachments')
     .insert(data)
     .select()
@@ -338,7 +342,7 @@ export async function createAttachment(data: Record<string, unknown>) {
 // INTAKE SESSIONS
 // ============================================
 export async function getIntakeSession(sessionId: string) {
-  return supabase
+  return getSupabase()
     .from('intake_sessions')
     .select('*')
     .eq('session_id', sessionId)
@@ -346,7 +350,7 @@ export async function getIntakeSession(sessionId: string) {
 }
 
 export async function createIntakeSession(data: Record<string, unknown>) {
-  return supabase
+  return getSupabase()
     .from('intake_sessions')
     .insert(data)
     .select()
@@ -354,7 +358,7 @@ export async function createIntakeSession(data: Record<string, unknown>) {
 }
 
 export async function updateIntakeSession(sessionId: string, data: Record<string, unknown>) {
-  return supabase
+  return getSupabase()
     .from('intake_sessions')
     .update(data)
     .eq('session_id', sessionId)
@@ -366,7 +370,7 @@ export async function updateIntakeSession(sessionId: string, data: Record<string
 // KNOWLEDGE BASE (Read-only)
 // ============================================
 export async function searchKnowledgeBase(query: string, sourceTables?: string[], limit = 10) {
-  return supabase
+  return getSupabase()
     .rpc('search_knowledge_base', {
       search_query: query,
       source_tables: sourceTables || ['who_terminology', 'diseases', 'herbs', 'treatments', 'charak_chapters'],
@@ -375,7 +379,7 @@ export async function searchKnowledgeBase(query: string, sourceTables?: string[]
 }
 
 export async function semanticSearch(embedding: number[], matchThreshold = 0.5, matchCount = 10, sourceTable?: string) {
-  return supabase
+  return getSupabase()
     .rpc('semantic_search', {
       query_embedding: embedding,
       match_threshold: matchThreshold,
@@ -392,11 +396,11 @@ export async function logRagSearch(data: {
   latency_ms: number
   embedding_used: boolean
 }) {
-  return supabase.from('rag_search_history').insert(data)
+  return getSupabase().from('rag_search_history').insert(data)
 }
 
 export async function getDisease(diseaseCode: string) {
-  return supabase
+  return getSupabase()
     .from('diseases')
     .select('*')
     .eq('disease_code', diseaseCode)
@@ -405,7 +409,7 @@ export async function getDisease(diseaseCode: string) {
 }
 
 export async function getHerb(herbCode: string) {
-  return supabase
+  return getSupabase()
     .from('herbs')
     .select('*')
     .eq('herb_code', herbCode)
@@ -414,7 +418,7 @@ export async function getHerb(herbCode: string) {
 }
 
 export async function getTreatment(treatmentCode: string) {
-  return supabase
+  return getSupabase()
     .from('treatments')
     .select('*')
     .eq('treatment_code', treatmentCode)
@@ -423,7 +427,7 @@ export async function getTreatment(treatmentCode: string) {
 }
 
 export async function searchDiseases(query: string) {
-  return supabase
+  return getSupabase()
     .from('diseases')
     .select('*')
     .eq('is_active', true)
@@ -432,7 +436,7 @@ export async function searchDiseases(query: string) {
 }
 
 export async function searchHerbs(query: string) {
-  return supabase
+  return getSupabase()
     .from('herbs')
     .select('*')
     .eq('is_active', true)
@@ -441,7 +445,7 @@ export async function searchHerbs(query: string) {
 }
 
 export async function getDrugInteractions(drug: string, herb: string) {
-  return supabase
+  return getSupabase()
     .from('allopathy_integration')
     .select('*')
     .or(`allopathic_drug.ilike.%${drug}%,ayurvedic_herb.ilike.%${herb}%`)
@@ -451,32 +455,32 @@ export async function getDrugInteractions(drug: string, herb: string) {
 // ANALYTICS
 // ============================================
 export async function getDoctorStats(doctorId: string) {
-  return supabase
+  return getSupabase()
     .rpc('get_doctor_stats', { doctor_uuid: doctorId })
 }
 
 export async function getPatientCaseHistory(patientId: string) {
-  return supabase
+  return getSupabase()
     .rpc('get_patient_case_history', { patient_uuid: patientId })
 }
 
 // TODO: v_patient_summary view needs doctor_id column added
 export async function getPatientSummary(doctorId: string) {
-  return supabase
+  return getSupabase()
     .from('v_patient_summary')
     .select('*')
 }
 
 // TODO: v_case_analytics view needs doctor_id column added
 export async function getCaseAnalytics(doctorId: string) {
-  return supabase
+  return getSupabase()
     .from('v_case_analytics')
     .select('*')
 }
 
 // TODO: v_treatment_effectiveness view needs doctor_id column added
 export async function getTreatmentEffectiveness(doctorId: string) {
-  return supabase
+  return getSupabase()
     .from('v_treatment_effectiveness')
     .select('*')
 }
@@ -485,7 +489,7 @@ export async function getTreatmentEffectiveness(doctorId: string) {
 // STORAGE HELPERS
 // ============================================
 export async function uploadFile(bucket: string, path: string, file: File) {
-  return supabase.storage
+  return getSupabase().storage
     .from(bucket)
     .upload(path, file, {
       cacheControl: '3600',
@@ -494,14 +498,14 @@ export async function uploadFile(bucket: string, path: string, file: File) {
 }
 
 export async function getFileUrl(bucket: string, path: string) {
-  const { data } = await supabase.storage
+  const { data } = await getSupabase().storage
     .from(bucket)
     .getPublicUrl(path)
   return data.publicUrl
 }
 
 export async function deleteFile(bucket: string, path: string) {
-  return supabase.storage
+  return getSupabase().storage
     .from(bucket)
     .remove([path])
 }
