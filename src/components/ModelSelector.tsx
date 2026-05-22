@@ -31,7 +31,7 @@ export function ModelSelector() {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute bottom-full right-0 mb-2 w-72 bg-card border border-border rounded-xl shadow-2xl z-50 overflow-hidden">
+          <div className="fixed sm:absolute bottom-[60px] sm:bottom-full right-2 sm:right-0 sm:mb-2 w-72 max-w-[calc(100vw-16px)] bg-card border border-border rounded-xl shadow-2xl z-50 overflow-hidden">
             <div className="px-3 py-2 border-b border-border">
               <span className="text-xs font-medium text-muted-foreground">Select Model</span>
             </div>
