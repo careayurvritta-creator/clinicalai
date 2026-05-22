@@ -49,9 +49,23 @@ function batchItems<T>(items: T[], size: number): T[][] {
   return batches
 }
 
+async function fetchWithRetry(url: string, retries = 3): Promise<Response> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const response = await fetch(url)
+    if (response.status === 429 && attempt < retries) {
+      const delay = Math.pow(2, attempt + 2) * 1000 // 4s, 8s, 16s
+      console.log(`  Rate limited, waiting ${delay / 1000}s (attempt ${attempt + 1}/${retries})...`)
+      await new Promise(r => setTimeout(r, delay))
+      continue
+    }
+    return response
+  }
+  throw new Error('Max retries exceeded')
+}
+
 async function fetchJson(url: string): Promise<Record<string, unknown>[]> {
   console.log(`  Fetching: ${url}`)
-  const response = await fetch(url)
+  const response = await fetchWithRetry(url)
   if (!response.ok) {
     throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`)
   }
@@ -145,9 +159,11 @@ async function main() {
   const args = process.argv.slice(2)
   const dryRun = args.includes('--dry-run')
   const force = args.includes('--force')
+  const startOffsetArg = args.find(a => a.startsWith('--start-offset='))
+  const startOffset = startOffsetArg ? parseInt(startOffsetArg.split('=')[1], 10) : 0
 
   console.log('=== HuggingFace Ayurveda Dataset Ingestion ===')
-  console.log(`Mode: ${dryRun ? 'DRY RUN' : 'LIVE'}${force ? ' (FORCE)' : ''}`)
+  console.log(`Mode: ${dryRun ? 'DRY RUN' : 'LIVE'}${force ? ' (FORCE)' : ''}${startOffset > 0 ? ` (resume from ${startOffset})` : ''}`)
 
   // Supabase client
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -191,7 +207,7 @@ async function main() {
   try {
     const PAGE_SIZE = 100  // HF datasets server max per page
     let totalUpserted = 0
-    let offset = 0
+    let offset = startOffset
     let hasMore = true
 
     while (hasMore) {
@@ -218,8 +234,8 @@ async function main() {
 
         offset += PAGE_SIZE
         hasMore = data.length === PAGE_SIZE
-        // Small delay to avoid rate limiting
-        await new Promise(r => setTimeout(r, 200))
+        // Delay to avoid HF rate limiting (429)
+        await new Promise(r => setTimeout(r, 1500))
       } catch (e) {
         console.log(`  Stopped at offset ${offset}: ${(e as Error).message}`)
         break
