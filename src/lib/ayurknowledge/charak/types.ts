@@ -53,4 +53,13 @@ export interface CharakChapter {
   diseaseDescriptions?: DiseaseDescription[]
   importantVerses?: string[]
   clinicalApplications: string[]
+  // Additional content arrays (used by expanded chapters)
+  additionalShlokas?: Shloka[]
+  additionalTopics?: Topic[]
+  additionalDiseaseDescriptions?: DiseaseDescription[]
+  additionalTreatmentProtocols?: TreatmentProtocol[]
+  additionalDoshaDiscussion?: string[]
+  additionalClinicalApplications?: string[]
+  additionalDietaryGuidelines?: string[]
+  additionalImportantVerses?: string[]
 }
