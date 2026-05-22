@@ -82,13 +82,22 @@ export function CanvasPanel() {
               <div className="mt-6 p-4 bg-muted/30 border border-border rounded-lg">
                 <h4 className="text-sm font-semibold text-foreground mb-2">Actions</h4>
                 <div className="flex flex-wrap gap-2">
-                  <button className="px-3 py-1.5 text-xs bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors">
+                  <button
+                    onClick={() => useChatStore.getState().setChatInputDraft('I confirm this diagnosis. Please provide the treatment plan.')}
+                    className="px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                  >
                     Confirm Diagnosis
                   </button>
-                  <button className="px-3 py-1.5 text-xs bg-muted border border-border rounded-lg hover:border-primary/50 transition-colors">
+                  <button
+                    onClick={() => useChatStore.getState().setChatInputDraft('I need to add more clinical information about this case.')}
+                    className="px-3 py-1.5 text-xs bg-muted border border-border rounded-lg hover:border-primary/50 transition-colors"
+                  >
                     Add More Information
                   </button>
-                  <button className="px-3 py-1.5 text-xs bg-muted border border-border rounded-lg hover:border-primary/50 transition-colors">
+                  <button
+                    onClick={() => useChatStore.getState().setChatInputDraft('Please generate a detailed treatment protocol for this diagnosis.')}
+                    className="px-3 py-1.5 text-xs bg-muted border border-border rounded-lg hover:border-primary/50 transition-colors"
+                  >
                     Generate Treatment Plan
                   </button>
                 </div>

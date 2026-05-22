@@ -4,7 +4,6 @@ import { useChatStore } from '@/lib/store'
 import { useShallow } from 'zustand/shallow'
 import { MessageBubble } from './MessageBubble'
 import { ChatInput } from './ChatInput'
-import { ModuleSidebar } from './ModuleSidebar'
 import { CaseCollectorChat } from './CaseCollectorChat'
 import { useEffect, useRef } from 'react'
 import type { CaseData } from '@/lib/types'
@@ -31,7 +30,7 @@ function ChatView() {
             <p className="text-sm text-muted-foreground">
               Start a conversation with Clinical AI
             </p>
-            <p className="text-xs text-muted-foreground/60 mt-1">
+            <p className="text-xs text-muted-foreground/80 mt-1">
               Ask about Ayurvedic health guidance
             </p>
           </div>
@@ -92,16 +91,14 @@ export function ChatPanel() {
       case 'chat':
         return 'Clinical AI'
       case 'treatment-protocol':
-        return 'AI-Guided Case Collection'
+        return 'Research-Backed Protocols'
       default:
         return 'Module'
     }
   }
 
   return (
-    <div className="flex h-full w-full">
-      <ModuleSidebar />
-      <div className="flex flex-col flex-1 h-full bg-panel-chat">
+    <div className="flex flex-col flex-1 h-full bg-panel-chat">
         <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
           <div className="flex items-center gap-2">
             <h2 className="text-sm font-semibold text-foreground">
@@ -137,13 +134,12 @@ export function ChatPanel() {
               <p className="text-sm text-muted-foreground">
                 {getModuleTitle()}
               </p>
-              <p className="text-xs text-muted-foreground/60 mt-1">
+              <p className="text-xs text-muted-foreground/80 mt-1">
                 Module coming soon
               </p>
             </div>
           )}
         </div>
       </div>
-    </div>
   )
 }

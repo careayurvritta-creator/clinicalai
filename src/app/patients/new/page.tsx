@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 export default function NewPatientPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState({
     name: '',
     age: '',
@@ -59,12 +60,12 @@ export default function NewPatientPage() {
         const data = await res.json()
         router.push(`/patients/${data.patient.id}`)
       } else {
-        const error = await res.json()
-        alert(error.error || 'Failed to create patient')
+        const err = await res.json()
+        setError(err.error || 'Failed to create patient')
       }
     } catch (error) {
       console.error('Error creating patient:', error)
-      alert('Failed to create patient')
+      setError('Failed to create patient. Please check your connection and try again.')
     } finally {
       setLoading(false)
     }
@@ -83,6 +84,13 @@ export default function NewPatientPage() {
           <h1 className="text-2xl font-bold text-foreground mt-2">New Patient</h1>
           <p className="text-sm text-muted-foreground mt-1">Add a new patient record</p>
         </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg flex items-center justify-between">
+            <p className="text-sm text-red-400">{error}</p>
+            <button onClick={() => setError(null)} className="text-red-400 hover:text-red-300 text-lg">&times;</button>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Info */}

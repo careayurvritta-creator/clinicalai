@@ -62,6 +62,8 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
         body: JSON.stringify({ action: 'start' }),
       })
 
+      if (!response.ok) throw new Error(`Server error: ${response.status}`)
+
       const data = await response.json()
 
       addMessage({
@@ -149,6 +151,8 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
         }),
       })
 
+      if (!response.ok) throw new Error(`Server error: ${response.status}`)
+
       const data = await response.json()
 
       if (data.protocol) {
@@ -207,6 +211,8 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
           caseData,
         }),
       })
+
+      if (!response.ok) throw new Error(`Server error: ${response.status}`)
 
       const data = await response.json()
 
@@ -355,7 +361,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
             <div
               className={`max-w-[85%] rounded-lg px-4 py-3 ${
                 message.role === 'user'
-                  ? 'bg-primary text-white'
+                  ? 'bg-primary text-primary-foreground'
                   : message.role === 'assistant'
                   ? 'bg-muted border border-border'
                   : 'bg-muted/50 text-muted-foreground text-xs italic'
@@ -372,7 +378,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
           <div className="mt-4 flex flex-wrap gap-2">
             <button
               onClick={handleShowDiagnosis}
-              className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+              className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
             >
               Generate Diagnosis
             </button>
@@ -384,7 +390,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
             <button
               onClick={handleConfirmDiagnosis}
               disabled={isLoading}
-              className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+              className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
               Confirm & Generate Research-Backed Protocol
             </button>
@@ -450,7 +456,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
               <button
                 onClick={() => sendAnswer(String(scaleValue))}
                 disabled={isLoading}
-                className="mt-2 w-full px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+                className="mt-2 w-full px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
               >
                 Confirm Severity: {scaleValue}/10
               </button>
@@ -496,7 +502,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
                   }
                 }}
                 disabled={!input.trim() || isLoading}
-                className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+                className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
               >
                 Send
               </button>

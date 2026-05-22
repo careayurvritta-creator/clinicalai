@@ -18,6 +18,8 @@
   --chat-ai: 0 0% 7%;
   --panel-chat: 0 0% 7%;
   --panel-canvas: 0 0% 5%;
+  --panel-header: 0 0% 6%;
+  --secondary: 0 0% 12%;
 }
 
 * {

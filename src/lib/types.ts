@@ -16,10 +16,12 @@ export interface Message {
 
 export interface ChatState {
   messages: Message[]
+  messagesByModule: Record<string, Message[]>
   isStreaming: boolean
   selectedModel: string
   canvasContent: string
   activeModule: string
+  chatInputDraft: string
   intakeState?: IntakeState
 }
 

@@ -77,9 +77,7 @@ export function ModuleSidebar() {
   const [isExpanded, setIsExpanded] = useState(true)
   const [isMobile, setIsMobile] = useState(false)
   const setActiveModule = useChatStore((state) => state.setActiveModule)
-  const activeModule = useChatStore(
-    (state) => isExpanded ? state.activeModule : ''
-  )
+  const activeModule = useChatStore((state) => state.activeModule)
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768)
@@ -119,7 +117,9 @@ export function ModuleSidebar() {
                 <button
                   key={module.id}
                   onClick={() => setActiveModule(module.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-3 md:py-2.5 rounded-lg text-left transition-colors touch-target ${
+                  aria-label={module.name}
+                  aria-current={activeModule === module.id ? 'page' : undefined}
+                  className={`w-full flex items-center gap-3 px-3 py-3 md:py-2.5 rounded-lg text-left transition-colors touch-target focus:outline-none focus:ring-2 focus:ring-primary/50 ${
                     activeModule === module.id
                       ? 'bg-primary/20 text-primary'
                       : 'hover:bg-muted/30 text-foreground active:bg-muted/50'
@@ -162,7 +162,8 @@ export function ModuleSidebar() {
       {!isMobile && (
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="absolute top-1/2 -translate-y-1/2 z-10 w-5 h-12 bg-panel-chat border border-border rounded-r-lg flex items-center justify-center hover:bg-primary/10 transition-colors"
+          aria-label={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
+          className="absolute top-1/2 -translate-y-1/2 z-10 w-5 h-12 bg-panel-chat border border-border rounded-r-lg flex items-center justify-center hover:bg-primary/10 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50"
           style={{ left: isExpanded ? '268px' : '0px' }}
         >
           <svg

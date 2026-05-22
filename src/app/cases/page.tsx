@@ -15,6 +15,7 @@ interface Case {
 export default function CasesPage() {
   const [cases, setCases] = useState<Case[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<string>('')
 
   useEffect(() => {
@@ -23,15 +24,19 @@ export default function CasesPage() {
 
   const fetchCases = async () => {
     try {
+      setLoading(true)
+      setError(null)
       const params = new URLSearchParams()
       if (statusFilter) params.set('status', statusFilter)
       params.set('limit', '50')
 
       const res = await fetch(`/api/cases?${params}`)
+      if (!res.ok) throw new Error(`Server returned ${res.status}`)
       const data = await res.json()
       setCases(data.cases || [])
     } catch (error) {
       console.error('Failed to fetch cases:', error)
+      setError('Failed to load cases. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -79,7 +84,20 @@ export default function CasesPage() {
         </div>
 
         {loading ? (
-          <div className="text-center py-12 text-muted-foreground">Loading...</div>
+          <div className="text-center py-12">
+            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-muted-foreground">Loading cases...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <p className="text-red-400 mb-3">{error}</p>
+            <button
+              onClick={fetchCases}
+              className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
         ) : cases.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
@@ -88,7 +106,7 @@ export default function CasesPage() {
               </svg>
             </div>
             <p className="text-muted-foreground">No cases found</p>
-            <p className="text-sm text-muted-foreground/60 mt-1">Start a new case from the home page</p>
+            <p className="text-sm text-muted-foreground/80 mt-1">Start a new case from the home page</p>
           </div>
         ) : (
           <div className="grid gap-3">
@@ -109,7 +127,7 @@ export default function CasesPage() {
                       <p className="text-sm text-muted-foreground mt-1">{caseItem.provisional_diagnosis}</p>
                     )}
                     {caseItem.chief_complaints && caseItem.chief_complaints.length > 0 && (
-                      <p className="text-xs text-muted-foreground/60 mt-1">
+                      <p className="text-xs text-muted-foreground/80 mt-1">
                         {caseItem.chief_complaints.map(c => c.complaint).join(', ')}
                       </p>
                     )}

@@ -5,9 +5,11 @@ import { DEFAULT_MODEL } from './types'
 
 const defaultState: Omit<ChatState, 'isStreaming' | 'intakeState'> = {
   messages: [],
+  messagesByModule: {},
   selectedModel: DEFAULT_MODEL,
   canvasContent: '',
   activeModule: 'chat',
+  chatInputDraft: '',
 }
 
 const initialCaseData: CaseData = {
@@ -70,6 +72,7 @@ interface ChatActions {
   updateProvisionalDiagnosis: (diagnosis: string, reasoning: string) => void
   resetIntake: () => void
   setShowProvisionalDiagnosis: (show: boolean) => void
+  setChatInputDraft: (draft: string) => void
 }
 
 interface CaseStoreActions {
@@ -89,9 +92,16 @@ export const useChatStore = create<ChatState & ChatActions>()(
       activeModule: 'chat',
 
       addMessage: (message) =>
-        set((state) => ({
-          messages: [...state.messages, message],
-        })),
+        set((state) => {
+          const newMessages = [...state.messages, message]
+          return {
+            messages: newMessages,
+            messagesByModule: {
+              ...state.messagesByModule,
+              [state.activeModule]: newMessages,
+            },
+          }
+        }),
 
       updateLastMessage: (content, status) =>
         set((state) => {
@@ -104,7 +114,13 @@ export const useChatStore = create<ChatState & ChatActions>()(
               status: status ?? last.status,
             }
           }
-          return { messages }
+          return {
+            messages,
+            messagesByModule: {
+              ...state.messagesByModule,
+              [state.activeModule]: messages,
+            },
+          }
         }),
 
       setStreaming: (streaming) => set({ isStreaming: streaming }),
@@ -132,13 +148,27 @@ export const useChatStore = create<ChatState & ChatActions>()(
         }),
 
       clearMessages: () =>
-        set({
+        set((state) => ({
           messages: [],
+          messagesByModule: {
+            ...state.messagesByModule,
+            [state.activeModule]: [],
+          },
           canvasContent: '',
           isStreaming: false,
-        }),
+        })),
 
-      setActiveModule: (module) => set({ activeModule: module }),
+      setActiveModule: (module) =>
+        set((state) => {
+          // Save current module's messages before switching
+          const updatedByModule = { ...state.messagesByModule }
+          updatedByModule[state.activeModule] = state.messages
+          return {
+            activeModule: module,
+            messagesByModule: updatedByModule,
+            messages: updatedByModule[module] ?? [],
+          }
+        }),
 
       setIntakeState: (stateUpdate) =>
         set((prev) => ({
@@ -192,15 +222,19 @@ export const useChatStore = create<ChatState & ChatActions>()(
             showProvisionalDiagnosis: show,
           } as IntakeState,
         })),
+
+      setChatInputDraft: (draft) => set({ chatInputDraft: draft }),
     }),
     {
       name: 'clinical-ai-chat',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         messages: state.messages,
+        messagesByModule: state.messagesByModule,
         selectedModel: state.selectedModel,
         canvasContent: state.canvasContent,
         activeModule: state.activeModule,
+        chatInputDraft: state.chatInputDraft,
         intakeState: state.intakeState,
       }),
       version: 3,

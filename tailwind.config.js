@@ -24,6 +24,9 @@ module.exports = {
         'chat-ai': 'hsl(var(--chat-ai))',
         'panel-chat': 'hsl(var(--panel-chat))',
         'panel-canvas': 'hsl(var(--panel-canvas))',
+        'panel-header': 'hsl(var(--panel-header))',
+        'secondary': 'hsl(var(--secondary))',
+        'secondary-foreground': 'hsl(var(--foreground))',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],

@@ -22,6 +22,17 @@ export function ChatInput() {
   const updateLastMessage = useChatStore((state) => state.updateLastMessage)
   const setStreaming = useChatStore((state) => state.setStreaming)
   const appendToCanvas = useChatStore((state) => state.appendToCanvas)
+  const chatInputDraft = useChatStore((state) => state.chatInputDraft)
+  const setChatInputDraft = useChatStore((state) => state.setChatInputDraft)
+
+  // Sync draft from store (set by CanvasPanel action buttons)
+  useEffect(() => {
+    if (chatInputDraft) {
+      setInput(chatInputDraft)
+      setChatInputDraft('')
+      textareaRef.current?.focus()
+    }
+  }, [chatInputDraft, setChatInputDraft])
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const newAttachments: Attachment[] = []
@@ -112,14 +123,14 @@ export function ChatInput() {
       const apiMessages = currentMessages
         .map((m) => ({ role: m.role, content: m.content }))
 
-      // Include attachment content in the last user message
+      // Brief attachment indicators for display (actual content handled server-side)
       const attachmentContext = attachments
-        .filter(a => a.text)
         .map(a => {
-          if (a.type === 'pdf') return `\n\n[Attached PDF: ${a.name}]\n${a.text}`
-          if (a.type === 'image') return `\n\n[Attached Image: ${a.name}]`
+          if (a.type === 'pdf') return `\n\n[📄 Attached PDF: ${a.name}]`
+          if (a.type === 'image') return `\n\n[📷 Attached Image: ${a.name}]`
           return ''
         })
+        .filter(Boolean)
         .join('')
 
       // For images, make a vision API call to get description
@@ -340,7 +351,8 @@ export function ChatInput() {
           {/* Attach button - larger touch target on mobile */}
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="touch-target flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors flex-shrink-0"
+            aria-label="Attach file"
+            className="touch-target flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-primary/50"
             title="Attach file"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -351,7 +363,6 @@ export function ChatInput() {
             ref={fileInputRef}
             type="file"
             accept="image/*,.pdf"
-            capture="environment"
             className="hidden"
             onChange={(e) => {
               if (e.target.files?.length) onDrop(Array.from(e.target.files))
@@ -372,7 +383,8 @@ export function ChatInput() {
               }
               input.click()
             }}
-            className="touch-target flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors flex-shrink-0 md:hidden"
+            aria-label="Take photo"
+            className="touch-target flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors flex-shrink-0 md:hidden focus:outline-none focus:ring-2 focus:ring-primary/50"
             title="Take photo"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -397,8 +409,9 @@ export function ChatInput() {
           {/* Send button - larger touch target */}
           <button
             onClick={handleSend}
-            disabled={!input.trim() && attachments.length === 0 || isStreaming || isProcessing}
-            className="touch-target flex items-center justify-center bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex-shrink-0"
+            disabled={(!input.trim() && attachments.length === 0) || isStreaming || isProcessing}
+            aria-label="Send message"
+            className="touch-target flex items-center justify-center bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-primary/50"
           >
             {isProcessing ? (
               <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -414,7 +427,7 @@ export function ChatInput() {
         </div>
 
         <div className="flex items-center justify-between mt-1.5 md:mt-2 px-1">
-          <span className="text-[10px] text-muted-foreground/40 hidden md:inline">
+          <span className="text-[10px] text-muted-foreground/70 hidden md:inline">
             Enter to send, Shift+Enter for new line
           </span>
           <ModelSelector />

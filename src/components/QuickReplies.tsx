@@ -56,9 +56,9 @@ export function SeverityScale({ value, onChange, min = 1, max = 10, labels }: Se
             key={i}
             onClick={() => onChange(i + min)}
             className={cn(
-              'w-6 h-6 text-xs rounded transition-colors',
+              'min-w-[32px] min-h-[32px] text-xs rounded transition-colors',
               value === i + min
-                ? 'bg-primary text-white'
+                ? 'bg-primary text-primary-foreground'
                 : 'bg-muted hover:bg-muted/80'
             )}
           >
@@ -172,7 +172,7 @@ export function ConfirmButtons({
     <div className="flex flex-wrap gap-2 mt-3">
       <button
         onClick={onConfirm}
-        className="px-4 py-2 text-sm bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+        className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
       >
         {confirmLabel}
       </button>

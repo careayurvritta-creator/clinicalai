@@ -17,6 +17,7 @@ export default function PatientsPage() {
   const [patients, setPatients] = useState<Patient[]>([])
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchPatients()
@@ -24,11 +25,15 @@ export default function PatientsPage() {
 
   const fetchPatients = async () => {
     try {
+      setLoading(true)
+      setError(null)
       const res = await fetch(`/api/patients?search=${encodeURIComponent(search)}`)
+      if (!res.ok) throw new Error(`Server returned ${res.status}`)
       const data = await res.json()
       setPatients(data.patients || [])
     } catch (error) {
       console.error('Failed to fetch patients:', error)
+      setError('Failed to load patients. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -61,6 +66,7 @@ export default function PatientsPage() {
           <input
             type="text"
             placeholder="Search patients by name, phone, or code..."
+            aria-label="Search patients"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full px-4 py-3 bg-muted border border-border rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/50"
@@ -68,7 +74,20 @@ export default function PatientsPage() {
         </div>
 
         {loading ? (
-          <div className="text-center py-12 text-muted-foreground">Loading...</div>
+          <div className="text-center py-12">
+            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-muted-foreground">Loading patients...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <p className="text-red-400 mb-3">{error}</p>
+            <button
+              onClick={fetchPatients}
+              className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
         ) : patients.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
@@ -77,7 +96,7 @@ export default function PatientsPage() {
               </svg>
             </div>
             <p className="text-muted-foreground">No patients found</p>
-            <p className="text-sm text-muted-foreground/60 mt-1">Add your first patient to get started</p>
+            <p className="text-sm text-muted-foreground/80 mt-1">Add your first patient to get started</p>
           </div>
         ) : (
           <div className="grid gap-3">

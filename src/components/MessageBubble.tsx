@@ -50,7 +50,7 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         </div>
 
         <div className={`flex items-center gap-2 mt-2 ${isUser ? 'justify-end' : 'justify-start'}`}>
-          <span className="text-[10px] text-muted-foreground/60">
+          <span className="text-[10px] text-muted-foreground/80">
             {formatTime(message.timestamp)}
           </span>
           {message.status === 'error' && (
