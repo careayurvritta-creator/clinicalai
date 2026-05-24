@@ -45,6 +45,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
   const [followupStep, setFollowupStep] = useState(0)
   const [isFollowupPhase, setIsFollowupPhase] = useState(false)
   const [protocolPhase, setProtocolPhase] = useState('')
+  const [diagnosisText, setDiagnosisText] = useState('')
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -248,9 +249,24 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
 
     try {
       const complaints = caseData.chiefComplaints || []
-      const complaintsText = complaints.map(c => c.complaint).join(', ')
-      const duration = complaints[0]?.duration || ''
+      // Build rich complaints text with durations for better PubMed queries
+      const complaintsText = complaints.map(c => {
+        const dur = c.duration ? ` (${c.duration})` : ''
+        return c.complaint + dur
+      }).join(', ')
+      // Build per-complaint duration summary for research context
+      const duration = complaints
+        .filter(c => c.duration)
+        .map(c => `${c.complaint}: ${c.duration}`)
+        .join('; ') || 'Not specified'
       const associatedSymptoms = complaints.flatMap(c => c.associatedSymptoms || []).join(', ')
+      // Extract diagnosis text (strip markdown formatting for the API)
+      const plainDiagnosis = diagnosisText
+        .replace(/\*\*/g, '')
+        .replace(/\[.*?\]/g, '')
+        .replace(/#{1,6}\s*/g, '')
+        .replace(/\n+/g, ' ')
+        .trim()
 
       const response = await fetch('/api/treatment-protocol', {
         method: 'POST',
@@ -262,7 +278,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
             gender: caseData.gender || '',
             prakriti: caseData.prakritiDetail || caseData.prakriti || '',
             chiefComplaints: complaintsText,
-            diagnosis: 'Based on clinical assessment',
+            diagnosis: plainDiagnosis || 'Based on clinical assessment',
             duration,
             associatedSymptoms,
             investigation: caseData.investigationText || '',
@@ -450,6 +466,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
         setShowDiagnosis(true)
         setDiagnosisShown(true)
         setCurrentQuestion(null)
+        setDiagnosisText(data.diagnosis)
         addMessage({
           id: generateId(),
           role: 'assistant',
@@ -508,6 +525,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
       const data = await response.json()
 
       if (data.diagnosis) {
+        setDiagnosisText(data.diagnosis)
         addMessage({
           id: generateId(),
           role: 'assistant',
