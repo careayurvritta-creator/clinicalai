@@ -917,17 +917,25 @@ async function upsertChunks(
     const batchChunks = chunks.slice(i, i + UPSERT_BATCH)
     const batchEmbeddings = embeddings.slice(i, i + UPSERT_BATCH)
 
-    const rows = batchChunks.map((chunk, j) => ({
-      id: deterministicUuid(`emb:${chunk.sourceTable}:${chunk.sourceId}:${chunk.metadata.section || 'main'}`),
-      source_table: chunk.sourceTable,
-      source_id: chunk.sourceId,
-      source_title: chunk.sourceTitle,
-      content_type: chunk.contentType,
-      content: chunk.content,
-      content_hash: createHash('md5').update(chunk.content).digest('hex'),
-      metadata: chunk.metadata,
-      embedding: `[${batchEmbeddings[j].join(',')}]`,
-    }))
+    const rows: Array<{
+      id: string; source_table: string; source_id: string; source_title: string;
+      content_type: string; content: string; content_hash: string;
+      metadata: Record<string, unknown>; embedding: string | null
+    }> = []
+    for (let j = 0; j < batchChunks.length; j++) {
+      if (!batchEmbeddings[j]) continue // skip chunks that failed embedding
+      rows.push({
+        id: deterministicUuid(`emb:${batchChunks[j].sourceTable}:${batchChunks[j].sourceId}:${batchChunks[j].metadata.section || 'main'}`),
+        source_table: batchChunks[j].sourceTable,
+        source_id: batchChunks[j].sourceId,
+        source_title: batchChunks[j].sourceTitle,
+        content_type: batchChunks[j].contentType,
+        content: batchChunks[j].content,
+        content_hash: createHash('md5').update(batchChunks[j].content).digest('hex'),
+        metadata: batchChunks[j].metadata,
+        embedding: `[${batchEmbeddings[j].join(',')}]`,
+      })
+    }
 
     // Deduplicate by id within batch to avoid ON CONFLICT error
     const seen = new Set<string>()
