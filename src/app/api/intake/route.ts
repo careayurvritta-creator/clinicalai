@@ -841,7 +841,7 @@ async function generateFollowupQuestions(caseData: Partial<CaseData>): Promise<F
     const prompt = buildFollowupPrompt(flatData)
 
     const response = await client.chat.completions.create({
-      model: 'meta/llama-3.3-8b-instruct',
+      model: 'meta/llama-3.1-8b-instruct',
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 1500,
       temperature: 0.4,

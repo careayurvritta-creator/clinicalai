@@ -34,8 +34,8 @@ export interface ModelOption {
 
 export const MODELS: ModelOption[] = [
   {
-    id: 'meta/llama-3.1-405b-instruct',
-    name: 'Llama 3.1 405B',
+    id: 'nvidia/llama-3.1-nemotron-ultra-253b-v1',
+    name: 'Nemotron Ultra 253B',
     description: 'Most powerful for clinical reasoning',
     context: '128K',
   },
@@ -46,13 +46,19 @@ export const MODELS: ModelOption[] = [
     context: '128K',
   },
   {
-    id: 'meta/llama-3.3-70b-instruct',
-    name: 'Llama 3.3 70B',
+    id: 'nvidia/llama-3.3-nemotron-super-49b-v1.5',
+    name: 'Nemotron Super 49B v1.5',
     description: 'Fast, strong clinical reasoning',
     context: '128K',
   },
   {
-    id: 'mistralai/mistral-large-2',
+    id: 'meta/llama-3.3-70b-instruct',
+    name: 'Llama 3.3 70B',
+    description: 'Reliable general-purpose model',
+    context: '128K',
+  },
+  {
+    id: 'mistralai/mistral-large-2-instruct',
     name: 'Mistral Large 2',
     description: 'Strong reasoning alternative',
     context: '128K',
@@ -64,8 +70,8 @@ export const MODELS: ModelOption[] = [
     context: '128K',
   },
   {
-    id: 'meta/llama-3.3-8b-instruct',
-    name: 'Llama 3.3 8B',
+    id: 'meta/llama-3.1-8b-instruct',
+    name: 'Llama 3.1 8B',
     description: 'Ultra-fast, low cost',
     context: '128K',
   },
