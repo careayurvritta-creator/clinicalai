@@ -7,6 +7,7 @@ export default function NewPatientPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [errors, setErrors] = useState<Record<string, string>>({})
   const [form, setForm] = useState({
     name: '',
     age: '',
@@ -26,10 +27,24 @@ export default function NewPatientPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
+    setErrors(prev => ({ ...prev, [e.target.name]: '' }))
+  }
+
+  function validate(): boolean {
+    const newErrors: Record<string, string> = {}
+    if (!form.name.trim()) newErrors.name = 'Full name is required'
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) newErrors.email = 'Invalid email address'
+    if (form.phone && !/^\+?[\d\s\-()]{7,20}$/.test(form.phone)) newErrors.phone = 'Invalid phone number'
+    if (form.age && (parseInt(form.age) < 0 || parseInt(form.age) > 150)) newErrors.age = 'Age must be 0–150'
+    if (form.height_cm && (parseFloat(form.height_cm) <= 0 || parseFloat(form.height_cm) > 300)) newErrors.height_cm = 'Height must be 1–300 cm'
+    if (form.weight_kg && (parseFloat(form.weight_kg) <= 0 || parseFloat(form.weight_kg) > 500)) newErrors.weight_kg = 'Weight must be 1–500 kg'
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!validate()) return
     setLoading(true)
 
     try {
@@ -115,6 +130,7 @@ export default function NewPatientPage() {
                   required
                   className="w-full px-3 py-2 bg-muted border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
                 />
+                {errors.name && <p className="text-xs text-red-400 mt-1">{errors.name}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">Age</label>
@@ -127,6 +143,7 @@ export default function NewPatientPage() {
                   max="150"
                   className="w-full px-3 py-2 bg-muted border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
                 />
+                {errors.age && <p className="text-xs text-red-400 mt-1">{errors.age}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">Gender</label>
@@ -151,6 +168,7 @@ export default function NewPatientPage() {
                   onChange={handleChange}
                   className="w-full px-3 py-2 bg-muted border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
                 />
+                {errors.phone && <p className="text-xs text-red-400 mt-1">{errors.phone}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">Email</label>
@@ -161,6 +179,7 @@ export default function NewPatientPage() {
                   onChange={handleChange}
                   className="w-full px-3 py-2 bg-muted border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
                 />
+                {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">Date of Birth</label>
@@ -229,6 +248,7 @@ export default function NewPatientPage() {
                   max="300"
                   className="w-full px-3 py-2 bg-muted border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
                 />
+                {errors.height_cm && <p className="text-xs text-red-400 mt-1">{errors.height_cm}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">Weight (kg)</label>
@@ -242,6 +262,7 @@ export default function NewPatientPage() {
                   step="0.1"
                   className="w-full px-3 py-2 bg-muted border border-border rounded-lg text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
                 />
+                {errors.weight_kg && <p className="text-xs text-red-400 mt-1">{errors.weight_kg}</p>}
               </div>
             </div>
           </div>

@@ -223,21 +223,26 @@ async function main() {
 
     // We'll store scraped content as additional enrichment in metadata
     // since the charak_chapters table has a fixed schema
-    const embeddingRows = chapters.map(ch => ({
-      id: ch.id,
-      source_table: 'charak_chapters',
-      source_id: ch.id,
-      source_title: ch.title,
-      content_type: 'description' as const,
-      content: `Charak Samhita Online — ${ch.title}\n\n${ch.content}`,
-      metadata: {
-        source: ch.source,
-        attribution: ch.attribution,
-        summary: ch.summary,
-        key_concepts: ch.key_concepts,
-        scraped_at: new Date().toISOString(),
-      },
-    }))
+    const embeddingRows = chapters.map(ch => {
+      const fullContent = `Charak Samhita Online — ${ch.title}\n\n${ch.content}`
+      return {
+        id: ch.id,
+        source_table: 'charak_chapters',
+        source_id: ch.id,
+        source_title: ch.title,
+        content_type: 'description' as const,
+        content: fullContent,
+        embedding: null,
+        content_hash: createHash('sha256').update(fullContent).digest('hex'),
+        metadata: {
+          source: ch.source,
+          attribution: ch.attribution,
+          summary: ch.summary,
+          key_concepts: ch.key_concepts,
+          scraped_at: new Date().toISOString(),
+        },
+      }
+    })
 
     // Insert into knowledge_embeddings directly
     const batches = []

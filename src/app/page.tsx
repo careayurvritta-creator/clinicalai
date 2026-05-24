@@ -6,14 +6,12 @@ import { CanvasPanel } from '@/components/CanvasPanel'
 import { ResizableLayout } from '@/components/ResizableLayout'
 import { ModuleSidebar } from '@/components/ModuleSidebar'
 import { useChatStore } from '@/lib/store'
+import { useRouter } from 'next/navigation'
 
 const MODULE_TITLES: Record<string, string> = {
   chat: 'Ayurveda Clinical AI',
   intake: 'Case Collector',
   'treatment-protocol': 'Treatment Protocol',
-  'patient-portal': 'Patient Portal',
-  'diet-chart': 'Diet Chart',
-  'lifestyle-advice': 'Lifestyle Advice',
 }
 
 export default function Home() {
@@ -21,6 +19,7 @@ export default function Home() {
   const setActiveModule = useChatStore((s) => s.setActiveModule)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const router = useRouter()
 
   useEffect(() => {
     const checkMobile = () => {
@@ -31,6 +30,22 @@ export default function Home() {
     checkMobile()
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  // Navigate to /patients when patient-portal module is selected
+  useEffect(() => {
+    if (activeModule === 'patient-portal') {
+      router.push('/patients')
+    }
+  }, [activeModule, router])
+
+  // Read ?module= query param on mount to set active module
+  useEffect(() => {
+    const moduleParam = new URLSearchParams(window.location.search).get('module')
+    if (moduleParam && moduleParam !== activeModule) {
+      setActiveModule(moduleParam)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleModuleSelect = (module: string) => {
@@ -121,8 +136,8 @@ export default function Home() {
           ) : (
             <div className="flex items-center justify-center h-full text-muted-foreground p-4 text-center">
               <div>
-                <p className="text-lg font-medium mb-2">{MODULE_TITLES[activeModule]}</p>
-                <p className="text-sm">This module is coming soon. Switch to Chat or Case Collector to get started.</p>
+                <p className="text-lg font-medium mb-2">Module not found</p>
+                <p className="text-sm">Switch to Chat or Case Collector to get started.</p>
               </div>
             </div>
           )}

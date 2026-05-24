@@ -80,6 +80,19 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  // Handle CORS preflight for API routes
+  if (pathname.startsWith('/api/') && request.method === 'OPTIONS') {
+    return new NextResponse(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': 'https://clinicalai.ayurvrittaayurveda.in',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        'Access-Control-Max-Age': '86400',
+      },
+    })
+  }
+
   // Add security headers to all responses
   const response = NextResponse.next()
 

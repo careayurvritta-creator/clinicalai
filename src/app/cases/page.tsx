@@ -60,7 +60,7 @@ export default function CasesPage() {
             <p className="text-sm text-muted-foreground mt-1">Manage clinical cases</p>
           </div>
           <Link
-            href="/"
+            href="/?module=intake"
             className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm font-medium"
           >
             + New Case
