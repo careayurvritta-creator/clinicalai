@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { ChatState, Message } from './types'
-import { DEFAULT_MODEL } from './types'
+import { DEFAULT_MODEL, MODELS } from './types'
 
 const defaultState: Omit<ChatState, 'isStreaming'> = {
   messages: [],
@@ -107,7 +107,7 @@ export const useChatStore = create<ChatState & ChatActions>()(
         activeModule: state.activeModule,
         chatInputDraft: state.chatInputDraft,
       }),
-      version: 4,
+      version: 5,
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as Record<string, unknown>
         // Clean up stale streaming messages on migration
@@ -119,6 +119,13 @@ export const useChatStore = create<ChatState & ChatActions>()(
             for (const key of Object.keys(byModule)) {
               byModule[key] = byModule[key].filter((m) => m.status !== 'streaming')
             }
+          }
+        }
+        // Reset selectedModel if it's not in the current MODELS list (e.g., removed broken NIM models)
+        if (version < 5 && state?.selectedModel) {
+          const validIds = MODELS.map((m) => m.id)
+          if (!validIds.includes(state.selectedModel as string)) {
+            state.selectedModel = DEFAULT_MODEL
           }
         }
         return persistedState
