@@ -111,8 +111,9 @@ export default function CasesPage() {
         ) : (
           <div className="grid gap-3">
             {cases.map((caseItem) => (
-              <div
+              <Link
                 key={caseItem.id}
+                href={`/cases/${caseItem.id}`}
                 className="block p-4 bg-card border border-border rounded-xl hover:border-primary/30 transition-colors"
               >
                 <div className="flex items-center justify-between">
@@ -138,7 +139,7 @@ export default function CasesPage() {
                     </p>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}
