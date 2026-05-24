@@ -240,7 +240,7 @@ export async function POST(req: NextRequest) {
         { role: 'system', content: systemPrompt },
         { role: 'user', content: 'Generate the complete treatment protocol for this patient now.' },
       ],
-      'meta/llama-3.1-405b-instruct',
+      'mistralai/mistral-large-3-675b-instruct-2512',
       { max_tokens: 8192, temperature: 0.4, top_p: 0.9 }
     )
 

@@ -26,7 +26,7 @@ export interface ChatParams {
 }
 
 const DEFAULT_PARAMS: Required<ChatParams> = {
-  max_tokens: 4096,
+  max_tokens: 8192,
   temperature: 0.7,
   top_p: 0.7,
 }

@@ -250,8 +250,10 @@ export function ChatInput() {
             const json = JSON.parse(data)
             const content =
               json.choices?.[0]?.delta?.content ??
+              json.choices?.[0]?.delta?.reasoning_content ??
               json.choices?.[0]?.delta?.text ??
               json.choices?.[0]?.message?.content ??
+              json.choices?.[0]?.message?.reasoning_content ??
               json.content ??
               json.text ??
               ''

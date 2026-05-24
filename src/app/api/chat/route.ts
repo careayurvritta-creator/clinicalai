@@ -15,7 +15,7 @@ const chatRequestSchema = z.object({
       content: z.string().max(100000),
     })
   ),
-  model: z.string().default('meta/llama-3.3-70b-instruct'),
+  model: z.string().default('mistralai/mistral-large-3-675b-instruct-2512'),
   enableRAG: z.boolean().default(true),
   attachments: z.array(z.object({
     type: z.enum(['image', 'pdf']),
@@ -211,9 +211,10 @@ export async function POST(req: NextRequest) {
         try {
           for await (const chunk of stream) {
             const data = JSON.stringify(chunk)
-            // Extract content for persistence
+            // Extract content for persistence — handle both regular and reasoning models
             try {
-              const content = chunk.choices?.[0]?.delta?.content || ''
+              const delta = chunk.choices?.[0]?.delta as Record<string, string> | undefined
+              const content = delta?.content || delta?.reasoning_content || ''
               if (content) assistantContent += content
             } catch {}
             controller.enqueue(encoder.encode(`data: ${data}\n\n`))
