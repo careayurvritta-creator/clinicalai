@@ -18,6 +18,7 @@ export interface ChatState {
   messages: Message[]
   messagesByModule: Record<string, Message[]>
   isStreaming: boolean
+  streamingModule: string | null
   selectedModel: string
   canvasContent: string
   activeModule: string

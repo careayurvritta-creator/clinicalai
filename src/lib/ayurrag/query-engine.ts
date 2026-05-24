@@ -86,30 +86,33 @@ export function generateAyurvedaResponse(query: string, userContext?: { prakriti
   let response = ''
   
   switch (analysis.intent) {
-    case 'diagnosis':
-      const diseaseInfo = analysis.entities.length > 0 
+    case 'diagnosis': {
+      const diseaseInfo = analysis.entities.length > 0
         ? getDiseaseInfo(analysis.entities[0])
         : null
       response = diseaseInfo || searchKnowledge(query)
       break
-      
-    case 'treatment':
+    }
+
+    case 'treatment': {
       const treatmentInfo = analysis.entities.length > 0
         ? getTreatmentInfo(analysis.entities[0])
         : null
       response = treatmentInfo || searchKnowledge(query)
       break
-      
+    }
+
     case 'herb':
       response = searchKnowledge(query)
       break
-      
-    case 'drug_interaction':
+
+    case 'drug_interaction': {
       const herbName = analysis.entities[0] || extractDrugFromQuery(query)
       const drugClass = extractDrugClassFromQuery(query)
       response = checkDrugInteraction(herbName, drugClass)
       break
-      
+    }
+
     case 'prakriti':
       if (analysis.entities.length > 0) {
         response = getPrakritiGuidance(analysis.entities[0])
@@ -119,19 +122,20 @@ export function generateAyurvedaResponse(query: string, userContext?: { prakriti
         response = explainPrakriti(query)
       }
       break
-      
-    case 'integration':
-      const condition = analysis.entities.length > 0 
+
+    case 'integration': {
+      const condition = analysis.entities.length > 0
         ? analysis.entities[0]
         : extractConditionFromQuery(query)
       const integration = getAllopathyIntegration(condition)
       response = integration || searchKnowledge(query)
       break
-      
+    }
+
     case 'procedure':
       response = explainProcedure(query)
       break
-      
+
     default:
       response = generateGeneralResponse(query, userContext)
   }
@@ -383,9 +387,8 @@ export function formatResponseForDisplay(response: string): string {
   // Format section headers
   formatted = formatted.replace(/=== /g, '## ').replace(/ ===/g, '')
   
-  // Format list items
-  formatted = formatted.replace(/^- /g, '• ')
-  formatted = formatted.replace(/^• /gm, (match) => match.replace('•', '- '))
+  // Format list items — convert dash lists to bullet lists
+  formatted = formatted.replace(/^- /gm, '• ')
   
   return formatted
 }

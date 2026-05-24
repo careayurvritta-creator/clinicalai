@@ -58,10 +58,18 @@ export default function NewPatientPage() {
 
       if (res.ok) {
         const data = await res.json()
-        router.push(`/patients/${data.patient.id}`)
+        if (data?.patient?.id) {
+          router.push(`/patients/${data.patient.id}`)
+        } else {
+          router.push('/patients')
+        }
       } else {
-        const err = await res.json()
-        setError(err.error || 'Failed to create patient')
+        let errMsg = 'Failed to create patient'
+        try {
+          const err = await res.json()
+          errMsg = err.error || errMsg
+        } catch { /* non-JSON error */ }
+        setError(errMsg)
       }
     } catch (error) {
       console.error('Error creating patient:', error)

@@ -39,7 +39,7 @@ export default function Home() {
   }
 
   return (
-    <div className="flex flex-col h-[100dvh] h-screen bg-background overflow-hidden safe-top">
+    <div className="flex flex-col h-[100dvh] bg-background overflow-hidden safe-top">
       {/* Header */}
       <header className="flex items-center justify-between px-3 md:px-4 py-2.5 border-b border-border bg-panel-header flex-shrink-0">
         <div className="flex items-center gap-2">
@@ -115,7 +115,6 @@ export default function Home() {
         <div className="flex-1 min-w-0">
           {activeModule === 'chat' || activeModule === 'intake' || activeModule === 'treatment-protocol' ? (
             <ResizableLayout
-              key={activeModule}
               chatPanel={<ChatPanel key={activeModule} />}
               canvasPanel={<CanvasPanel />}
             />

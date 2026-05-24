@@ -38,7 +38,12 @@ export function CanvasToolbar() {
     }
   }
 
-  const isProtocol = canvasContent.includes('## ') && canvasContent.length > 2000
+  const isProtocol = (
+    canvasContent.includes('## Case Summary') ||
+    canvasContent.includes('## Treatment Protocol') ||
+    canvasContent.includes('## Samprapti') ||
+    canvasContent.includes('## Detailed Treatment')
+  ) && canvasContent.length > 500
 
   return (
     <div className="flex items-center gap-2 px-4 py-3 border-t border-border bg-panel-canvas">

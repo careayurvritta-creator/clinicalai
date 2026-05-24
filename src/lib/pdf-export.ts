@@ -13,6 +13,7 @@ export async function exportProtocolToPDF(
 
   const date = new Date().toISOString().split('T')[0]
   const safeName = patientName.replace(/[^a-zA-Z0-9\s]/g, '').trim() || 'Patient'
+  const safeDiagnosis = diagnosis.replace(/[<>&"']/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' })[c] || '')
   const filename = `treatment-protocol-${safeName.replace(/\s+/g, '-')}-${date}.pdf`
 
   // Create a clone for PDF rendering with light theme
@@ -93,7 +94,7 @@ export async function exportProtocolToPDF(
       Treatment Protocol — Clinical Case Study
     </p>
     <p style="font-size: 12px; color: #9ca3af; margin: 0;">
-      Patient: ${safeName} | Date: ${date} ${diagnosis ? `| Diagnosis: ${diagnosis}` : ''}
+      Patient: ${safeName} | Date: ${date} ${safeDiagnosis ? `| Diagnosis: ${safeDiagnosis}` : ''}
     </p>
   `
   wrapper.appendChild(header)

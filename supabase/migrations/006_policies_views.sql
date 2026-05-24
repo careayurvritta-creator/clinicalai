@@ -11,7 +11,7 @@ alter table cases enable row level security;
 alter table chief_complaints enable row level security;
 alter table investigation_findings enable row level security;
 alter table treatment_protocols enable row level security;
-alter case_outcomes enable row level security;
+alter table case_outcomes enable row level security;
 alter table case_learnings enable row level security;
 alter table intake_sessions enable row level security;
 alter table treatment_adherence enable row level security;
@@ -649,9 +649,12 @@ end;
 $$ language plpgsql security definer;
 
 -- Search knowledge base with full-text search
+-- NOTE: This initial version only covers tables created in migrations 001-005.
+-- Migration 009 will recreate this function to include sushruta_chapters,
+-- clinical_evidence, external_qa, and modern_medicines (created in migration 008).
 create or replace function search_knowledge_base(
   search_query text,
-  source_tables text[] default array['who_terminology', 'diseases', 'herbs', 'treatments', 'charak_chapters', 'sushruta_chapters', 'clinical_evidence', 'external_qa', 'modern_medicines'],
+  source_tables text[] default array['who_terminology', 'diseases', 'herbs', 'treatments', 'charak_chapters'],
   limit_results integer default 10
 )
 returns table (
@@ -698,34 +701,6 @@ begin
   from charak_chapters
   where search_vector @@ plainto_tsquery('simple', search_query)
   and 'charak_chapters' = any(source_tables)
-
-  union all
-
-  select 'sushruta_chapters' as source_table, id as source_id, chapter_name as title, coalesce(summary, '') as content, ts_rank(search_vector, plainto_tsquery('simple', search_query)) as rank
-  from sushruta_chapters
-  where search_vector @@ plainto_tsquery('simple', search_query)
-  and 'sushruta_chapters' = any(source_tables)
-
-  union all
-
-  select 'clinical_evidence' as source_table, id as source_id, title as title, coalesce(abstract, '') as content, ts_rank(search_vector, plainto_tsquery('simple', search_query)) as rank
-  from clinical_evidence
-  where search_vector @@ plainto_tsquery('simple', search_query)
-  and 'clinical_evidence' = any(source_tables)
-
-  union all
-
-  select 'external_qa' as source_table, id as source_id, question as title, coalesce(answer, '') as content, ts_rank(search_vector, plainto_tsquery('simple', search_query)) as rank
-  from external_qa
-  where search_vector @@ plainto_tsquery('simple', search_query)
-  and 'external_qa' = any(source_tables)
-
-  union all
-
-  select 'modern_medicines' as source_table, id as source_id, medicine_name as title, coalesce(uses, '') as content, ts_rank(search_vector, plainto_tsquery('simple', search_query)) as rank
-  from modern_medicines
-  where search_vector @@ plainto_tsquery('simple', search_query)
-  and 'modern_medicines' = any(source_tables)
 
   order by rank desc
   limit limit_results;

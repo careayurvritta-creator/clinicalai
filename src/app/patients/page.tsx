@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 
 interface Patient {
@@ -18,16 +18,14 @@ export default function PatientsPage() {
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const searchRef = useRef(search)
+  searchRef.current = search
 
-  useEffect(() => {
-    fetchPatients()
-  }, [])
-
-  const fetchPatients = async () => {
+  const fetchPatients = useCallback(async (query: string) => {
     try {
       setLoading(true)
       setError(null)
-      const res = await fetch(`/api/patients?search=${encodeURIComponent(search)}`)
+      const res = await fetch(`/api/patients?search=${encodeURIComponent(query)}`)
       if (!res.ok) throw new Error(`Server returned ${res.status}`)
       const data = await res.json()
       setPatients(data.patients || [])
@@ -37,14 +35,14 @@ export default function PatientsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      fetchPatients()
+      fetchPatients(searchRef.current)
     }, 300)
     return () => clearTimeout(timer)
-  }, [search])
+  }, [search, fetchPatients])
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
@@ -82,7 +80,7 @@ export default function PatientsPage() {
           <div className="text-center py-12">
             <p className="text-red-400 mb-3">{error}</p>
             <button
-              onClick={fetchPatients}
+              onClick={() => fetchPatients(search)}
               className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
             >
               Retry

@@ -46,5 +46,5 @@ export async function createChatStream(
     temperature: merged.temperature,
     top_p: merged.top_p,
     stream: true,
-  })
+  }, { maxRetries: 2 })
 }

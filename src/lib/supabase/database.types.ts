@@ -1155,6 +1155,7 @@ export interface Database {
           source_title: string
           content_type: string | null
           content: string
+          content_hash: string | null
           metadata: Json
           embedding: unknown
           created_at: string
@@ -1167,6 +1168,7 @@ export interface Database {
           source_title: string
           content_type?: string | null
           content: string
+          content_hash?: string | null
           metadata?: Json
           embedding?: unknown
           created_at?: string
@@ -1179,6 +1181,7 @@ export interface Database {
           source_title?: string
           content_type?: string | null
           content?: string
+          content_hash?: string | null
           metadata?: Json
           embedding?: unknown
           created_at?: string

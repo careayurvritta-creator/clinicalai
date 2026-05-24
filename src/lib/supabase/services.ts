@@ -74,11 +74,12 @@ export async function updatePatient(patientId: string, data: Record<string, unkn
 }
 
 export async function searchPatients(doctorId: string, query: string) {
+  const safeQuery = query.replace(/[%_\\]/g, '\\$&')
   return getSupabase()
     .from('patients')
     .select('*')
     .eq('doctor_id', doctorId)
-    .ilike('name', `%${query}%`)
+    .ilike('name', `%${safeQuery}%`)
     .order('name')
 }
 
@@ -445,10 +446,12 @@ export async function searchHerbs(query: string) {
 }
 
 export async function getDrugInteractions(drug: string, herb: string) {
+  const safeDrug = drug.replace(/[%_\\]/g, '\\$&')
+  const safeHerb = herb.replace(/[%_\\]/g, '\\$&')
   return getSupabase()
     .from('allopathy_integration')
     .select('*')
-    .or(`allopathic_drug.ilike.%${drug}%,ayurvedic_herb.ilike.%${herb}%`)
+    .or(`allopathic_drug.ilike.%${safeDrug}%,ayurvedic_herb.ilike.%${safeHerb}%`)
 }
 
 // ============================================
@@ -466,23 +469,34 @@ export async function getPatientCaseHistory(patientId: string) {
 
 // TODO: v_patient_summary view needs doctor_id column added
 export async function getPatientSummary(doctorId: string) {
+  // Filter by doctor_id through patients table join since view lacks doctor_id
   return getSupabase()
-    .from('v_patient_summary')
+    .from('patients')
     .select('*')
+    .eq('doctor_id', doctorId)
+    .eq('is_archived', false)
+    .order('created_at', { ascending: false })
+    .limit(100)
 }
 
 // TODO: v_case_analytics view needs doctor_id column added
 export async function getCaseAnalytics(doctorId: string) {
   return getSupabase()
-    .from('v_case_analytics')
-    .select('*')
+    .from('cases')
+    .select('*, patients!inner(name, doctor_id)')
+    .eq('patients.doctor_id', doctorId)
+    .order('created_at', { ascending: false })
+    .limit(100)
 }
 
 // TODO: v_treatment_effectiveness view needs doctor_id column added
 export async function getTreatmentEffectiveness(doctorId: string) {
   return getSupabase()
-    .from('v_treatment_effectiveness')
-    .select('*')
+    .from('treatment_protocols')
+    .select('*, cases!inner(patient_id, patients!inner(doctor_id))')
+    .eq('cases.patients.doctor_id', doctorId)
+    .order('created_at', { ascending: false })
+    .limit(100)
 }
 
 // ============================================

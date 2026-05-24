@@ -45,7 +45,7 @@ function getSectionIcon(title: string): string {
   if (t.includes('case summary') || t.includes('patient')) return 'Patient'
   if (t.includes('samprapti') || t.includes('pathogenesis')) return 'Analysis'
   if (t.includes('literature') || t.includes('research') || t.includes('evidence')) return 'Research'
-  if (t.includes('classical') || t.includes('charak') || t.includes('reference')) return 'Texts'
+  if (t.includes('classical') || t.includes('charak')) return 'Texts'
   if (t.includes('treatment protocol') || t.includes('detailed treatment')) return 'Protocol'
   if (t.includes('purvakarma')) return 'Prep'
   if (t.includes('pradhana') || t.includes('panchakarma')) return 'Panchakarma'

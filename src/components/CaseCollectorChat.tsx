@@ -311,7 +311,8 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
       // Clear canvas for new protocol
       setCanvasContent('')
 
-      while (true) {
+      let streamDone = false
+      while (!streamDone) {
         const { done, value } = await reader.read()
         if (done) break
 
@@ -323,7 +324,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
           if (!line.startsWith('data: ')) continue
           const data = line.slice(6).trim()
 
-          if (data === '[DONE]') break
+          if (data === '[DONE]') { streamDone = true; break }
 
           try {
             const parsed = JSON.parse(data)
@@ -444,7 +445,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
           timestamp: Date.now(),
           status: 'complete',
         })
-        setCurrentStep(currentStep + 1)
+        setCurrentStep(prev => prev + 1)
       } else if (data.type === 'diagnosis' && data.diagnosis) {
         setShowDiagnosis(true)
         setDiagnosisShown(true)

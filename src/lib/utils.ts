@@ -26,8 +26,10 @@ export function truncateText(text: string, maxLength: number): string {
 
 export function sanitizeInput(input: string): string {
   return input
-    .replace(/[<>]/g, '')
+    .replace(/[<>&"']/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' })[c] || '')
     .replace(/\x00/g, '')
+    .replace(/javascript:/gi, '')
+    .replace(/\bon\w+=/gi, '')
     .trim()
     .substring(0, 5000)
 }

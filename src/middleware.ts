@@ -92,7 +92,7 @@ export function middleware(request: NextRequest) {
 
   // CORS for API routes
   if (pathname.startsWith('/api/')) {
-    response.headers.set('Access-Control-Allow-Origin', '*')
+    response.headers.set('Access-Control-Allow-Origin', 'https://clinicalai.ayurvrittaayurveda.in')
     response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
     response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization')
   }

@@ -104,8 +104,10 @@ export function ResizableLayout({ chatPanel, canvasPanel }: ResizableLayoutProps
       document.body.style.userSelect = ''
       document.removeEventListener('touchmove', handleTouchMove)
       document.removeEventListener('touchend', handleTouchEnd)
+      listenersRef.current = { move: null, up: null }
     }
 
+    listenersRef.current = { move: handleTouchMove as unknown as (e: MouseEvent) => void, up: handleTouchEnd }
     document.addEventListener('touchmove', handleTouchMove, { passive: false })
     document.addEventListener('touchend', handleTouchEnd)
   }, [])

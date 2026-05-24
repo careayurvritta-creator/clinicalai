@@ -81,7 +81,16 @@ export function ChatPanel() {
   )
 
   const handleIntakeComplete = (caseData: CaseData) => {
-    console.log('Intake complete:', caseData)
+    const summary = [
+      `## Case Summary`,
+      `**Patient:** ${caseData.name || 'Unknown'}`,
+      caseData.age ? `**Age:** ${caseData.age}` : '',
+      caseData.gender ? `**Gender:** ${caseData.gender}` : '',
+      caseData.prakriti ? `**Prakriti:** ${caseData.prakriti}` : '',
+      caseData.chiefComplaints?.length ? `**Chief Complaints:** ${caseData.chiefComplaints.map(c => c.complaint).join(', ')}` : '',
+      caseData.provisionalDiagnosis ? `\n### Provisional Diagnosis\n${caseData.provisionalDiagnosis}` : '',
+    ].filter(Boolean).join('\n')
+    setCanvasContent(summary)
   }
 
   const handleShowDiagnosis = (caseData: CaseData) => {

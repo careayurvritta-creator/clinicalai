@@ -105,7 +105,11 @@ function parseArticleXml(articleXml: string): ClinicalEvidenceRow | null {
     const month = extractXmlTag(pubDateXml[0], 'Month')
     const day = extractXmlTag(pubDateXml[0], 'Day')
     if (year) {
-      const m = month ? String(month).padStart(2, '0') : '01'
+      const MONTH_MAP: Record<string, string> = {
+        'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05', 'Jun': '06',
+        'Jul': '07', 'Aug': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12',
+      }
+      const m = month ? (MONTH_MAP[String(month)] || String(month).padStart(2, '0')) : '01'
       const d = day ? String(day).padStart(2, '0') : '01'
       publicationDate = `${year}-${m}-${d}`
     }
@@ -204,7 +208,14 @@ async function main() {
   const dryRun = args.includes('--dry-run')
   const force = args.includes('--force')
   const limitArg = args.find(a => a.startsWith('--limit'))
-  const limit = limitArg ? parseInt(args[args.indexOf(limitArg) + 1] || '563') : 563
+  let limit = 563
+  if (limitArg) {
+    if (limitArg.includes('=')) {
+      limit = parseInt(limitArg.split('=')[1]) || 563
+    } else {
+      limit = parseInt(args[args.indexOf(limitArg) + 1] || '563') || 563
+    }
+  }
 
   console.log('=== PubMed Ayurveda Clinical Evidence Ingestion ===')
   console.log(`Mode: ${dryRun ? 'DRY RUN' : 'LIVE'}${force ? ' (FORCE)' : ''}`)

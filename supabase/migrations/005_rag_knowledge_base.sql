@@ -135,7 +135,7 @@ create table herbs (
   -- Properties (Dravyaguna)
   rasa text[],
   guna text[],
-  virya text check (virya in ('Sheeta', 'Ushna')),
+  virya text check (virya in ('Sheeta', 'Ushna', 'Anushnasheeta')),
   vipaka text check (vipaka in ('Madhura', 'Amla', 'Katu')),
   prabhava text,
   

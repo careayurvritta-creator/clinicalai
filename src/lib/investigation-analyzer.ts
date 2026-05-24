@@ -183,7 +183,8 @@ export function parseLabValue(text: string, parameter: LabParameter): { value: n
 }
 
 export function getValueStatus(value: number, normalRange: { min: number; max: number }): 'normal' | 'abnormal' | 'critical' {
-  if (value < normalRange.min * 0.7 || value > normalRange.max * 1.5) {
+  const criticalLow = normalRange.min === 0 ? normalRange.max * 0.3 : normalRange.min * 0.7
+  if (value < criticalLow || value > normalRange.max * 1.5) {
     return 'critical'
   }
   if (value < normalRange.min || value > normalRange.max) {

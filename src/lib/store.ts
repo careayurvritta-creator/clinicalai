@@ -9,6 +9,7 @@ const defaultState: Omit<ChatState, 'isStreaming'> = {
   selectedModel: DEFAULT_MODEL,
   canvasContent: '',
   activeModule: 'chat',
+  streamingModule: null,
   chatInputDraft: '',
 }
 
@@ -21,6 +22,7 @@ interface ChatActions {
   clearMessages: () => void
   setActiveModule: (module: string) => void
   setChatInputDraft: (draft: string) => void
+  setStreamingModule: (module: string | null) => void
 }
 
 export const useChatStore = create<ChatState & ChatActions>()(
@@ -28,6 +30,7 @@ export const useChatStore = create<ChatState & ChatActions>()(
     (set) => ({
       ...defaultState,
       isStreaming: false,
+      streamingModule: null,
       activeModule: 'chat',
 
       addMessage: (message) =>
@@ -44,6 +47,7 @@ export const useChatStore = create<ChatState & ChatActions>()(
 
       updateLastMessage: (content, status) =>
         set((state) => {
+          const targetModule = state.streamingModule ?? state.activeModule
           const messages = [...state.messages]
           const last = messages[messages.length - 1]
           if (last) {
@@ -57,12 +61,13 @@ export const useChatStore = create<ChatState & ChatActions>()(
             messages,
             messagesByModule: {
               ...state.messagesByModule,
-              [state.activeModule]: messages,
+              [targetModule]: messages,
             },
           }
         }),
 
       setStreaming: (streaming) => set({ isStreaming: streaming }),
+      setStreamingModule: (module) => set({ streamingModule: module }),
       setModel: (model) => set({ selectedModel: model }),
       setCanvasContent: (content) => set({ canvasContent: content }),
 
@@ -85,6 +90,7 @@ export const useChatStore = create<ChatState & ChatActions>()(
             activeModule: module,
             messagesByModule: updatedByModule,
             messages: updatedByModule[module] ?? [],
+            canvasContent: '',
           }
         }),
 
@@ -101,13 +107,18 @@ export const useChatStore = create<ChatState & ChatActions>()(
         activeModule: state.activeModule,
         chatInputDraft: state.chatInputDraft,
       }),
-      version: 3,
-      migrate: (persistedState: any, version: number) => {
-        if (version < 3) {
-          const state = persistedState as any
-          if (state?.intakeState?.caseData?.sparSh !== undefined) {
-            state.intakeState.caseData.sparsh = state.intakeState.caseData.sparSh
-            delete state.intakeState.caseData.sparSh
+      version: 4,
+      migrate: (persistedState: unknown, version: number) => {
+        const state = persistedState as Record<string, unknown>
+        // Clean up stale streaming messages on migration
+        if (version < 4 && state?.messages) {
+          const messages = state.messages as Array<{ status?: string }>
+          state.messages = messages.filter((m) => m.status !== 'streaming')
+          if (state.messagesByModule) {
+            const byModule = state.messagesByModule as Record<string, Array<{ status?: string }>>
+            for (const key of Object.keys(byModule)) {
+              byModule[key] = byModule[key].filter((m) => m.status !== 'streaming')
+            }
           }
         }
         return persistedState

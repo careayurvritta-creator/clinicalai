@@ -21,6 +21,8 @@ export function ChatInput() {
   const addMessage = useChatStore((state) => state.addMessage)
   const updateLastMessage = useChatStore((state) => state.updateLastMessage)
   const setStreaming = useChatStore((state) => state.setStreaming)
+  const setStreamingModule = useChatStore((state) => state.setStreamingModule)
+  const activeModule = useChatStore((state) => state.activeModule)
   const chatInputDraft = useChatStore((state) => state.chatInputDraft)
   const setChatInputDraft = useChatStore((state) => state.setChatInputDraft)
 
@@ -48,6 +50,18 @@ export function ChatInput() {
     el.style.height = 'auto'
     el.style.height = Math.min(el.scrollHeight, 150) + 'px'
   }, [input])
+
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    return () => {
+      setAttachments((prev) => {
+        prev.forEach(a => { if (a.preview) URL.revokeObjectURL(a.preview) })
+        return []
+      })
+      setStreamingModule(null)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const newAttachments: Attachment[] = []
@@ -127,6 +141,7 @@ export function ChatInput() {
     currentAttachments.forEach(a => { if (a.preview) URL.revokeObjectURL(a.preview) })
     setAttachments([])
     setStreaming(true)
+    setStreamingModule(activeModule)
 
     const assistantMessage = {
       id: generateId(),
@@ -140,6 +155,7 @@ export function ChatInput() {
     try {
       const currentMessages = useChatStore.getState().messages
       const apiMessages = currentMessages
+        .filter((m) => m.content.trim() !== '' || m.status !== 'streaming')
         .map((m) => ({ role: m.role, content: m.content }))
 
       // For images, make a vision API call to get description
@@ -262,6 +278,7 @@ export function ChatInput() {
       )
     } finally {
       setStreaming(false)
+      setStreamingModule(null)
     }
   }
 

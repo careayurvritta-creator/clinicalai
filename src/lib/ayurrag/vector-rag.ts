@@ -289,7 +289,7 @@ export async function vectorSearch(
               content: tr.content,
               source: tr.title,
               category: mapSourceTableToCategory(tr.source_table),
-              relevance: Math.min(tr.rank * 10, 1.0) * 0.8, // normalize then downweight text search results
+              relevance: Math.min(tr.rank * 2, 1.0) * 0.7, // normalize then downweight text search results
               metadata: {
                 source_table: tr.source_table,
                 source_id: tr.source_id,
@@ -407,5 +407,5 @@ export function formatVectorResultsForContext(results: VectorSearchResult[]): st
 }
 
 export function getCacheSize(): number {
-  return 0
+  return searchCache.size
 }

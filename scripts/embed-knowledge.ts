@@ -859,8 +859,8 @@ async function generateEmbeddings(openai: OpenAI, texts: string[]): Promise<numb
       for (const item of response.data) {
         const emb = item.embedding as number[]
         if (!validateEmbedding(emb)) {
-          console.warn(`  Invalid embedding at index ${i + response.data.indexOf(item)}, using zero vector`)
-          allEmbeddings.push(new Array(EMBEDDING_DIM).fill(0))
+          console.warn(`  Invalid embedding at index ${i + response.data.indexOf(item)}, skipping`)
+          allEmbeddings.push(null as unknown as number[])
         } else {
           allEmbeddings.push(emb)
         }
@@ -876,13 +876,14 @@ async function generateEmbeddings(openai: OpenAI, texts: string[]): Promise<numb
               model: EMBEDDING_MODEL,
               input: [text],
               encoding_format: 'float',
+              // @ts-expect-error -- NVIDIA NIM requires input_type for asymmetric models
               input_type: 'passage',
             })
             const emb = resp.data[0].embedding as number[]
-            allEmbeddings.push(validateEmbedding(emb) ? emb : new Array(EMBEDDING_DIM).fill(0))
+            allEmbeddings.push(validateEmbedding(emb) ? emb : (null as unknown as number[]))
           } catch {
             console.warn(`  Skipped oversized chunk (${text.length} chars)`)
-            allEmbeddings.push(new Array(EMBEDDING_DIM).fill(0))
+            allEmbeddings.push(null as unknown as number[])
             skipped++
           }
         }

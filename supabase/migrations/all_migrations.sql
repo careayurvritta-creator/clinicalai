@@ -8,11 +8,18 @@ create extension if not exists "uuid-ossp";
 create extension if not exists "pgcrypto";
 
 -- ============================================
--- CLEANUP: Drop all existing functions to avoid return type conflicts
--- Must happen before any CREATE statements
+-- CLEANUP: Drop only functions created by this migration
+-- to avoid return type conflicts. Do NOT drop all public functions.
 -- ============================================
 DO $$ DECLARE
   r RECORD;
+  funcs text[] := ARRAY[
+    'generate_patient_code', 'generate_case_number', 'set_visit_number',
+    'calculate_bmi', 'update_modified_column', 'set_protocol_version',
+    'get_critical_findings', 'get_doctor_stats', 'get_patient_case_history',
+    'search_knowledge_base', 'semantic_search',
+    'get_patient_summary', 'get_case_analytics', 'get_treatment_effectiveness'
+  ];
 BEGIN
   FOR r IN (
     SELECT p.proname, pg_get_function_identity_arguments(p.oid) as args
@@ -20,6 +27,7 @@ BEGIN
     JOIN pg_namespace n ON p.pronamespace = n.oid
     WHERE n.nspname = 'public'
     AND p.prokind = 'f'
+    AND p.proname = ANY(funcs)
   ) LOOP
     BEGIN
       EXECUTE 'DROP FUNCTION IF EXISTS ' || r.proname || '(' || r.args || ') CASCADE';

@@ -38,10 +38,16 @@ export class ErrorBoundary extends React.Component<
             {this.state.error?.message || 'An unexpected error occurred'}
           </p>
           <button
-            onClick={() => this.setState({ hasError: false })}
+            onClick={() => this.setState({ hasError: false, error: undefined })}
             className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
           >
             Try again
+          </button>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 text-sm bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 mt-2"
+          >
+            Reload page
           </button>
         </div>
       )

@@ -12,8 +12,14 @@ export function CanvasPanel() {
   const isStreaming = useChatStore((state) => state.isStreaming)
   const contentEndRef = useRef<HTMLDivElement>(null)
 
+  // Auto-scroll only if user is near bottom
   useEffect(() => {
-    contentEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const el = contentEndRef.current?.parentElement
+    if (!el) return
+    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 200
+    if (isNearBottom) {
+      contentEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
   }, [canvasContent])
 
   const hasContent = canvasContent.trim().length > 0

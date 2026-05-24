@@ -26,7 +26,7 @@ module.exports = {
         'panel-canvas': 'hsl(var(--panel-canvas))',
         'panel-header': 'hsl(var(--panel-header))',
         'secondary': 'hsl(var(--secondary))',
-        'secondary-foreground': 'hsl(var(--foreground))',
+        'secondary-foreground': 'hsl(var(--secondary-foreground, var(--foreground)))',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
