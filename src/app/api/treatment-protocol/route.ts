@@ -7,6 +7,7 @@ import { vectorSearch, initializeVectorRAG, formatVectorResultsForContext } from
 import { getCharakTreatmentProtocols, getCharakDiseaseDescriptions } from '@/lib/ayurknowledge/charak'
 import { createChatStream } from '@/lib/nvidia-client'
 import { createServerClient } from '@/lib/supabase/client'
+import { embedTreatmentProtocol } from '@/lib/input-learning'
 import { buildProtocolPrompt } from '@/lib/treatment-prompts'
 
 interface PatientInfo {
@@ -175,6 +176,10 @@ async function persistProtocol(
       console.warn('[Treatment Protocol] Persistence skipped:', error.message)
     } else {
       console.log('[Treatment Protocol] Saved:', protocolNumber)
+      // Embed protocol into RAG knowledge base (fire-and-forget)
+      embedTreatmentProtocol(protocolNumber, protocol, patientInfo.diagnosis, patientInfo.prakriti).catch(err =>
+        console.warn('[Treatment Protocol] Embedding failed:', err)
+      )
     }
   } catch (error) {
     console.warn('[Treatment Protocol] Persistence error:', error)

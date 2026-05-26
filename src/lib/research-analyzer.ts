@@ -392,29 +392,38 @@ export async function getComprehensiveResearchContext(
   const queries = generateSearchQueries(complaints, duration, diagnosis)
   console.log('[Research] Generated', queries.length, 'search queries')
 
+  // Run ALL PubMed queries in parallel (was sequential — caused timeouts on Vercel)
   const allPmids = new Set<string>()
-  for (const query of queries) {
-    const pmids = await searchPubMed(query, 20)
+  const pmidResults = await Promise.all(
+    queries.map(query => searchPubMed(query, 20))
+  )
+  for (const pmids of pmidResults) {
     for (const pmid of pmids) allPmids.add(pmid)
   }
   const uniquePmids = Array.from(allPmids).slice(0, 40)
   console.log('[Research] Total unique papers found:', uniquePmids.length)
 
-  // Run PubMed and web search in parallel
+  // Run PubMed and web search in parallel (journal-focused + general queries)
+  const journalQueries = [
+    `${complaints} ayurvedic treatment evidence`,
+    `${diagnosis || complaints} panchakarma clinical study`,
+    `${complaints} integrative medicine systematic review`,
+    // Non-PubMed Ayurveda journals (web search)
+    `${diagnosis || complaints} "International Journal of Research in Ayurveda and Pharmacy"`,
+    `${diagnosis || complaints} "Journal of Ayurveda" BHU research`,
+    `${complaints} "Indian Journal of Ayurveda and Siddha" treatment`,
+    `${diagnosis || complaints} "Annals of Ayurvedic Medicine" clinical`,
+    `${complaints} "International Ayurvedic Medical Journal" case study`,
+    `${diagnosis || complaints} "World Journal of Pharmaceutical Research" ayurvedic`,
+    `${complaints} ayurvedic formulation "Journal of Pharmacognosy and Phytochemistry"`,
+  ]
   const [papers, webResults] = await Promise.all([
     (async () => {
       if (uniquePmids.length === 0) return []
       const rawPapers = await fetchAbstracts(uniquePmids)
       return analyzePapersWithLLM(rawPapers, patientContext)
     })(),
-    searchWebMultiple(
-      [
-        `${complaints} ayurvedic treatment evidence`,
-        `${diagnosis || complaints} panchakarma clinical study`,
-        `${complaints} integrative medicine systematic review`,
-      ],
-      3
-    ),
+    searchWebMultiple(journalQueries, 3),
   ])
 
   console.log('[Research] Analyzed', papers.length, 'papers and found', webResults.length, 'web results')

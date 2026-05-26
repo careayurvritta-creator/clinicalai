@@ -85,11 +85,15 @@ export async function searchWebMultiple(
   queries: string[],
   maxResultsPerQuery: number = 3
 ): Promise<WebSearchResult[]> {
+  // Run all web searches in parallel (was sequential — caused timeouts)
   const allResults: WebSearchResult[] = []
   const seenUrls = new Set<string>()
 
-  for (const query of queries) {
-    const results = await searchWeb(query, maxResultsPerQuery)
+  const queryResults = await Promise.all(
+    queries.map(query => searchWeb(query, maxResultsPerQuery))
+  )
+
+  for (const results of queryResults) {
     for (const result of results) {
       if (!seenUrls.has(result.url)) {
         seenUrls.add(result.url)

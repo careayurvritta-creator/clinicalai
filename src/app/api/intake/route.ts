@@ -7,6 +7,7 @@ import { sanitizeInput } from '@/lib/utils'
 import { searchKnowledge, AYURVEDA_KNOWLEDGE } from '@/lib/ayurknowledge'
 import { analyzeProvisionalDiagnosis, formatDiagnosisForDisplay } from '@/lib/diagnosis-engine'
 import { createServerClient } from '@/lib/supabase/client'
+import { embedCaseToKnowledge } from '@/lib/input-learning'
 import { getNvidiaClient } from '@/lib/nvidia-client'
 import { buildFollowupPrompt } from '@/lib/treatment-prompts'
 
@@ -738,7 +739,7 @@ function updateLastComplaint(
 }
 
 // Fire-and-forget case persistence
-async function persistCaseData(caseData: Partial<CaseData>, diagnosis: string) {
+async function persistCaseData(caseData: Partial<CaseData>, diagnosis: string): Promise<string | null> {
   try {
     const supabase = createServerClient()
     const caseNumber = `CASE-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
@@ -784,11 +785,20 @@ async function persistCaseData(caseData: Partial<CaseData>, diagnosis: string) {
 
     if (caseError) {
       console.warn('[Intake API] Case insert error:', caseError.message)
-    } else {
-      console.log('[Intake API] Case saved:', caseNumber, caseRecord?.id)
+      return null
     }
+
+    console.log('[Intake API] Case saved:', caseNumber, caseRecord?.id)
+    // Embed case into RAG knowledge base (fire-and-forget)
+    if (caseRecord?.id) {
+      embedCaseToKnowledge(caseRecord.id).catch(err =>
+        console.warn('[Intake API] Case embedding failed:', err)
+      )
+    }
+    return caseRecord?.id || null
   } catch (error) {
     console.warn('[Intake API] Persistence error:', error)
+    return null
   }
 }
 
