@@ -18,9 +18,9 @@ import OpenAI from 'openai'
 const EMBEDDING_MODEL = 'nvidia/nv-embedqa-e5-v5'
 const EMBEDDING_DIM = 1024
 const BATCH_SIZE = 20
-const UPSERT_BATCH = 50
+const UPSERT_BATCH = 10
 const DELAY_BETWEEN_BATCHES_MS = 1000
-const MAX_CHUNK_CHARS = 1500 // ~375 tokens, safe for 512-token limit
+const MAX_CHUNK_CHARS = 400 // ~100 tokens, well under 512-token NIM limit (prevents all skips)
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Chunk {
@@ -62,30 +62,52 @@ function truncate(str: string, maxLen: number): string {
  * Splits on sentence boundaries to preserve semantic coherence.
  * Adds 50-character overlap between parts to prevent context loss at boundaries.
  */
-const CHUNK_OVERLAP_CHARS = 100 // ~25 tokens overlap between chunks
+const CHUNK_OVERLAP_CHARS = 50 // ~12 tokens overlap between chunks
 
 function splitOversizedChunk(chunk: Chunk): Chunk[] {
   if (chunk.content.length <= MAX_CHUNK_CHARS) return [chunk]
 
   const parts: Chunk[] = []
-  const sentences = chunk.content.split(/(?<=[.!])\s+/)
+  // Split on sentence boundaries (. or !) AND newlines (for bullet-based content)
+  const sentences = chunk.content.split(/(?<=[.!])\s+|\n/)
   let currentPart = ''
   let lastPartTail = ''
 
   for (const sentence of sentences) {
-    if ((currentPart + ' ' + sentence).length > MAX_CHUNK_CHARS && currentPart.length > 0) {
-      // Include overlap from previous chunk tail
+    const candidate = currentPart ? currentPart + ' ' + sentence : sentence
+    if (candidate.length > MAX_CHUNK_CHARS && currentPart.length > 0) {
+      // Current part is full — flush it
       const contentWithOverlap = lastPartTail ? lastPartTail + ' ' + currentPart.trim() : currentPart.trim()
       parts.push({
         ...chunk,
         content: contentWithOverlap,
         sourceId: deterministicUuid(`${chunk.sourceId}:part${parts.length}`),
       })
-      // Save tail for overlap with next chunk
       lastPartTail = currentPart.trim().slice(-CHUNK_OVERLAP_CHARS)
       currentPart = sentence
+    } else if (sentence.length > MAX_CHUNK_CHARS) {
+      // Single sentence/line exceeds limit — force-split by character count
+      if (currentPart.trim()) {
+        const contentWithOverlap = lastPartTail ? lastPartTail + ' ' + currentPart.trim() : currentPart.trim()
+        parts.push({
+          ...chunk,
+          content: contentWithOverlap,
+          sourceId: deterministicUuid(`${chunk.sourceId}:part${parts.length}`),
+        })
+        lastPartTail = currentPart.trim().slice(-CHUNK_OVERLAP_CHARS)
+        currentPart = ''
+      }
+      // Split the long line into fixed-size pieces
+      for (let k = 0; k < sentence.length; k += MAX_CHUNK_CHARS - CHUNK_OVERLAP_CHARS) {
+        const piece = sentence.slice(k, k + MAX_CHUNK_CHARS)
+        parts.push({
+          ...chunk,
+          content: piece,
+          sourceId: deterministicUuid(`${chunk.sourceId}:part${parts.length}`),
+        })
+      }
     } else {
-      currentPart = currentPart ? currentPart + ' ' + sentence : sentence
+      currentPart = candidate
     }
   }
 
@@ -99,6 +121,25 @@ function splitOversizedChunk(chunk: Chunk): Chunk[] {
   }
 
   return parts.length > 0 ? parts : [chunk]
+}
+
+function sanitizeForJson(obj: unknown): unknown {
+  if (obj === null || obj === undefined) return null
+  if (typeof obj === 'string') {
+    // Remove control characters except \n, \r, \t
+    return obj.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
+  }
+  if (Array.isArray(obj)) return obj.map(sanitizeForJson)
+  if (typeof obj === 'object') {
+    const result: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+      if (value !== undefined) {
+        result[key] = sanitizeForJson(value)
+      }
+    }
+    return result
+  }
+  return obj
 }
 
 /**
@@ -819,6 +860,213 @@ function chunkModernMedicine(med: ModernMedicineRow): Chunk[] {
   return chunks
 }
 
+// ─── Chunk Case Studies (from local JSON) ────────────────────────────────────
+
+interface CaseStudyData {
+  caseNumber: number
+  diseaseName: string
+  modernName: string
+  part1Sections: {
+    nidanaam: string[]
+    purvaroopam: string[]
+    lakshanam: string[]
+    systemicExam: string[]
+    labInvestigations: string[]
+  }
+  part2Sections: {
+    differentialDiagnosis: string[]
+    samprapti: string
+    sampraptiGhataka: string[]
+    upashaya: string[]
+    anupashaya: string[]
+    samanyaChikitsa: string[]
+    visheshaChikitsa: string[]
+    surgicalManagement: string[]
+  }
+  references: string[]
+  rawPart1: string
+  rawPart2: string
+}
+
+function chunkCaseStudy(cs: CaseStudyData): Chunk[] {
+  const chunks: Chunk[] = []
+  const title = cs.modernName
+    ? `${cs.diseaseName} (${cs.modernName})`
+    : cs.diseaseName
+  const prefix = `Ayurvedic Case Study #${cs.caseNumber} — ${title}`
+  const baseMeta = { caseNumber: cs.caseNumber, disease: cs.diseaseName }
+
+  // Chunk 1: Overview + pathogenesis summary
+  const overviewParts = [`${prefix}.`]
+  if (cs.part2Sections.samprapti) overviewParts.push(`Pathogenesis: ${cs.part2Sections.samprapti}`)
+  chunks.push({
+    content: overviewParts.join('\n'),
+    metadata: { ...baseMeta, section: 'overview' },
+    sourceTable: 'case_studies',
+    sourceId: deterministicUuid(`case_studies:${cs.caseNumber}:overview`),
+    sourceTitle: title,
+    contentType: 'description',
+  })
+
+  // Chunk 2: Etiology
+  if (cs.part1Sections.nidanaam.length > 0) {
+    chunks.push({
+      content: `${prefix} — Etiology (Nidanam).\n${cs.part1Sections.nidanaam.map(i => `- ${i}`).join('\n')}`,
+      metadata: { ...baseMeta, section: 'etiology' },
+      sourceTable: 'case_studies',
+      sourceId: deterministicUuid(`case_studies:${cs.caseNumber}:etiology`),
+      sourceTitle: title,
+      contentType: 'description',
+    })
+  }
+
+  // Chunk 3: Symptoms (purvaroopam + lakshanam)
+  const symptomParts: string[] = []
+  if (cs.part1Sections.purvaroopam.length > 0) {
+    symptomParts.push(`Prodromal Symptoms:\n${cs.part1Sections.purvaroopam.map(i => `- ${i}`).join('\n')}`)
+  }
+  if (cs.part1Sections.lakshanam.length > 0) {
+    symptomParts.push(`Clinical Features:\n${cs.part1Sections.lakshanam.map(i => `- ${i}`).join('\n')}`)
+  }
+  if (symptomParts.length > 0) {
+    chunks.push({
+      content: `${prefix} — Symptoms.\n${symptomParts.join('\n\n')}`,
+      metadata: { ...baseMeta, section: 'symptoms' },
+      sourceTable: 'case_studies',
+      sourceId: deterministicUuid(`case_studies:${cs.caseNumber}:symptoms`),
+      sourceTitle: title,
+      contentType: 'description',
+    })
+  }
+
+  // Chunk 4: Differential Diagnosis
+  if (cs.part2Sections.differentialDiagnosis.length > 0) {
+    chunks.push({
+      content: `${prefix} — Differential Diagnosis.\n${cs.part2Sections.differentialDiagnosis.map(i => `- ${i}`).join('\n')}`,
+      metadata: { ...baseMeta, section: 'differentialDiagnosis' },
+      sourceTable: 'case_studies',
+      sourceId: deterministicUuid(`case_studies:${cs.caseNumber}:diffdx`),
+      sourceTitle: title,
+      contentType: 'description',
+    })
+  }
+
+  // Chunk 5: Pathogenesis (samprapti + ghatakas)
+  const pathParts: string[] = []
+  if (cs.part2Sections.samprapti) pathParts.push(cs.part2Sections.samprapti)
+  if (cs.part2Sections.sampraptiGhataka.length > 0) {
+    pathParts.push(`Samprapti Ghataka:\n${cs.part2Sections.sampraptiGhataka.map(i => `- ${i}`).join('\n')}`)
+  }
+  if (pathParts.length > 0) {
+    chunks.push({
+      content: `${prefix} — Pathogenesis (Samprapti).\n${pathParts.join('\n\n')}`,
+      metadata: { ...baseMeta, section: 'pathogenesis' },
+      sourceTable: 'case_studies',
+      sourceId: deterministicUuid(`case_studies:${cs.caseNumber}:pathogenesis`),
+      sourceTitle: title,
+      contentType: 'description',
+    })
+  }
+
+  // Chunk 6: Treatment (samanya + vishesha + surgical)
+  const txParts: string[] = []
+  if (cs.part2Sections.samanyaChikitsa.length > 0) {
+    txParts.push(`General Treatment (Samanya Chikitsa):\n${cs.part2Sections.samanyaChikitsa.map(i => `- ${i}`).join('\n')}`)
+  }
+  if (cs.part2Sections.visheshaChikitsa.length > 0) {
+    txParts.push(`Specific Treatment (Vishesha Chikitsa):\n${cs.part2Sections.visheshaChikitsa.map(i => `- ${i}`).join('\n')}`)
+  }
+  if (cs.part2Sections.surgicalManagement.length > 0) {
+    txParts.push(`Surgical Management:\n${cs.part2Sections.surgicalManagement.map(i => `- ${i}`).join('\n')}`)
+  }
+  if (txParts.length > 0) {
+    chunks.push({
+      content: `${prefix} — Treatment.\n${txParts.join('\n\n')}`,
+      metadata: { ...baseMeta, section: 'treatment' },
+      sourceTable: 'case_studies',
+      sourceId: deterministicUuid(`case_studies:${cs.caseNumber}:treatment`),
+      sourceTitle: title,
+      contentType: 'procedure',
+    })
+  }
+
+  // Chunk 7: Aggravating/Relieving factors
+  const factorParts: string[] = []
+  if (cs.part2Sections.upashaya.length > 0) {
+    factorParts.push(`Relieving Factors (Upashaya):\n${cs.part2Sections.upashaya.map(i => `- ${i}`).join('\n')}`)
+  }
+  if (cs.part2Sections.anupashaya.length > 0) {
+    factorParts.push(`Aggravating Factors (Anupashaya):\n${cs.part2Sections.anupashaya.map(i => `- ${i}`).join('\n')}`)
+  }
+  if (factorParts.length > 0) {
+    chunks.push({
+      content: `${prefix} — Relieving and Aggravating Factors.\n${factorParts.join('\n\n')}`,
+      metadata: { ...baseMeta, section: 'factors' },
+      sourceTable: 'case_studies',
+      sourceId: deterministicUuid(`case_studies:${cs.caseNumber}:factors`),
+      sourceTitle: title,
+      contentType: 'concept',
+    })
+  }
+
+  // Chunk 8: References
+  if (cs.references.length > 0) {
+    chunks.push({
+      content: `${prefix} — Classical References.\n${cs.references.map(r => `- ${r}`).join('\n')}`,
+      metadata: { ...baseMeta, section: 'references' },
+      sourceTable: 'case_studies',
+      sourceId: deterministicUuid(`case_studies:${cs.caseNumber}:references`),
+      sourceTitle: title,
+      contentType: 'concept',
+    })
+  }
+
+  // Chunk 9-10: Full raw text (for comprehensive RAG retrieval)
+  if (cs.rawPart1) {
+    chunks.push({
+      content: `${prefix} — Full Part 1 (Etiology, Symptoms, Examination, Investigations).\n${cs.rawPart1}`,
+      metadata: { ...baseMeta, section: 'rawPart1' },
+      sourceTable: 'case_studies',
+      sourceId: deterministicUuid(`case_studies:${cs.caseNumber}:rawPart1`),
+      sourceTitle: title,
+      contentType: 'description',
+    })
+  }
+  if (cs.rawPart2) {
+    chunks.push({
+      content: `${prefix} — Full Part 2 (Diagnosis, Pathogenesis, Treatment).\n${cs.rawPart2}`,
+      metadata: { ...baseMeta, section: 'rawPart2' },
+      sourceTable: 'case_studies',
+      sourceId: deterministicUuid(`case_studies:${cs.caseNumber}:rawPart2`),
+      sourceTitle: title,
+      contentType: 'description',
+    })
+  }
+
+  return chunks
+}
+
+async function chunkCaseStudiesFromJson(): Promise<Chunk[]> {
+  const fs = await import('fs')
+  const path = await import('path')
+  const jsonPath = path.join(process.cwd(), 'src', 'lib', 'ayurknowledge', 'case-studies.json')
+
+  if (!fs.existsSync(jsonPath)) {
+    console.log('  Case studies JSON not found, skipping')
+    return []
+  }
+
+  const raw = fs.readFileSync(jsonPath, 'utf-8').replace(/^\uFEFF/, '')
+  const cases: CaseStudyData[] = JSON.parse(raw)
+  console.log(`  Loaded ${cases.length} case studies from JSON`)
+
+  const chunks: Chunk[] = []
+  for (const cs of cases) {
+    chunks.push(...chunkCaseStudy(cs))
+  }
+  return chunks
+}
+
 // ─── Load External Sources from Supabase ─────────────────────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -843,8 +1091,18 @@ async function generateEmbeddings(openai: OpenAI, texts: string[]): Promise<numb
   const allEmbeddings: number[][] = []
   let skipped = 0
 
+  function sanitizeForEmbedding(text: string): string {
+    return text
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // control chars
+      .replace(/\uFFFD/g, '') // replacement char
+      .replace(/[\u0900-\u097F]/g, '') // Devanagari script (NIM may not support)
+      .replace(/[^\x20-\x7E\u00C0-\u024F\u2018-\u201F\u2013\u2014]/g, '') // keep ASCII + Latin Extended + common punctuation
+      .replace(/\s+/g, ' ') // collapse whitespace after removal
+      .trim()
+  }
+
   for (let i = 0; i < texts.length; i += BATCH_SIZE) {
-    const batch = texts.slice(i, i + BATCH_SIZE)
+    const batch = texts.slice(i, i + BATCH_SIZE).map(sanitizeForEmbedding)
     try {
       const response = await withRetry(() =>
         openai.embeddings.create({
@@ -871,18 +1129,34 @@ async function generateEmbeddings(openai: OpenAI, texts: string[]): Promise<numb
         // Batch failed, try individual texts to skip oversized ones
         console.warn(`\n  Batch at offset ${i} failed (oversized input), trying individually...`)
         for (const text of batch) {
-          try {
-            const resp = await openai.embeddings.create({
-              model: EMBEDDING_MODEL,
-              input: [text],
-              encoding_format: 'float',
-              // @ts-expect-error -- NVIDIA NIM requires input_type for asymmetric models
-              input_type: 'passage',
-            })
-            const emb = resp.data[0].embedding as number[]
-            allEmbeddings.push(validateEmbedding(emb) ? emb : (null as unknown as number[]))
-          } catch {
-            console.warn(`  Skipped oversized chunk (${text.length} chars)`)
+          const sanitized = sanitizeForEmbedding(text)
+          // Try progressively shorter versions before giving up
+          const truncations = [sanitized.length, 300, 200, 100]
+          let embedded = false
+          for (const maxLen of truncations) {
+            const truncated = maxLen < sanitized.length ? sanitized.slice(0, maxLen) : sanitized
+            if (!truncated.trim()) break
+            try {
+              const resp = await openai.embeddings.create({
+                model: EMBEDDING_MODEL,
+                input: [truncated],
+                encoding_format: 'float',
+                // @ts-expect-error -- NVIDIA NIM requires input_type for asymmetric models
+                input_type: 'passage',
+              })
+              const emb = resp.data[0].embedding as number[]
+              if (validateEmbedding(emb)) {
+                allEmbeddings.push(emb)
+                if (maxLen < sanitized.length) {
+                  console.warn(`  Truncated chunk (${text.length}→${maxLen} chars) to embed successfully`)
+                }
+                embedded = true
+                break
+              }
+            } catch { /* try next shorter */ }
+          }
+          if (!embedded) {
+            console.warn(`  Skipped unembeddable chunk (${text.length} chars)`)
             allEmbeddings.push(null as unknown as number[])
             skipped++
           }
@@ -912,6 +1186,7 @@ async function upsertChunks(
   embeddings: number[][]
 ): Promise<number> {
   let upserted = 0
+  let nullEmbeddings = 0
 
   for (let i = 0; i < chunks.length; i += UPSERT_BATCH) {
     const batchChunks = chunks.slice(i, i + UPSERT_BATCH)
@@ -923,7 +1198,9 @@ async function upsertChunks(
       metadata: Record<string, unknown>; embedding: string | null
     }> = []
     for (let j = 0; j < batchChunks.length; j++) {
-      if (!batchEmbeddings[j]) continue // skip chunks that failed embedding
+      if (!batchEmbeddings[j]) {
+        nullEmbeddings++
+      }
       rows.push({
         id: deterministicUuid(`emb:${batchChunks[j].sourceTable}:${batchChunks[j].sourceId}:${batchChunks[j].metadata.section || 'main'}`),
         source_table: batchChunks[j].sourceTable,
@@ -932,8 +1209,8 @@ async function upsertChunks(
         content_type: batchChunks[j].contentType,
         content: batchChunks[j].content,
         content_hash: createHash('md5').update(batchChunks[j].content).digest('hex'),
-        metadata: batchChunks[j].metadata,
-        embedding: `[${batchEmbeddings[j].join(',')}]`,
+        metadata: sanitizeForJson(batchChunks[j].metadata) as Record<string, unknown>,
+        embedding: batchEmbeddings[j] ? `[${batchEmbeddings[j].join(',')}]` : null,
       })
     }
 
@@ -959,15 +1236,31 @@ async function upsertChunks(
         .from('knowledge_embeddings')
         .upsert(dedupedRows, { onConflict: 'id' })
       if (retryError) {
-        console.error(`  Retry also failed: ${retryError.message}`)
+        console.error(`  Retry failed, upserting individually...`)
+        let individualFailed = 0
+        for (const row of dedupedRows) {
+          const { error: singleError } = await supabase
+            .from('knowledge_embeddings')
+            .upsert([row], { onConflict: 'id' })
+          if (singleError) {
+            console.error(`    Individual upsert failed for ${row.id}: ${singleError.message}`)
+            individualFailed++
+          }
+        }
+        if (individualFailed > 0) {
+          console.error(`    ${individualFailed}/${dedupedRows.length} individual rows failed`)
+        }
       }
     }
 
-    upserted += batchChunks.length
+    upserted += dedupedRows.length
     process.stdout.write(`  Upserted ${upserted}/${chunks.length}\r`)
   }
 
   console.log()
+  if (nullEmbeddings > 0) {
+    console.warn(`  ${nullEmbeddings} chunks stored without embedding (vector search unavailable, full-text only)`)
+  }
   return upserted
 }
 
@@ -1034,6 +1327,10 @@ async function main() {
   const whoChunks = await chunkWHO()
   console.log(`  ${whoChunks.length} chunks`)
 
+  console.log('Chunking case studies...')
+  const caseStudyChunks = await chunkCaseStudiesFromJson()
+  console.log(`  ${caseStudyChunks.length} chunks`)
+
   // ── External sources (from Supabase tables, populated by ingestion scripts) ──
   console.log('Loading external sources from Supabase...')
   const externalSources = await loadSupabaseSources(supabase)
@@ -1066,6 +1363,7 @@ async function main() {
     ...allopathyChunks,
     ...fundamentalChunks,
     ...whoChunks,
+    ...caseStudyChunks,
     ...sushrutaChunks,
     ...clinicalChunks,
     ...qaChunks,
@@ -1091,6 +1389,7 @@ async function main() {
     console.log(`  Allopathy: ${allopathyChunks.length}`)
     console.log(`  Fundamentals: ${fundamentalChunks.length}`)
     console.log(`  WHO terms: ${whoChunks.length}`)
+    console.log(`  Case studies: ${caseStudyChunks.length}`)
     console.log(`  Sushruta chapters: ${sushrutaChunks.length}`)
     console.log(`  Clinical evidence: ${clinicalChunks.length}`)
     console.log(`  External Q&A: ${qaChunks.length}`)
