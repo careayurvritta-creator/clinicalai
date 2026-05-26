@@ -153,11 +153,11 @@ async function persistProtocol(
   patientInfo: PatientInfo,
   protocol: string,
   researchPapers: ResearchPaper[],
-  charakRefs: string[]
+  charakRefs: string[],
+  protocolNumber: string
 ) {
   try {
     const supabase = createServerClient()
-    const protocolNumber = `PROTO-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
 
     const { error } = await supabase
       .from('treatment_protocols')
@@ -229,12 +229,15 @@ export async function POST(req: NextRequest) {
     const patientData = formatPatientData(patientInfo, treatmentSelection)
 
     // Build the comprehensive LLM prompt
+    const protocolNumber = `PROTO-${Date.now()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
     const systemPrompt = buildProtocolPrompt(
       patientData,
       researchCtx?.formattedResearch || 'No research papers found for this condition.',
       ragContext || 'No additional knowledge base context available.',
       charakRefs.length > 0 ? charakRefs.join('\n') : 'No specific Charak Samhita references found.',
-      researchCtx?.formattedWeb || ''
+      researchCtx?.formattedWeb || '',
+      patientInfo.name,
+      patientInfo.diagnosis
     )
 
     console.log('[Treatment Protocol] Generating with LLM. Papers:', researchCtx?.papers.length || 0, 'Web:', researchCtx?.webResults.length || 0, 'RAG:', ragResults.length)
@@ -275,7 +278,7 @@ export async function POST(req: NextRequest) {
 
           // Persist after streaming completes
           if (fullProtocol.length > 100) {
-            persistProtocol(patientInfo, fullProtocol, researchCtx?.papers || [], charakRefs)
+            persistProtocol(patientInfo, fullProtocol, researchCtx?.papers || [], charakRefs, protocolNumber)
           }
 
           controller.enqueue(encoder.encode('data: [DONE]\n\n'))

@@ -79,6 +79,22 @@ export async function exportProtocolToPDF(
     htmlS.style.pageBreakInside = 'avoid'
   }
 
+  // Style abstract block
+  const abstractBlocks = clone.querySelectorAll('.abstract-content')
+  for (const ab of abstractBlocks) {
+    const htmlAb = ab as HTMLElement
+    htmlAb.style.fontSize = '13px'
+    htmlAb.style.lineHeight = '1.7'
+  }
+
+  // Style footer content
+  const footerBlocks = clone.querySelectorAll('.footer-content')
+  for (const fb of footerBlocks) {
+    const htmlFb = fb as HTMLElement
+    htmlFb.style.fontSize = '10px'
+    htmlFb.style.color = '#6b7280'
+  }
+
   // Create wrapper with header and footer
   const wrapper = document.createElement('div')
   wrapper.style.cssText = 'font-family: Segoe UI, system-ui, sans-serif; color: #1a1a1a; background: #fff;'

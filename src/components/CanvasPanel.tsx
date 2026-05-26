@@ -25,11 +25,18 @@ export function CanvasPanel() {
   const hasContent = canvasContent.trim().length > 0
 
   const isProtocol = hasContent && (
+    canvasContent.includes('## Abstract') ||
+    canvasContent.includes('## Keywords') ||
     canvasContent.includes('## Case Summary') ||
+    canvasContent.includes('## Case Presentation') ||
+    canvasContent.includes('## Diagnostic Assessment') ||
     canvasContent.includes('## Treatment Protocol') ||
     canvasContent.includes('## Ayurvedic Pathogenesis') ||
     canvasContent.includes('## Samprapti') ||
-    canvasContent.includes('## Detailed Treatment')
+    canvasContent.includes('## Detailed Treatment') ||
+    canvasContent.includes('## Pharmacotherapy') ||
+    canvasContent.includes('## Literature Review') ||
+    canvasContent.includes('## Conclusion')
   )
 
   const isDiagnosis = hasContent && !isProtocol && (

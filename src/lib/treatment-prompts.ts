@@ -15,113 +15,155 @@ Your output MUST use EXACTLY these section headers (starting with ##). Each sect
 
 You MUST produce ALL of the following sections in this exact order. Do not skip any section. If data is unavailable for a section, write "Not assessed" and specify what clinical information would be required.
 
----
-
-### SECTION 1: CASE SUMMARY (header: ## Case Summary)
-
-Write a structured clinical summary in paragraph form (150-250 words). Include:
-- Patient identifiers: name, age, gender, occupation
-- Presenting complaints with precise duration and severity
-- Constitutional assessment: Prakriti (dosha constitution) and Vikriti (current imbalance)
-- Relevant past medical history, comorbidities, and current medications
-- Ashtavidha Pariksha (eight-fold examination) findings presented as a structured table:
-
-| Parameter | Finding |
-|-----------|---------|
-| Nadi (Pulse) | ... |
-| Jivha (Tongue) | ... |
-| Shabda (Voice) | ... |
-| Sparsh (Touch/Skin) | ... |
-| Drik (Eyes) | ... |
-| Aakriti (Build) | ... |
-| Mala (Stool) | ... |
-| Mootra (Urine) | ... |
+Use numbered subsections (### 2.1, ### 2.2, etc.) for structured navigation. Number ALL tables sequentially (Table 1, Table 2, Table 3...) with a descriptive caption line immediately above each table: "**Table N: [Description]**".
 
 ---
 
-### SECTION 2: AYURVEDIC PATHOGENESIS (header: ## Ayurvedic Pathogenesis)
+### SECTION 0: ABSTRACT (header: ## Abstract)
 
-Provide a systematic analysis of Samprapti (disease pathogenesis) as a clinical reasoning chain, NOT a list:
+Write a structured abstract in the standard journal format with these labeled subsections:
 
-**2.1 Dosha-Dushya-Sammurchana**: Identify which doshas (Vata/Pitta/Kapha) are vitiated and which dhatus (tissues) are affected. Explain the mechanism of interaction.
+**Background:** 1-2 sentences on the clinical condition and its Ayurvedic relevance.
+**Case Presentation:** 2-3 sentences summarizing the patient demographics, chief complaints, and diagnostic findings.
+**Treatment:** 2-3 sentences on the integrated Ayurvedic treatment approach, key formulations, and Panchakarma procedures employed.
+**Conclusion:** 1-2 sentences on expected outcomes and the significance of this integrated approach.
 
-**2.2 Srotas Involved**: Which body channels (Rasavaha, Raktavaha, Mamsavaha, etc.) are compromised and the mechanism of dysfunction.
-
-**2.3 Agni Status**: Assess digestive and metabolic fire:
-- Jatharagni (digestive fire): mandagni / teekshagni / vishamagni / samagni
-- Bhutagni (elemental metabolism) if relevant
-- Dhatvagni (tissue-level metabolism) if relevant
-
-**2.4 Ama Assessment**: Presence of metabolic toxins — location, severity, and clinical indicators.
-
-**2.5 Prakriti-Vikriti Analysis**: How the constitutional type predisposes to or modifies the current disease presentation.
-
-**2.6 Shatkriyakala**: Identify the current stage of disease progression:
-- Sanchaya (accumulation) → Prakopa (aggravation) → Prasara (spread) → Sthana Samshraya (localization) → Vyaktha (manifestation) → Bheda (complications)
-
-Present this as a numbered clinical reasoning chain with clear logical connections between each stage.
+Total length: 150-250 words.
 
 ---
 
-### SECTION 3: LITERATURE REVIEW (header: ## Literature Review)
+### SECTION 0B: KEYWORDS (header: ## Keywords)
 
-Synthesize the provided research evidence into a coherent academic narrative. Structure as:
+List 5-8 MeSH-aligned keywords separated by semicolons. Format:
+Ayurveda; [Condition Name]; [Key Dosha]; [Primary Treatment Modality]; [Key Formulation]; Samprapti; Integrative Medicine
 
-**3.1 Summary of Evidence**: A 2-3 sentence overview of the evidence landscape for this condition.
+---
 
-**3.2 Thematic Analysis**: Group findings by theme (e.g., "Panchakarma Efficacy", "Herbal Interventions", "Dietary Approaches", "Integrative Protocols"). Under each theme:
+### SECTION 1: INTRODUCTION (header: ## 1. Introduction)
+
+Write 150-250 words covering:
+- The clinical significance of this condition in both modern and Ayurvedic medicine
+- Prevalence and impact on patient quality of life
+- The rationale for an integrative Ayurvedic approach
+- A brief overview of classical Ayurvedic understanding of this condition
+- The objective of this treatment protocol document
+
+---
+
+### SECTION 2: CASE PRESENTATION (header: ## 2. Case Presentation)
+
+#### 2.1 Patient Demographics (header: ### 2.1 Patient Demographics)
+Present a structured summary including: name, age, gender, occupation, Prakriti (constitutional type).
+
+#### 2.2 Chief Complaints (header: ### 2.2 Chief Complaints)
+Present in table format:
+
+**Table 1: Chief Complaints**
+| # | Complaint | Duration | Severity (1-10) | Location | Onset |
+|---|-----------|----------|-----------------|----------|-------|
+| 1 | ... | ... | ... | ... | ... |
+
+#### 2.3 Medical History (header: ### 2.3 Medical History)
+Include: comorbidities, current medications, allergies, family history, surgical history. Present as a narrative paragraph or table as appropriate.
+
+#### 2.4 Ashtavidha Pariksha (header: ### 2.4 Ashtavidha Pariksha - Eight-fold Examination)
+Present as a structured table:
+
+**Table 2: Ashtavidha Pariksha Findings**
+| Parameter | Sanskrit Term | Finding | Clinical Interpretation |
+|-----------|--------------|---------|------------------------|
+| Pulse | Nadi | ... | ... |
+| Tongue | Jivha | ... | ... |
+| Voice | Shabda | ... | ... |
+| Skin/Touch | Sparsh | ... | ... |
+| Eyes | Drik | ... | ... |
+| Build | Aakriti | ... | ... |
+| Stool | Mala | ... | ... |
+| Urine | Mootra | ... | ... |
+
+#### 2.5 Dashavidha Pariksha (header: ### 2.5 Dashavidha Pariksha - Ten-fold Examination)
+Present Satva (Mental Strength), Ahara Shakti (Diet Capacity), Vyayama Shakti (Exercise Tolerance), and any additional parameters.
+
+---
+
+### SECTION 3: DIAGNOSTIC ASSESSMENT (header: ## 3. Diagnostic Assessment)
+
+#### 3.1 Modern Medicine Diagnosis (header: ### 3.1 Modern Medicine Diagnosis)
+State the provisional diagnosis with supporting clinical evidence and investigation findings.
+
+#### 3.2 Ayurvedic Diagnosis (header: ### 3.2 Ayurvedic Diagnosis)
+Identify: Roga (disease), Roga Marga (pathway), Dosha involvement, Dushya (affected tissues).
+
+#### 3.3 Samprapti - Disease Pathogenesis (header: ### 3.3 Samprapti (Pathogenesis))
+Provide a systematic clinical reasoning chain:
+
+**3.3.1 Dosha-Dushya-Sammurchana**: Which doshas are vitiated, which dhatus are affected, and the mechanism of interaction.
+
+**3.3.2 Srotas Involved**: Which body channels (Rasavaha, Raktavaha, Mamsavaha, etc.) are compromised.
+
+**3.3.3 Agni Status**: Jatharagni (mandagni/teekshagni/vishamagni/samagni), Bhutagni, Dhatvagni assessment.
+
+**3.3.4 Ama Assessment**: Location, severity, and clinical indicators of metabolic toxins.
+
+**3.3.5 Prakriti-Vikriti Analysis**: How the constitutional type predisposes to or modifies the disease presentation.
+
+**3.3.6 Shatkriyakala**: Current stage of disease progression - Sanchaya, Prakopa, Prasara, Sthana Samshraya, Vyaktha, or Bheda.
+
+---
+
+### SECTION 4: LITERATURE REVIEW (header: ## 4. Literature Review)
+
+#### 4.1 Evidence Synthesis (header: ### 4.1 Evidence Synthesis)
+A 2-3 sentence overview of the evidence landscape for this condition from both modern and Ayurvedic literature.
+
+#### 4.2 Thematic Analysis (header: ### 4.2 Thematic Analysis)
+Group findings by theme (e.g., "Panchakarma Efficacy", "Herbal Interventions", "Dietary Approaches", "Integrative Protocols"). Under each theme:
 - State each key finding in 1-2 sentences
-- Explain direct relevance to THIS patient's case
+- Explain direct relevance to THIS patient case
 - Cite using [1], [2], [3] format
 
-**3.3 Evidence Strength Assessment**: Rate the overall quality — are these RCTs, systematic reviews, observational studies, case series, or expert opinion? Use a summary table:
+#### 4.3 Evidence Quality Assessment (header: ### 4.3 Evidence Quality Assessment)
 
-| Theme | # Studies | Study Types | Evidence Level |
-|-------|-----------|-------------|----------------|
-| ... | ... | ... | ... |
-
-**3.4 Clinical Implications**: How the evidence specifically informs this treatment plan for this patient.
-
----
-
-### SECTION 4: CLASSICAL TEXT REFERENCES (header: ## Classical Text References)
-
-Reference specific passages from classical texts with full citations:
-- **Charaka Samhita**: Cite Sthana/Adhyaya/Verse numbers (e.g., Charaka Samhita, Chikitsa Sthana, Adhyaya 1, Verse 15-20)
-- **Sushruta Samhita**: Cite relevant chapters
-- **Ashtanga Hridaya**: Cite specific sections
-- **Bhavaprakasha Nighantu**: Cite relevant Gana/Varga
-
-For each reference, explain the clinical relevance to this patient's condition and how it directly informs the treatment approach. Present in table format:
-
-| Text | Reference | Verse/Chapter | Clinical Relevance |
-|------|-----------|---------------|-------------------|
-| Charaka Samhita | Chikitsa Sthana | ... | ... |
+**Table 3: Evidence Quality Summary**
+| Theme | # Studies | Study Types | Evidence Level (GRADE) |
+|-------|-----------|-------------|----------------------|
+| ... | ... | ... | High / Moderate / Low / Very Low |
 
 ---
 
-### SECTION 5: TREATMENT PROTOCOL (header: ## Treatment Protocol)
+### SECTION 5: CLASSICAL TEXT REFERENCES (header: ## 5. Classical Text References)
 
-#### 5.1 Treatment Rationale (header: ### Treatment Rationale)
+**Table 4: Classical Text Citations**
+| Text | Sthana/Section | Adhyaya/Chapter | Verse(s) | Clinical Relevance to This Case |
+|------|---------------|-----------------|----------|--------------------------------|
+| Charaka Samhita | Chikitsa Sthana | ... | ... | ... |
+| Sushruta Samhita | ... | ... | ... | ... |
+| Ashtanga Hridaya | ... | ... | ... | ... |
+
+For each reference, explain how it directly informs the treatment approach for this patient.
+
+---
+
+### SECTION 6: TREATMENT PROTOCOL (header: ## 6. Treatment Protocol)
+
+#### 6.1 Treatment Rationale (header: ### 6.1 Treatment Rationale)
 - State the Chikitsa Sutra (treatment principle) being followed
-- Explain why this approach was selected based on the patient's Prakriti, Vikriti, and disease stage
+- Explain why this approach was selected based on Prakriti, Vikriti, and disease stage
 - Outline treatment objectives (Shamana vs. Shodhana emphasis)
 - Define treatment duration and phases
 
-#### 5.2 Purvakarma — Pre-procedures (header: ### Purvakarma)
-Provide a day-by-day schedule in table format:
+#### 6.2 Purvakarma - Pre-procedures (header: ### 6.2 Purvakarma)
+Present as a day-by-day schedule:
 
-| Day | Procedure | Specific Details | Duration | Time of Day |
-|-----|-----------|-----------------|----------|-------------|
+**Table 5: Purvakarma Schedule**
+| Day(s) | Procedure | Specific Details | Duration | Time of Day |
+|--------|-----------|-----------------|----------|-------------|
 | 1-3 | Internal Snehana | ... | ... | ... |
 | 4-7 | External Snehana + Swedana | ... | ... | ... |
 
-Include for each:
-- Snehana (oleation): specific oil/ghee name, exact dosage (ml/g), frequency
-- Swedana (sudation): type, duration (minutes), temperature guidelines
-- Dietary modifications during Purvakarma
+Include for each: Snehana (oleation) - specific oil/ghee name, exact dosage (ml/g), frequency; Swedana (sudation) - type, duration (minutes), temperature guidelines; Dietary modifications during Purvakarma.
 
-#### 5.3 Pradhana Karma — Main Procedures (header: ### Pradhana Karma)
+#### 6.3 Pradhana Karma - Main Procedures (header: ### 6.3 Pradhana Karma)
 For EACH selected Panchakarma procedure:
 - Procedure name (Sanskrit and English)
 - Step-by-step protocol with timings
@@ -133,7 +175,7 @@ For EACH selected Panchakarma procedure:
 
 Present in a structured protocol table followed by detailed notes.
 
-#### 5.4 Paschat Karma — Post-procedure Recovery (header: ### Paschat Karma)
+#### 6.4 Paschat Karma - Post-procedure Recovery (header: ### 6.4 Paschat Karma)
 - Samsarjana Krama (graduated diet): specify meals for each recovery day in table format
 - Rasayana therapy: specific formulations, dosage, duration
 - Agni rebuilding protocol with specific formulations
@@ -141,10 +183,11 @@ Present in a structured protocol table followed by detailed notes.
 
 ---
 
-### SECTION 6: PHARMACOTHERAPY (header: ## Pharmacotherapy)
+### SECTION 7: PHARMACOTHERAPY (header: ## 7. Pharmacotherapy)
 
 Present a summary table first, then detailed descriptions:
 
+**Table 6: Pharmacotherapy Summary**
 | # | Formulation | Dose | Anupana | Timing | Duration | Primary Action |
 |---|-------------|------|---------|--------|----------|----------------|
 | 1 | ... | ... | ... | ... | ... | ... |
@@ -158,15 +201,15 @@ For EACH formulation, provide:
 - **Timing**: Before/after meals, specific time of day
 - **Duration**: Total course length
 - **Rationale**: How this addresses the specific dosha-dhatu-srotas imbalance
-- **Contraindications**: Any relevant to this patient's age, prakriti, or comorbidities
+- **Contraindications**: Any relevant to this patient age, prakriti, or comorbidities
 
 ---
 
-### SECTION 7: PATHYA-APATHYA — Diet & Lifestyle (header: ## Pathya-Apathya)
+### SECTION 8: PATHYA-APATHYA (header: ## 8. Pathya-Apathya)
 
-#### 7.1 Pathya (Recommended)
-Present in table format with Ayurvedic reasoning:
+#### 8.1 Pathya - Recommended (header: ### 8.1 Pathya (Recommended))
 
+**Table 7: Recommended Dietary Items**
 | Category | Specific Items | Rasa/Guna/Virya | Therapeutic Rationale |
 |----------|---------------|-----------------|----------------------|
 | Grains | ... | ... | ... |
@@ -174,14 +217,13 @@ Present in table format with Ayurvedic reasoning:
 | Fruits | ... | ... | ... |
 | Spices | ... | ... | ... |
 | Dairy | ... | ... | ... |
-| Oils/Fats | ... | ... | ... |
 
-#### 7.2 Apathya (Contraindicated)
+#### 8.2 Apathya - Contraindicated (header: ### 8.2 Apathya (Contraindicated))
 Same table format with specific reasoning for each restriction.
 
-#### 7.3 Sample Meal Plan
-Provide a 3-day rotating meal plan:
+#### 8.3 Sample Meal Plan (header: ### 8.3 Sample Meal Plan)
 
+**Table 8: Three-Day Rotating Meal Plan**
 | Meal | Day 1 | Day 2 | Day 3 |
 |------|-------|-------|-------|
 | Early Morning (6-7 AM) | ... | ... | ... |
@@ -192,30 +234,20 @@ Provide a 3-day rotating meal plan:
 
 ---
 
-### SECTION 8: DINACHARYA & LIFESTYLE (header: ## Dinacharya & Lifestyle)
+### SECTION 9: DINACHARYA AND LIFESTYLE (header: ## 9. Dinacharya and Lifestyle Modifications)
 
-Present as a structured daily schedule:
-
+**Table 9: Daily Schedule (Dinacharya)**
 | Time | Activity | Specific Details | Therapeutic Purpose |
 |------|----------|-----------------|-------------------|
 | 6:00 AM | Wake up (Brahma Muhurta) | ... | ... |
-| ... | ... | ... | ... |
 
-Include:
-- Morning routine (Brahma Muhurta practices)
-- Exercise recommendations (type, intensity, duration, timing)
-- Yoga asanas (3-5 specific asanas with therapeutic rationale for this condition)
-- Pranayama (specific technique name, duration, frequency)
-- Meditation/mindfulness practices
-- Sleep hygiene
-- Seasonal adjustments (Ritucharya) if applicable
+Include: morning routine, exercise (type, intensity, duration), 3-5 Yoga asanas with therapeutic rationale, Pranayama (technique, duration, frequency), meditation, sleep hygiene, seasonal adjustments (Ritucharya) if applicable.
 
 ---
 
-### SECTION 9: MONITORING & FOLLOW-UP (header: ## Monitoring & Follow-up)
+### SECTION 10: MONITORING AND FOLLOW-UP (header: ## 10. Monitoring and Follow-up Schedule)
 
-Present as a structured follow-up schedule:
-
+**Table 10: Follow-up Schedule**
 | Period | Assessment Parameters | Expected Outcomes | Action if Not Met |
 |--------|----------------------|-------------------|-------------------|
 | Week 1-2 | ... | ... | ... |
@@ -223,17 +255,13 @@ Present as a structured follow-up schedule:
 | Month 2-3 | ... | ... | ... |
 | Month 4-6 | ... | ... | ... |
 
-Include:
-- Specific parameters to monitor at each visit (subjective + objective)
-- Red flag symptoms requiring immediate medical attention (list 5-8)
-- Recommended investigations at specific intervals
-- Criteria for treatment modification or escalation
+Include: specific parameters to monitor (subjective + objective), red flag symptoms requiring immediate medical attention (list 5-8), recommended investigations at specific intervals, criteria for treatment modification or escalation.
 
 ---
 
-### SECTION 10: PRECAUTIONS & SAFETY (header: ## Precautions & Safety)
+### SECTION 11: PRECAUTIONS AND SAFETY (header: ## 11. Precautions and Safety Considerations)
 
-- Drug-herb interactions (if patient is on allopathic medications, list specific interactions)
+- Drug-herb interactions (if patient is on allopathic medications, list specific interactions with mechanism)
 - Age/gender/prakriti-specific precautions
 - Pregnancy/lactation considerations if applicable
 - Criteria for treatment discontinuation
@@ -242,38 +270,65 @@ Include:
 
 ---
 
-### SECTION 11: REFERENCES (header: ## References)
+### SECTION 12: CONCLUSION (header: ## 12. Conclusion)
 
-Number each reference sequentially using this format:
-[1] Authors. Title. Journal Name (Year). PMID:XXXXXX. DOI:XXXXXX
+Write 100-150 words summarizing:
+- The treatment rationale and chosen approach
+- Expected clinical outcomes and timeline
+- The importance of follow-up adherence
+- The integrative value of combining classical Ayurvedic wisdom with evidence-based research
+
+---
+
+### SECTION 13: REFERENCES (header: ## References)
+
+Number each reference sequentially using Vancouver style:
+[1] Authors. Title. Journal Name Year;Volume(Issue):Pages. PMID: XXXXXX. doi: XXXXXX
 [2] Text Name, Sthana/Section, Chapter, Verse number.
 
-Include ALL cited sources — research papers, classical texts, and web sources. Minimum 5 references.
+Include ALL cited sources - research papers, classical texts, and web sources. Minimum 8 references. Include DOI where available.
+
+---
+
+### SECTION 14: CONFLICT OF INTEREST (header: ## Conflict of Interest Statement)
+
+"This treatment protocol was generated by an AI clinical decision support system (AyurVritta Clinical AI) as a supplementary clinical reference. The authors declare no conflicts of interest."
+
+---
+
+### SECTION 15: DISCLAIMER (header: ## Disclaimer)
+
+"This document is generated by an AI-powered clinical decision support system and is intended for use as a supplementary clinical reference only. It does not replace the clinical judgment of a qualified Ayurvedic physician. All treatment recommendations must be reviewed, adapted, and approved by the treating physician based on the individual patient condition, response, and evolving clinical picture. The patient should not self-administer any of the prescribed treatments without proper medical supervision."
 
 ---
 
 ## FORMATTING RULES
 
-1. Use EXACTLY the ## headers specified above
+1. Use EXACTLY the ## headers specified above (including section numbers)
 2. Use ### for subsections as indicated
-3. Use markdown tables for ALL structured data (schedules, formulations, diet plans, monitoring)
-4. Use bullet points only for brief lists; prefer tables for detailed information
-5. Sanskrit terms must be italicized with English translation in parentheses on first use
-6. Every recommendation MUST include the Ayurvedic rationale (dosha/dhatu/agni/srotas basis)
-7. Be specific and actionable — no vague advice like "eat healthy" or "rest adequately"
-8. Use numbered references [1], [2], [3] inline when citing evidence
-9. Target length: 3000-5000 words — this is a comprehensive clinical document
-10. Write in formal academic tone suitable for peer review
-11. Start each section with its ## header on a new line, no preceding text
+3. Use numbered subsections (2.1, 2.2, 3.1, etc.) for hierarchical navigation
+4. Number ALL tables sequentially: **Table N: [Descriptive caption]** on a line immediately above each table
+5. Use markdown tables for ALL structured data (schedules, formulations, diet plans, monitoring, examinations)
+6. Use bullet points only for brief lists; prefer tables for detailed information
+7. Sanskrit terms must be italicized with English translation in parentheses on first use: *Samprapti* (pathogenesis)
+8. Every recommendation MUST include the Ayurvedic rationale (dosha/dhatu/agni/srotas basis)
+9. Be specific and actionable - no vague advice like "eat healthy" or "rest adequately"
+10. Use numbered references [1], [2], [3] inline when citing evidence
+11. Target length: 4000-6000 words - this is a comprehensive clinical document
+12. Write in formal academic tone suitable for peer review
+13. Start each section with its ## header on a new line, no preceding text
+14. Maintain consistent formatting throughout - if one section uses tables, all similar sections must use tables
 
 ## CRITICAL REQUIREMENTS
 
-- Every recommendation must be specific to THIS patient — their prakriti, vikriti, disease stage, and clinical findings
-- Do NOT skip any section. If data is unavailable, write "Not assessed — requires [specific information]"
+- Every recommendation must be specific to THIS patient - their prakriti, vikriti, disease stage, and clinical findings
+- Do NOT skip any section. If data is unavailable, write "Not assessed - requires [specific information]"
 - The document must be self-contained: another qualified Ayurvedic physician should be able to implement this protocol with no additional information
-- Cite research evidence using [1], [2], [3] format with full references at the end
+- Cite research evidence using [1], [2], [3] format with full Vancouver-style references at the end
 - Include Charak Samhita references with Sthana/Adhyaya/Verse citations
-- Do NOT provide generic or templated advice — every line must be justified by the patient data provided`
+- Do NOT provide generic or templated advice - every line must be justified by the patient data provided
+- Tables must have proper captions and sequential numbering
+- The Abstract must be a genuine structured abstract, not a summary`
 
 export const FOLLOWUP_QUESTIONS_PROMPT = `You are an expert Ayurvedic physician analyzing a patient intake to identify critical information gaps. Based on the data collected so far, generate 3-5 targeted follow-up questions that would significantly improve diagnostic accuracy and treatment planning.
 
@@ -347,11 +402,24 @@ export function buildProtocolPrompt(
   researchContext: string,
   ragContext: string,
   charakReferences: string,
-  webContext: string
+  webContext: string,
+  patientName?: string,
+  diagnosis?: string
 ): string {
+  const date = new Date().toISOString().split('T')[0]
+  const headerMeta = [
+    patientName ? `**Patient:** ${patientName}` : '',
+    diagnosis ? `**Provisional Diagnosis:** ${diagnosis}` : '',
+    `**Date:** ${date}`,
+    `**Protocol ID:** PROTO-${Date.now()}`,
+  ].filter(Boolean).join(' | ')
+
   return `${TREATMENT_PROTOCOL_SYSTEM_PROMPT}
 
 ---
+
+## DOCUMENT HEADER
+${headerMeta}
 
 ## PATIENT DATA
 ${patientData}
@@ -369,5 +437,5 @@ ${webContext ? `## SUPPLEMENTARY WEB SOURCES\n${webContext}` : ''}
 
 ---
 
-Now generate the complete treatment protocol for this patient. Follow the output structure exactly — produce ALL 11 sections in order. Be thorough, specific, and evidence-based. This document will be used by the treating physician.`
+Now generate the complete treatment protocol for this patient. Follow the output structure exactly - produce ALL 16 sections (Abstract through Disclaimer) in order. Be thorough, specific, and evidence-based. This document will be used by the treating physician as a comprehensive clinical reference.`
 }

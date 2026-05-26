@@ -39,10 +39,17 @@ export function CanvasToolbar() {
   }
 
   const isProtocol = (
+    canvasContent.includes('## Abstract') ||
+    canvasContent.includes('## Keywords') ||
     canvasContent.includes('## Case Summary') ||
+    canvasContent.includes('## Case Presentation') ||
+    canvasContent.includes('## Diagnostic Assessment') ||
     canvasContent.includes('## Treatment Protocol') ||
     canvasContent.includes('## Samprapti') ||
-    canvasContent.includes('## Detailed Treatment')
+    canvasContent.includes('## Detailed Treatment') ||
+    canvasContent.includes('## Pharmacotherapy') ||
+    canvasContent.includes('## Literature Review') ||
+    canvasContent.includes('## Conclusion')
   ) && canvasContent.length > 500
 
   return (
