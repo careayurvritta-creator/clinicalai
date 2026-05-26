@@ -28,9 +28,18 @@ export interface ComprehensiveResearchContext {
 const PUBMED_SEARCH_URL = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi'
 const PUBMED_FETCH_URL = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi'
 
+// NCBI API key: set NCBI_API_KEY env var for 10 req/s (vs 3 without key)
+const NCBI_API_KEY = process.env.NCBI_API_KEY
+
+function ncbiParams(extra: Record<string, string>): URLSearchParams {
+  const params = new URLSearchParams(extra)
+  if (NCBI_API_KEY) params.set('api_key', NCBI_API_KEY)
+  return params
+}
+
 async function searchPubMed(query: string, maxResults: number = 20): Promise<string[]> {
   try {
-    const params = new URLSearchParams({
+    const params = ncbiParams({
       db: 'pubmed',
       term: query,
       retmax: String(maxResults),
@@ -40,16 +49,20 @@ async function searchPubMed(query: string, maxResults: number = 20): Promise<str
       reldate: '3650',
     })
 
-    const response = await fetch(`${PUBMED_SEARCH_URL}?${params}`)
+    const response = await fetch(`${PUBMED_SEARCH_URL}?${params}`, {
+      signal: AbortSignal.timeout(8000),
+    })
     if (!response.ok) {
-      console.error('[Research] PubMed search failed:', response.status)
+      console.error('[Research] PubMed search failed:', response.status, response.statusText)
       return []
     }
 
     const data = await response.json()
-    return data.esearchresult?.idlist || []
+    const ids = data.esearchresult?.idlist || []
+    console.log(`[Research] PubMed query returned ${ids.length} results`)
+    return ids
   } catch (error) {
-    console.error('[Research] PubMed search error:', error)
+    console.error('[Research] PubMed search error:', error instanceof Error ? error.message : error)
     return []
   }
 }
@@ -66,23 +79,27 @@ async function fetchAbstracts(pmids: string[]): Promise<Array<{
   if (pmids.length === 0) return []
 
   try {
-    const params = new URLSearchParams({
+    const params = ncbiParams({
       db: 'pubmed',
       id: pmids.join(','),
       retmode: 'xml',
       rettype: 'abstract',
     })
 
-    const response = await fetch(`${PUBMED_FETCH_URL}?${params}`)
+    const response = await fetch(`${PUBMED_FETCH_URL}?${params}`, {
+      signal: AbortSignal.timeout(10000),
+    })
     if (!response.ok) {
-      console.error('[Research] PubMed fetch failed:', response.status)
+      console.error('[Research] PubMed fetch failed:', response.status, response.statusText)
       return []
     }
 
     const xmlText = await response.text()
-    return parsePubMedXML(xmlText)
+    const papers = parsePubMedXML(xmlText)
+    console.log(`[Research] Fetched ${papers.length} abstracts from PubMed`)
+    return papers
   } catch (error) {
-    console.error('[Research] PubMed fetch error:', error)
+    console.error('[Research] PubMed fetch error:', error instanceof Error ? error.message : error)
     return []
   }
 }
