@@ -3,6 +3,8 @@
 import { Message } from '@/lib/types'
 import { formatTime } from '@/lib/utils'
 import { useState, useEffect } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 interface MessageBubbleProps {
   message: Message
@@ -61,10 +63,20 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         )}
 
         {/* Message content */}
-        <div className="text-sm leading-relaxed whitespace-pre-wrap break-words min-w-0">
-          {message.content || (message.status === 'streaming' && (
-            <span className="inline-block w-2 h-4 bg-primary animate-blink ml-0.5" />
-          ))}
+        <div className={`text-sm leading-relaxed min-w-0 ${isUser ? 'whitespace-pre-wrap break-words' : 'prose-message overflow-wrap-anywhere'}`}>
+          {message.content ? (
+            isUser ? (
+              <span className="whitespace-pre-wrap break-words">{message.content}</span>
+            ) : (
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {message.content}
+              </ReactMarkdown>
+            )
+          ) : (
+            message.status === 'streaming' && (
+              <span className="inline-block w-2 h-4 bg-primary animate-blink ml-0.5" />
+            )
+          )}
         </div>
 
         {/* Footer: time + status */}
