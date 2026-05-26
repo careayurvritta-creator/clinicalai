@@ -159,9 +159,26 @@ export function ResizableLayout({ chatPanel, canvasPanel }: ResizableLayoutProps
       </div>
 
       <div
-        className="w-1 bg-border hover:bg-primary/50 transition-colors cursor-col-resize flex-shrink-0 relative group"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize chat and output panels"
+        aria-valuenow={chatWidth}
+        aria-valuemin={300}
+        aria-valuemax={700}
+        tabIndex={0}
+        className="w-1 bg-border hover:bg-primary/50 focus-visible:ring-2 focus-visible:ring-primary/50 transition-colors cursor-col-resize flex-shrink-0 relative group outline-none"
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
+        onKeyDown={(e) => {
+          const step = e.shiftKey ? 50 : 10
+          if (e.key === 'ArrowLeft') {
+            e.preventDefault()
+            setChatWidth((w) => Math.max(300, w - step))
+          } else if (e.key === 'ArrowRight') {
+            e.preventDefault()
+            setChatWidth((w) => Math.min(700, w + step))
+          }
+        }}
       >
         <div className="absolute inset-y-0 -left-1.5 -right-1.5" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-10 bg-muted-foreground/20 rounded-full group-hover:bg-primary/50 transition-colors" />
