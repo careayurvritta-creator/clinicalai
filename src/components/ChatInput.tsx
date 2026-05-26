@@ -12,6 +12,7 @@ export function ChatInput() {
   const [input, setInput] = useState('')
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
+  const [charCount, setCharCount] = useState(0)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -25,6 +26,27 @@ export function ChatInput() {
   const activeModule = useChatStore((state) => state.activeModule)
   const chatInputDraft = useChatStore((state) => state.chatInputDraft)
   const setChatInputDraft = useChatStore((state) => state.setChatInputDraft)
+
+  const MAX_CHARS = 4000
+
+  // Restore draft from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('chat-draft')
+      if (saved) setInput(saved)
+    } catch { /* ignore */ }
+  }, [])
+
+  // Debounced draft save to localStorage
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      try {
+        if (input) localStorage.setItem('chat-draft', input)
+        else localStorage.removeItem('chat-draft')
+      } catch { /* ignore */ }
+    }, 500)
+    return () => clearTimeout(timeout)
+  }, [input])
 
   // Sync draft from store (set by CanvasPanel action buttons)
   useEffect(() => {
@@ -50,6 +72,18 @@ export function ChatInput() {
     el.style.height = 'auto'
     el.style.height = Math.min(el.scrollHeight, 150) + 'px'
   }, [input])
+
+  // Track char count
+  useEffect(() => {
+    setCharCount(input.length)
+  }, [input])
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value
+    if (val.length <= MAX_CHARS) {
+      setInput(val)
+    }
+  }
 
   // Cleanup object URLs on unmount
   useEffect(() => {
@@ -137,6 +171,8 @@ export function ChatInput() {
 
     addMessage(userMessage)
     setInput('')
+    setCharCount(0)
+    try { localStorage.removeItem('chat-draft') } catch { /* ignore */ }
     // Revoke object URLs before clearing attachments
     currentAttachments.forEach(a => { if (a.preview) URL.revokeObjectURL(a.preview) })
     setAttachments([])
@@ -401,12 +437,13 @@ export function ChatInput() {
             <textarea
               ref={textareaRef}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={handleInputChange}
               onKeyDown={handleKeyDown}
-              placeholder={isDragActive ? 'Drop files here...' : 'Ask about Ayurvedic health...'}
+              placeholder={isDragActive ? 'Drop files here...' : activeModule === 'intake' ? 'Describe the clinical case...' : activeModule === 'treatment-protocol' ? 'Describe symptoms, conditions, or request a protocol...' : 'Ask about Ayurvedic health...'}
               className="w-full bg-muted border border-border rounded-xl px-3 md:px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 resize-none focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50 scrollbar-thin leading-relaxed"
               rows={1}
               disabled={isStreaming || isProcessing}
+              maxLength={MAX_CHARS}
               style={{ maxHeight: '150px' }}
             />
           </div>
@@ -436,6 +473,11 @@ export function ChatInput() {
           <span className="text-[10px] text-muted-foreground/70 hidden md:inline">
             Enter to send, Shift+Enter for new line
           </span>
+          {charCount > MAX_CHARS * 0.8 && (
+            <span className={`text-[10px] ${charCount >= MAX_CHARS ? 'text-red-400' : 'text-muted-foreground/70'}`}>
+              {charCount}/{MAX_CHARS}
+            </span>
+          )}
           <div className="flex-shrink-0">
             <ModelSelector />
           </div>

@@ -21,6 +21,7 @@ export interface ChatState {
   streamingModule: string | null
   selectedModel: string
   canvasContent: string
+  canvasTimestamp: number
   activeModule: string
   chatInputDraft: string
 }

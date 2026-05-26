@@ -8,6 +8,7 @@ export function CanvasToolbar() {
   const canvasContent = useChatStore((state) => state.canvasContent)
   const clearMessages = useChatStore((state) => state.clearMessages)
   const [isExporting, setIsExporting] = useState(false)
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
 
   const handleCopy = async () => {
     try {
@@ -35,6 +36,17 @@ export function CanvasToolbar() {
       console.error('PDF export failed:', error)
     } finally {
       setIsExporting(false)
+    }
+  }
+
+  const handleClear = () => {
+    if (showClearConfirm) {
+      clearMessages()
+      setShowClearConfirm(false)
+    } else {
+      setShowClearConfirm(true)
+      // Auto-dismiss after 4 seconds
+      setTimeout(() => setShowClearConfirm(false), 4000)
     }
   }
 
@@ -84,15 +96,19 @@ export function CanvasToolbar() {
       <div className="flex-1" />
 
       <button
-        onClick={clearMessages}
-        aria-label="Clear all messages"
-        className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50"
-        title="Clear all"
+        onClick={handleClear}
+        aria-label={showClearConfirm ? 'Confirm clear all messages' : 'Clear all messages'}
+        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+          showClearConfirm
+            ? 'bg-red-500 text-white hover:bg-red-600'
+            : 'text-red-400 hover:text-red-300 hover:bg-red-400/10'
+        }`}
+        title={showClearConfirm ? 'Click again to confirm' : 'Clear all'}
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
         </svg>
-        Clear
+        {showClearConfirm ? 'Confirm Clear' : 'Clear'}
       </button>
     </div>
   )

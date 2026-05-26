@@ -3,11 +3,14 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import type { ChatState, Message } from './types'
 import { DEFAULT_MODEL, MODELS } from './types'
 
+const MAX_MESSAGES = 200
+
 const defaultState: Omit<ChatState, 'isStreaming'> = {
   messages: [],
   messagesByModule: {},
   selectedModel: DEFAULT_MODEL,
   canvasContent: '',
+  canvasTimestamp: 0,
   activeModule: 'chat',
   streamingModule: null,
   chatInputDraft: '',
@@ -25,6 +28,11 @@ interface ChatActions {
   setStreamingModule: (module: string | null) => void
 }
 
+function trimMessages(messages: Message[]): Message[] {
+  if (messages.length <= MAX_MESSAGES) return messages
+  return messages.slice(-MAX_MESSAGES)
+}
+
 export const useChatStore = create<ChatState & ChatActions>()(
   persist(
     (set) => ({
@@ -35,7 +43,7 @@ export const useChatStore = create<ChatState & ChatActions>()(
 
       addMessage: (message) =>
         set((state) => {
-          const newMessages = [...state.messages, message]
+          const newMessages = trimMessages([...state.messages, message])
           return {
             messages: newMessages,
             messagesByModule: {
@@ -69,7 +77,7 @@ export const useChatStore = create<ChatState & ChatActions>()(
       setStreaming: (streaming) => set({ isStreaming: streaming }),
       setStreamingModule: (module) => set({ streamingModule: module }),
       setModel: (model) => set({ selectedModel: model }),
-      setCanvasContent: (content) => set({ canvasContent: content }),
+      setCanvasContent: (content) => set({ canvasContent: content, canvasTimestamp: Date.now() }),
 
       clearMessages: () =>
         set((state) => ({
@@ -79,6 +87,7 @@ export const useChatStore = create<ChatState & ChatActions>()(
             [state.activeModule]: [],
           },
           canvasContent: '',
+          canvasTimestamp: 0,
           isStreaming: false,
         })),
 
@@ -91,6 +100,7 @@ export const useChatStore = create<ChatState & ChatActions>()(
             messagesByModule: updatedByModule,
             messages: updatedByModule[module] ?? [],
             canvasContent: '',
+            canvasTimestamp: 0,
           }
         }),
 
@@ -104,10 +114,11 @@ export const useChatStore = create<ChatState & ChatActions>()(
         messagesByModule: state.messagesByModule,
         selectedModel: state.selectedModel,
         canvasContent: state.canvasContent,
+        canvasTimestamp: state.canvasTimestamp,
         activeModule: state.activeModule,
-        chatInputDraft: state.chatInputDraft,
+        // chatInputDraft excluded — persisted separately with debounce
       }),
-      version: 5,
+      version: 6,
       migrate: (persistedState: unknown, version: number) => {
         const state = persistedState as Record<string, unknown>
         // Clean up stale streaming messages on migration
@@ -127,6 +138,10 @@ export const useChatStore = create<ChatState & ChatActions>()(
           if (!validIds.includes(state.selectedModel as string)) {
             state.selectedModel = DEFAULT_MODEL
           }
+        }
+        // Add canvasTimestamp if missing (v5 -> v6)
+        if (version < 6 && state && !('canvasTimestamp' in state)) {
+          state.canvasTimestamp = 0
         }
         return persistedState
       },

@@ -5,12 +5,21 @@ import { CanvasToolbar } from './CanvasToolbar'
 import { ProtocolRenderer } from './ProtocolRenderer'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 export function CanvasPanel() {
   const canvasContent = useChatStore((state) => state.canvasContent)
+  const canvasTimestamp = useChatStore((state) => state.canvasTimestamp)
   const isStreaming = useChatStore((state) => state.isStreaming)
+  const streamingModule = useChatStore((state) => state.streamingModule)
+  const activeModule = useChatStore((state) => state.activeModule)
   const contentEndRef = useRef<HTMLDivElement>(null)
+  const [dismissedStale, setDismissedStale] = useState(false)
+
+  // Reset stale dismissal when content changes
+  useEffect(() => {
+    setDismissedStale(false)
+  }, [canvasContent])
 
   // Auto-scroll only if user is near bottom
   useEffect(() => {
@@ -23,6 +32,11 @@ export function CanvasPanel() {
   }, [canvasContent])
 
   const hasContent = canvasContent.trim().length > 0
+
+  // Content is stale if it exists but timestamp is >5 min old or from different module
+  const isStale = hasContent && canvasTimestamp > 0 && (
+    Date.now() - canvasTimestamp > 5 * 60 * 1000
+  )
 
   const isProtocol = hasContent && (
     canvasContent.includes('## Abstract') ||
@@ -52,6 +66,9 @@ export function CanvasPanel() {
     return ''
   }
 
+  // Streaming is happening in the context that feeds this canvas
+  const isCanvasStreaming = isStreaming && (streamingModule === activeModule || streamingModule === 'treatment-protocol')
+
   return (
     <div className="flex flex-col h-full bg-panel-canvas">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
@@ -67,6 +84,12 @@ export function CanvasPanel() {
             </svg>
           </button>
           <h2 className="text-sm font-semibold text-foreground">Output</h2>
+          {isCanvasStreaming && (
+            <span className="flex items-center gap-1.5 text-xs text-primary">
+              <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
+              Generating...
+            </span>
+          )}
         </div>
         {hasContent && (
           <span className="text-xs text-muted-foreground truncate max-w-[200px]">
@@ -87,7 +110,7 @@ export function CanvasPanel() {
             <p className="text-sm text-muted-foreground max-w-md">
               Diagnosis results and treatment protocols will appear here as formatted documents.
             </p>
-            {isStreaming && (
+            {isCanvasStreaming && (
               <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
                 <div className="flex gap-1">
                   <span className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -100,6 +123,22 @@ export function CanvasPanel() {
           </div>
         ) : (
           <div className={`p-4 md:p-6 ${isProtocol ? '' : 'max-w-4xl mx-auto'}`}>
+            {/* Stale content banner */}
+            {isStale && !dismissedStale && (
+              <div className="mb-4 flex items-center gap-2 px-3 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-xs text-yellow-300">
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                <span>This output was generated previously. Send a new message for fresh results.</span>
+                <button
+                  onClick={() => setDismissedStale(true)}
+                  className="ml-auto text-yellow-400 hover:text-yellow-300 font-medium"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+
             {isProtocol ? (
               <ProtocolRenderer content={canvasContent} />
             ) : (
@@ -111,12 +150,12 @@ export function CanvasPanel() {
             )}
 
             {/* Streaming cursor */}
-            {isStreaming && (
+            {isCanvasStreaming && (
               <span className="inline-block w-2 h-5 bg-primary animate-blink ml-0.5 align-middle" />
             )}
 
             {/* Diagnosis action buttons */}
-            {isDiagnosis && (
+            {isDiagnosis && !isCanvasStreaming && (
               <div className="mt-6 flex flex-wrap gap-3 pt-4 border-t border-border">
                 <button
                   onClick={() => useChatStore.getState().setChatInputDraft('I confirm this diagnosis. Please provide the treatment plan.')}
