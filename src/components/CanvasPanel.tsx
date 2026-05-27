@@ -70,8 +70,8 @@ export function CanvasPanel() {
   const isCanvasStreaming = isStreaming && (streamingModule === activeModule || streamingModule === 'treatment-protocol')
 
   return (
-    <div className="flex flex-col h-full bg-panel-canvas">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+    <div className="flex flex-col flex-1 min-h-0 h-full bg-panel-canvas">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
         <div className="flex items-center gap-2">
           {/* Mobile back button */}
           <button
@@ -98,7 +98,7 @@ export function CanvasPanel() {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto scrollbar-thin">
+      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin">
         {!hasContent ? (
           <div className="flex flex-col items-center justify-center h-full text-center px-8">
             <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-4">

@@ -116,7 +116,7 @@ export const useChatStore = create<ChatState & ChatActions>()(
         canvasContent: state.canvasContent,
         canvasTimestamp: state.canvasTimestamp,
         activeModule: state.activeModule,
-        // chatInputDraft excluded — persisted separately with debounce
+        // chatInputDraft excluded — ephemeral, set by QuickActions/CanvasPanel
       }),
       version: 6,
       migrate: (persistedState: unknown, version: number) => {

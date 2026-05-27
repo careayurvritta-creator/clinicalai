@@ -77,7 +77,7 @@ export function MobileNav({ activeModule }: MobileNavProps) {
 
   return (
     <nav
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-panel-chat border-t border-border safe-bottom"
+      className="md:hidden flex-shrink-0 bg-panel-chat border-t border-border safe-bottom"
       role="navigation"
       aria-label="Main navigation"
     >

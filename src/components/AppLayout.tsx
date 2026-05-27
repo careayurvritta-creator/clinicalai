@@ -22,7 +22,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   void mobileMenuOpen
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-background">
+    <div className="flex app-height w-screen overflow-hidden bg-background">
       {/* Skip to content link */}
       <a href="#main-content" className="skip-link">
         Skip to content
@@ -42,7 +42,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         {/* Content area */}
         <main
           id="main-content"
-          className="flex-1 overflow-hidden"
+          className="flex-1 min-h-0 flex flex-col overflow-hidden"
           role="main"
         >
           {children}

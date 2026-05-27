@@ -4,19 +4,19 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { useChatStore } from '@/lib/store'
 import { generateId } from '@/lib/utils'
-import { MODELS } from '@/lib/types'
 import type { Attachment, Message } from '@/lib/types'
 import { ModelSelector } from './ModelSelector'
+
+const MAX_CHARS = 4000
+const MAX_TEXTAREA_HEIGHT_PX = 120
 
 export function ChatInput() {
   const [input, setInput] = useState('')
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
-  const [charCount, setCharCount] = useState(0)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const messages = useChatStore((state) => state.messages)
   const isStreaming = useChatStore((state) => state.isStreaming)
   const selectedModel = useChatStore((state) => state.selectedModel)
   const addMessage = useChatStore((state) => state.addMessage)
@@ -27,38 +27,15 @@ export function ChatInput() {
   const chatInputDraft = useChatStore((state) => state.chatInputDraft)
   const setChatInputDraft = useChatStore((state) => state.setChatInputDraft)
 
-  const MAX_CHARS = 4000
-
-  // Restore draft from localStorage on mount
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('chat-draft')
-      if (saved) setInput(saved)
-    } catch { /* ignore */ }
-  }, [])
-
-  // Debounced draft save to localStorage
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      try {
-        if (input) localStorage.setItem('chat-draft', input)
-        else localStorage.removeItem('chat-draft')
-      } catch { /* ignore */ }
-    }, 500)
-    return () => clearTimeout(timeout)
-  }, [input])
-
-  // Sync draft from store (set by CanvasPanel action buttons)
+  // Sync draft from store (set by CanvasPanel action buttons or QuickActions)
   useEffect(() => {
     if (chatInputDraft) {
       setInput(chatInputDraft)
       setChatInputDraft('')
-      // Focus textarea after setting draft
       requestAnimationFrame(() => {
-        textareaRef.current?.focus()
-        // Move cursor to end
         const el = textareaRef.current
         if (el) {
+          el.focus()
           el.selectionStart = el.selectionEnd = el.value.length
         }
       })
@@ -70,19 +47,12 @@ export function ChatInput() {
     const el = textareaRef.current
     if (!el) return
     el.style.height = 'auto'
-    el.style.height = Math.min(el.scrollHeight, 150) + 'px'
-  }, [input])
-
-  // Track char count
-  useEffect(() => {
-    setCharCount(input.length)
+    el.style.height = Math.min(el.scrollHeight, MAX_TEXTAREA_HEIGHT_PX) + 'px'
   }, [input])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value
-    if (val.length <= MAX_CHARS) {
-      setInput(val)
-    }
+    if (val.length <= MAX_CHARS) setInput(val)
   }
 
   // Cleanup object URLs on unmount
@@ -99,17 +69,11 @@ export function ChatInput() {
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const newAttachments: Attachment[] = []
-
     for (const file of acceptedFiles) {
       if (file.type.startsWith('image/')) {
         const preview = URL.createObjectURL(file)
         const base64 = await fileToBase64(file)
-        newAttachments.push({
-          type: 'image',
-          name: file.name,
-          preview,
-          text: base64,
-        })
+        newAttachments.push({ type: 'image', name: file.name, preview, text: base64 })
       } else if (file.type === 'application/pdf') {
         setIsProcessing(true)
         try {
@@ -117,13 +81,7 @@ export function ChatInput() {
           formData.append('file', file)
           const res = await fetch('/api/pdf', { method: 'POST', body: formData })
           const data = await res.json()
-          if (data.text) {
-            newAttachments.push({
-              type: 'pdf',
-              name: file.name,
-              text: data.text,
-            })
-          }
+          if (data.text) newAttachments.push({ type: 'pdf', name: file.name, text: data.text })
         } catch (err) {
           console.error('PDF extraction failed:', err)
         } finally {
@@ -131,18 +89,12 @@ export function ChatInput() {
         }
       }
     }
-
     setAttachments((prev) => [...prev, ...newAttachments])
   }, [])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: {
-      'image/jpeg': [],
-      'image/png': [],
-      'image/webp': [],
-      'application/pdf': [],
-    },
+    accept: { 'image/jpeg': [], 'image/png': [], 'image/webp': [], 'application/pdf': [] },
     maxSize: 10 * 1024 * 1024,
     noClick: true,
     noKeyboard: true,
@@ -152,28 +104,20 @@ export function ChatInput() {
     const text = input.trim()
     if ((!text && attachments.length === 0) || useChatStore.getState().isStreaming || isProcessing) return
 
-    // Capture attachments before clearing (React batches state updates)
     const currentAttachments = [...attachments]
-
     const userMessage: Message = {
       id: generateId(),
-      role: 'user' as const,
+      role: 'user',
       content: text,
       timestamp: Date.now(),
-      status: 'complete' as const,
+      status: 'complete',
       ...(currentAttachments.length > 0 ? {
-        attachments: currentAttachments.map((a) => ({
-          type: a.type as 'image' | 'pdf',
-          name: a.name,
-        })),
+        attachments: currentAttachments.map((a) => ({ type: a.type as 'image' | 'pdf', name: a.name })),
       } : {}),
     }
 
     addMessage(userMessage)
     setInput('')
-    setCharCount(0)
-    try { localStorage.removeItem('chat-draft') } catch { /* ignore */ }
-    // Revoke object URLs before clearing attachments
     currentAttachments.forEach(a => { if (a.preview) URL.revokeObjectURL(a.preview) })
     setAttachments([])
     setStreaming(true)
@@ -194,7 +138,6 @@ export function ChatInput() {
         .filter((m) => m.content.trim() !== '' || m.status !== 'streaming')
         .map((m) => ({ role: m.role, content: m.content }))
 
-      // For images, make a vision API call to get description
       let imageDescription = ''
       const imageAttachments = currentAttachments.filter(a => a.type === 'image' && a.text)
       if (imageAttachments.length > 0) {
@@ -222,21 +165,15 @@ export function ChatInput() {
         }
       }
 
-      // Build message with image analysis context (PDF text handled server-side)
       let messageWithContext = text
-      if (imageDescription) {
-        messageWithContext += `\n\n[Image Analysis]\n${imageDescription}`
-      }
+      if (imageDescription) messageWithContext += `\n\n[Image Analysis]\n${imageDescription}`
 
-      // Update the last user message with image context
       if (messageWithContext !== text && apiMessages.length > 0) {
         const lastMsg = apiMessages[apiMessages.length - 1]
-        if (lastMsg.role === 'user') {
-          lastMsg.content = messageWithContext
-        }
+        if (lastMsg.role === 'user') lastMsg.content = messageWithContext
       }
 
-      const body: any = {
+      const body = {
         messages: apiMessages,
         model: selectedModel,
         attachments: currentAttachments.map(a => ({
@@ -255,8 +192,7 @@ export function ChatInput() {
 
       if (!response.ok) {
         const errorBody = await response.json().catch(() => null)
-        const errorMsg = errorBody?.error || `API error: ${response.status}`
-        throw new Error(errorMsg)
+        throw new Error(errorBody?.error || `API error: ${response.status}`)
       }
 
       const reader = response.body?.getReader()
@@ -269,19 +205,14 @@ export function ChatInput() {
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
-
         buffer += decoder.decode(value, { stream: true })
         const lines = buffer.split(/\r?\n/)
         buffer = lines.pop() || ''
-
         for (const line of lines) {
           const trimmed = line.trim()
           if (!trimmed.startsWith('data:')) continue
           const data = trimmed.slice(5).trim()
-
-          if (data === '[DONE]') continue
-          if (!data) continue
-
+          if (data === '[DONE]' || !data) continue
           try {
             const json = JSON.parse(data)
             const content =
@@ -297,23 +228,17 @@ export function ChatInput() {
               fullContent += content
               updateLastMessage(fullContent, 'streaming')
             }
-          } catch {
-            // Skip malformed chunks
-          }
+          } catch { /* skip malformed chunks */ }
         }
       }
 
       if (!fullContent.trim()) {
         throw new Error('AI returned empty response. Check NVIDIA_API_KEY in Vercel settings.')
       }
-
       updateLastMessage(fullContent, 'complete')
     } catch (error) {
       console.error('Chat error:', error)
-      updateLastMessage(
-        `Error: ${error instanceof Error ? error.message : 'Failed to get response'}`,
-        'error'
-      )
+      updateLastMessage(`Error: ${error instanceof Error ? error.message : 'Failed to get response'}`, 'error')
     } finally {
       setStreaming(false)
       setStreamingModule(null)
@@ -337,9 +262,18 @@ export function ChatInput() {
   }
 
   const isDisabled = (!input.trim() && attachments.length === 0) || isStreaming || isProcessing
+  const charCount = input.length
+
+  const placeholder = isDragActive
+    ? 'Drop files here...'
+    : activeModule === 'intake'
+    ? 'Describe the clinical case...'
+    : activeModule === 'treatment-protocol'
+    ? 'Describe symptoms, conditions, or request a protocol...'
+    : 'Ask about Ayurvedic health...'
 
   return (
-    <div {...getRootProps()} className="border-t border-border flex-shrink-0 bg-panel-chat">
+    <div {...getRootProps()} className="border-t border-border flex-shrink-0 bg-panel-chat safe-bottom">
       <input {...getInputProps()} />
 
       {/* Attachments preview */}
@@ -349,11 +283,7 @@ export function ChatInput() {
             <div key={i} className="relative group flex-shrink-0">
               {att.type === 'image' && att.preview ? (
                 <div className="relative">
-                  <img
-                    src={att.preview}
-                    alt={att.name}
-                    className="w-16 h-16 object-cover rounded-lg border border-border"
-                  />
+                  <img src={att.preview} alt={att.name} className="w-16 h-16 object-cover rounded-lg border border-border" />
                   <button
                     onClick={(e) => { e.stopPropagation(); removeAttachment(i) }}
                     className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white text-xs opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
@@ -368,13 +298,7 @@ export function ChatInput() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                   </svg>
                   <span className="text-muted-foreground max-w-[100px] truncate">{att.name}</span>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); removeAttachment(i) }}
-                    className="text-red-400 hover:text-red-300 ml-1"
-                    aria-label={`Remove ${att.name}`}
-                  >
-                    x
-                  </button>
+                  <button onClick={(e) => { e.stopPropagation(); removeAttachment(i) }} className="text-red-400 hover:text-red-300 ml-1" aria-label={`Remove ${att.name}`}>x</button>
                 </div>
               )}
             </div>
@@ -391,40 +315,26 @@ export function ChatInput() {
             disabled={isStreaming || isProcessing}
             aria-label="Attach file"
             className="w-10 h-10 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-40"
-            title="Attach file"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
             </svg>
           </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*,.pdf"
-            className="hidden"
-            onChange={(e) => {
-              if (e.target.files?.length) onDrop(Array.from(e.target.files))
-              e.target.value = ''
-            }}
-          />
+          <input ref={fileInputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={(e) => { if (e.target.files?.length) onDrop(Array.from(e.target.files)); e.target.value = '' }} />
 
           {/* Camera button - mobile only */}
           <button
             onClick={() => {
-              const input = document.createElement('input')
-              input.type = 'file'
-              input.accept = 'image/*'
-              input.capture = 'environment'
-              input.onchange = (e) => {
-                const files = (e.target as HTMLInputElement).files
-                if (files?.length) onDrop(Array.from(files))
-              }
-              input.click()
+              const el = document.createElement('input')
+              el.type = 'file'
+              el.accept = 'image/*'
+              el.capture = 'environment'
+              el.onchange = (e) => { const files = (e.target as HTMLInputElement).files; if (files?.length) onDrop(Array.from(files)) }
+              el.click()
             }}
             disabled={isStreaming || isProcessing}
             aria-label="Take photo"
             className="w-10 h-10 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors flex-shrink-0 md:hidden focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-40"
-            title="Take photo"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -439,12 +349,12 @@ export function ChatInput() {
               value={input}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
-              placeholder={isDragActive ? 'Drop files here...' : activeModule === 'intake' ? 'Describe the clinical case...' : activeModule === 'treatment-protocol' ? 'Describe symptoms, conditions, or request a protocol...' : 'Ask about Ayurvedic health...'}
+              placeholder={placeholder}
               className="w-full bg-muted border border-border rounded-xl px-3 md:px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 resize-none focus:outline-none focus:ring-1 focus:ring-primary/50 focus:border-primary/50 scrollbar-thin leading-relaxed"
               rows={1}
               disabled={isStreaming || isProcessing}
               maxLength={MAX_CHARS}
-              style={{ maxHeight: '150px' }}
+              style={{ maxHeight: MAX_TEXTAREA_HEIGHT_PX + 'px' }}
             />
           </div>
 
@@ -490,10 +400,7 @@ export function ChatInput() {
 async function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
-    reader.onload = () => {
-      const result = reader.result as string
-      resolve(result.split(',')[1])
-    }
+    reader.onload = () => { const result = reader.result as string; resolve(result.split(',')[1]) }
     reader.onerror = reject
     reader.readAsDataURL(file)
   })

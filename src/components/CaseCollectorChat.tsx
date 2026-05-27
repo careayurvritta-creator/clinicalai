@@ -3,12 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useChatStore } from '@/lib/store'
 import { generateId } from '@/lib/utils'
-import type { CaseData, ChiefComplaint } from '@/lib/types'
-
-interface CaseCollectorChatProps {
-  onComplete?: (caseData: CaseData) => void
-  onShowDiagnosis?: (caseData: CaseData) => void
-}
+import type { CaseData } from '@/lib/types'
 
 interface Question {
   id: string
@@ -45,7 +40,7 @@ function WizardHeader({ groups, currentIndex, completedIndices, onGroupClick }: 
   onGroupClick: (index: number) => void
 }) {
   return (
-    <div className="px-3 py-2 border-b border-border bg-muted/30">
+    <div className="px-3 py-2 border-b border-border bg-muted/30 flex-shrink-0">
       <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
         {groups.map((group, index) => {
           const isCompleted = completedIndices.has(index)
@@ -187,7 +182,7 @@ function ReviewScreen({ caseData, onEdit }: {
 
 // ─── Main Component ─────────────────────────────────────────────
 
-export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollectorChatProps) {
+export function CaseCollectorChat() {
   const addMessage = useChatStore((state) => state.addMessage)
   const setCanvasContent = useChatStore((state) => state.setCanvasContent)
   const messages = useChatStore((state) => state.messages)
@@ -238,7 +233,6 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
   // Derived state
   const currentGroup = WIZARD_GROUPS[currentGroupIndex]
   const isFirstGroup = currentGroupIndex === 0
-  const isLastGroup = currentGroupIndex === WIZARD_GROUPS.length - 1
   const isFirstStepInGroup = currentStep === currentGroup.startStep
   const isLastStepInGroup = currentStep === currentGroup.endStep
 
@@ -586,9 +580,6 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
         setCanvasContent(data.diagnosis)
       }
 
-      if (onShowDiagnosis && caseDataRef.current.chiefComplaints && caseDataRef.current.chiefComplaints.length > 0) {
-        onShowDiagnosis(caseDataRef.current as CaseData)
-      }
     } catch {
       addMessage({
         id: generateId(),
@@ -603,9 +594,6 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
   }
 
   const handleConfirmDiagnosis = async () => {
-    if (onComplete && caseDataRef.current.chiefComplaints && caseDataRef.current.chiefComplaints.length > 0) {
-      onComplete(caseDataRef.current as CaseData)
-    }
     await generateTreatmentProtocol()
   }
 
@@ -834,7 +822,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
   // ─── Render ───────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col flex-1 min-h-0 h-full">
       {/* Wizard Header */}
       {phase === 'wizard' && (
         <WizardHeader
@@ -850,7 +838,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
 
       {/* Progress Bar */}
       {phase === 'wizard' && (
-        <div className="px-4 py-1.5 border-b border-border bg-muted/30">
+        <div className="px-4 py-1.5 border-b border-border bg-muted/30 flex-shrink-0">
           <div className="flex items-center gap-3">
             <span className="text-[10px] text-muted-foreground whitespace-nowrap">
               {progress.percentage}%
@@ -869,7 +857,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
       )}
 
       {/* Content Area */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         {phase === 'review' ? (
           <ReviewScreen
             caseData={caseData}
@@ -955,7 +943,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
 
       {/* Wizard Input */}
       {phase === 'wizard' && !isLoading && currentQuestion && (
-        <div className="border-t border-border p-3 bg-muted/30">
+        <div className="border-t border-border p-3 pb-[max(12px,env(safe-area-inset-bottom))] bg-muted/30 flex-shrink-0">
           <div className="flex items-center justify-between mb-2">
             <button
               onClick={goBack}
@@ -1066,7 +1054,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
 
       {/* Review Actions */}
       {phase === 'review' && (
-        <div className="border-t border-border p-3 bg-muted/30">
+        <div className="border-t border-border p-3 pb-[max(12px,env(safe-area-inset-bottom))] bg-muted/30 flex-shrink-0">
           <div className="flex gap-2">
             <button
               onClick={() => {
@@ -1096,7 +1084,7 @@ export function CaseCollectorChat({ onComplete, onShowDiagnosis }: CaseCollector
 
       {/* Follow-up Input */}
       {phase === 'followup' && isFollowupPhase && followupQuestions.length > 0 && !isLoading && (
-        <div className="border-t border-border p-3 bg-muted/30">
+        <div className="border-t border-border p-3 pb-[max(12px,env(safe-area-inset-bottom))] bg-muted/30 flex-shrink-0">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs text-muted-foreground">
               Follow-up question {followupStep + 1} of {followupQuestions.length}
