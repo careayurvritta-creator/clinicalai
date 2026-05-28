@@ -22,14 +22,13 @@ export async function GET(request: NextRequest) {
 
     const supabase = createServerClient(supabaseUrl, supabaseKey, {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
+        getAll() {
+          return cookieStore.getAll()
         },
-        set(name: string, value: string, options: Record<string, unknown>) {
-          cookieStore.set({ name, value, ...options })
-        },
-        remove(name: string, options: Record<string, unknown>) {
-          cookieStore.delete({ name, ...options })
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set({ name, value, ...options })
+          })
         },
       },
     })
@@ -39,8 +38,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${origin}${next}`)
     }
     console.error('[Auth Callback] Code exchange error:', error.message)
+    return NextResponse.redirect(
+      `${origin}/login?error=exchange_failed&msg=${encodeURIComponent(error.message)}`
+    )
   }
 
-  // If no code or exchange failed, redirect to login with error
-  return NextResponse.redirect(`${origin}/login?error=auth_failed`)
+  // No code parameter — redirect with diagnostic info
+  console.error('[Auth Callback] No code parameter in URL. Full URL:', request.url)
+  return NextResponse.redirect(`${origin}/login?error=no_code`)
 }

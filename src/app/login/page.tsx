@@ -9,9 +9,13 @@ export default function LoginPage() {
   const searchParams = useSearchParams()
   const errorParam = searchParams.get('error')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(
-    errorParam === 'auth_failed' ? 'Authentication failed. Please try again.' : null
-  )
+  const [error, setError] = useState<string | null>(() => {
+    if (!errorParam) return null
+    if (errorParam === 'exchange_failed')
+      return `Code exchange failed: ${searchParams.get('msg') || 'unknown error'}`
+    if (errorParam === 'no_code') return 'No auth code received from Supabase. Check redirect URL config.'
+    return 'Authentication failed. Please try again.'
+  })
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
