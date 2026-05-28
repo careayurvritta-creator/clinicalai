@@ -1,13 +1,19 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ArrowLeft, FileText, Image, Table, Download, Trash2, Search, SortAsc, SortDesc, Upload, X } from 'lucide-react'
-import { formatFileSize } from '@/lib/constants'
+import {
+  ArrowLeft, Download, Trash2, Eye, FileText, Image as ImageIcon,
+  FileSpreadsheet, Upload, SortAsc, SortDesc, X,
+} from 'lucide-react'
+import { DOCUMENT_CATEGORIES, getFileTypeLabel, formatFileSize } from '@/lib/constants'
 import type { DocumentCategory } from '@/lib/constants'
 
-interface Document {
+interface PatientDocument {
   id: string
+  patient_id: string
+  category: string
   filename: string
+  storage_path: string
   file_size: number
   file_type: string
   upload_date: string
@@ -17,35 +23,46 @@ interface Document {
 
 interface FolderContentsProps {
   patientId: string
-  category: DocumentCategory
-  categoryLabel: string
+  patientName: string
+  clinicalId: string
+  categoryId: DocumentCategory
   onBack: () => void
   onUpload: () => void
+  onPreview: (doc: PatientDocument) => void
 }
 
-const FILE_ICONS: Record<string, typeof FileText> = {
-  'application/pdf': FileText,
-  'image/jpeg': Image,
-  'image/png': Image,
-  'image/webp': Image,
-  'application/vnd.ms-excel': Table,
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': Table,
-  'text/csv': Table,
+function getFileIcon(filename: string) {
+  const ext = filename.split('.').pop()?.toLowerCase()
+  if (['jpg', 'jpeg', 'png', 'webp'].includes(ext ?? '')) return ImageIcon
+  if (['xls', 'xlsx', 'csv'].includes(ext ?? '')) return FileSpreadsheet
+  return FileText
 }
 
-export function FolderContents({ patientId, category, categoryLabel, onBack, onUpload }: FolderContentsProps) {
-  const [documents, setDocuments] = useState<Document[]>([])
+export function FolderContents({
+  patientId,
+  patientName,
+  clinicalId,
+  categoryId,
+  onBack,
+  onUpload,
+  onPreview,
+}: FolderContentsProps) {
+  const [documents, setDocuments] = useState<PatientDocument[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest')
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+
+  const category = DOCUMENT_CATEGORIES.find((c) => c.slug === categoryId)
 
   const fetchDocs = async () => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/patient-documents?patient_id=${patientId}&category=${category}`)
+      const res = await fetch(
+        `/api/patient-documents?patient_id=${patientId}&category=${categoryId}`
+      )
       const data = await res.json()
-      setDocuments(data.documents || [])
+      setDocuments(data.documents ?? [])
     } catch {
       setDocuments([])
     } finally {
@@ -55,22 +72,28 @@ export function FolderContents({ patientId, category, categoryLabel, onBack, onU
 
   useEffect(() => {
     fetchDocs()
-  }, [patientId, category])
+  }, [patientId, categoryId])
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Delete this document?')) return
-    setDeleting(id)
+  const sortedDocs = [...documents].sort((a, b) => {
+    const dateA = new Date(a.upload_date).getTime()
+    const dateB = new Date(b.upload_date).getTime()
+    return sortOrder === 'newest' ? dateB - dateA : dateA - dateB
+  })
+
+  const handleDelete = async (docId: string) => {
+    setDeleting(docId)
     try {
-      await fetch(`/api/patient-documents/${id}`, { method: 'DELETE' })
-      setDocuments(prev => prev.filter(d => d.id !== id))
+      await fetch(`/api/patient-documents/${docId}`, { method: 'DELETE' })
+      setDocuments((prev) => prev.filter((d) => d.id !== docId))
+      setDeleteConfirm(null)
     } catch {
-      // ignore
+      // silently fail
     } finally {
       setDeleting(null)
     }
   }
 
-  const handleDownload = async (doc: Document) => {
+  const handleDownload = async (doc: PatientDocument) => {
     try {
       const res = await fetch(`/api/patient-documents/${doc.id}`)
       const data = await res.json()
@@ -78,101 +101,155 @@ export function FolderContents({ patientId, category, categoryLabel, onBack, onU
         window.open(data.signedUrl, '_blank')
       }
     } catch {
-      // ignore
+      // silently fail
     }
   }
-
-  const filtered = documents
-    .filter(d => !searchQuery || d.filename.toLowerCase().includes(searchQuery.toLowerCase()))
-    .sort((a, b) => {
-      if (sortOrder === 'newest') return new Date(b.upload_date).getTime() - new Date(a.upload_date).getTime()
-      return new Date(a.upload_date).getTime() - new Date(b.upload_date).getTime()
-    })
 
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="p-4 border-b border-border">
         <button
           onClick={onBack}
-          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 mb-2"
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-2"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to Folders
+          <ArrowLeft className="w-4 h-4" />
+          Back to {clinicalId} folders
         </button>
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{categoryLabel}</h2>
 
-        {/* Search + Sort */}
-        <div className="flex gap-2 mt-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search files..."
-              className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-blue-500"
-            />
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-semibold">{category?.label ?? categoryId}</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {clinicalId} — {patientName} · {documents.length} file{documents.length !== 1 ? 's' : ''}
+            </p>
           </div>
-          <button
-            onClick={() => setSortOrder(s => s === 'newest' ? 'oldest' : 'newest')}
-            className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
-            title={`Sort: ${sortOrder}`}
-          >
-            {sortOrder === 'newest' ? <SortDesc className="w-4 h-4" /> : <SortAsc className="w-4 h-4" />}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSortOrder(sortOrder === 'newest' ? 'oldest' : 'newest')}
+              className="p-2 rounded-lg hover:bg-accent transition-colors"
+              title={`Sort ${sortOrder === 'newest' ? 'oldest first' : 'newest first'}`}
+            >
+              {sortOrder === 'newest' ? (
+                <SortDesc className="w-4 h-4 text-muted-foreground" />
+              ) : (
+                <SortAsc className="w-4 h-4 text-muted-foreground" />
+              )}
+            </button>
+            <button
+              onClick={onUpload}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              Upload
+            </button>
+          </div>
         </div>
       </div>
 
       {/* File List */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto">
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500" />
+            <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" />
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <FileText className="w-10 h-10 mx-auto mb-2 opacity-40" />
-            <p className="text-sm">{searchQuery ? 'No files match your search' : 'No documents yet'}</p>
-            <button onClick={onUpload} className="mt-3 text-sm text-blue-500 hover:text-blue-600 dark:text-blue-400">
+        ) : sortedDocs.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
+            <p className="text-sm">No documents in this folder</p>
+            <button
+              onClick={onUpload}
+              className="mt-3 text-sm text-primary hover:underline"
+            >
               Upload your first document
             </button>
           </div>
         ) : (
-          <div className="space-y-2">
-            {filtered.map((doc) => {
-              const Icon = FILE_ICONS[doc.file_type] || FileText
+          <div className="divide-y divide-border">
+            {sortedDocs.map((doc) => {
+              const Icon = getFileIcon(doc.filename)
               return (
-                <div key={doc.id} className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 group">
-                  <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400">
-                    <Icon className="w-4 h-4" />
+                <div
+                  key={doc.id}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-accent/50 transition-colors group"
+                >
+                  <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-primary/5 flex items-center justify-center">
+                    <Icon className="w-4 h-4 text-primary/70" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{doc.filename}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {formatFileSize(doc.file_size)} · {new Date(doc.upload_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                      {doc.tags.length > 0 && ` · ${doc.tags.join(', ')}`}
-                    </p>
+                    <p className="text-sm font-medium truncate">{doc.filename}</p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                      <span>{getFileTypeLabel(doc.filename)}</span>
+                      <span>·</span>
+                      <span>{formatFileSize(doc.file_size)}</span>
+                      <span>·</span>
+                      <span>
+                        {new Date(doc.upload_date).toLocaleDateString('en-IN', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </span>
+                    </div>
+                    {doc.tags.length > 0 && (
+                      <div className="flex gap-1 mt-1">
+                        {doc.tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="text-xs px-1.5 py-0.5 bg-muted rounded text-muted-foreground"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => handleDownload(doc)} className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500 dark:text-gray-400" title="Download">
-                      <Download className="w-4 h-4" />
+                    <button
+                      onClick={() => onPreview(doc)}
+                      className="p-1.5 rounded hover:bg-accent transition-colors"
+                      title="Preview"
+                    >
+                      <Eye className="w-4 h-4 text-muted-foreground" />
                     </button>
-                    <button onClick={() => handleDelete(doc.id)} disabled={deleting === doc.id} className="p-1.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400" title="Delete">
-                      <Trash2 className="w-4 h-4" />
+                    <button
+                      onClick={() => handleDownload(doc)}
+                      className="p-1.5 rounded hover:bg-accent transition-colors"
+                      title="Download"
+                    >
+                      <Download className="w-4 h-4 text-muted-foreground" />
                     </button>
+                    {deleteConfirm === doc.id ? (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleDelete(doc.id)}
+                          disabled={deleting === doc.id}
+                          className="px-2 py-1 text-xs bg-destructive text-destructive-foreground rounded hover:bg-destructive/90"
+                        >
+                          {deleting === doc.id ? '...' : 'Confirm'}
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirm(null)}
+                          className="p-1 rounded hover:bg-accent"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setDeleteConfirm(doc.id)}
+                        className="p-1.5 rounded hover:bg-accent transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4 text-destructive/70 hover:text-destructive" />
+                      </button>
+                    )}
                   </div>
                 </div>
               )
             })}
           </div>
         )}
-      </div>
-
-      {/* Upload Button */}
-      <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-        <button onClick={onUpload} className="w-full py-2.5 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm transition-colors">
-          Upload to {categoryLabel}
-        </button>
       </div>
     </div>
   )

@@ -1,14 +1,14 @@
 export const DOCUMENT_CATEGORIES = [
-  { slug: 'investigation-reports', label: 'Investigation Reports', icon: 'FlaskConical', description: 'Blood tests, imaging, biopsy, lab reports' },
-  { slug: 'opd-consultation-sheets', label: 'OPD Consultation Sheets', icon: 'FileText', description: 'Date-wise OPD visit records' },
-  { slug: 'ipd-sheets', label: 'IPD Sheets', icon: 'BedDouble', description: 'Admission/discharge records, date-wise' },
-  { slug: 'opd-registers', label: 'OPD Registers', icon: 'BookOpen', description: 'OPD register entries' },
-  { slug: 'ipd-registers', label: 'IPD Registers', icon: 'BookOpenCheck', description: 'IPD register entries' },
-  { slug: 'panchakarma-notes', label: 'Panchakarma Notes', icon: 'Leaf', description: 'Panchakarma therapy session records' },
-  { slug: 'reimbursement-forms', label: 'Reimbursement Forms', icon: 'Receipt', description: 'CGHS/insurance claim forms' },
-  { slug: 'medical-certificates', label: 'Medical Certificates', icon: 'Award', description: 'Fitness certificates, referral letters' },
-  { slug: 'prescriptions', label: 'Prescriptions', icon: 'Pill', description: 'Prescribed medications' },
-  { slug: 'discharge-summaries', label: 'Discharge Summaries', icon: 'ClipboardCheck', description: 'Hospital discharge documents' },
+  { slug: 'investigation-reports', label: 'Investigation Reports', icon: 'FlaskConical', description: 'Blood tests, imaging, biopsy, lab reports', accept: '.pdf,.jpg,.jpeg,.png,.webp' },
+  { slug: 'opd-consultation-sheets', label: 'OPD Consultation Sheets', icon: 'FileText', description: 'Date-wise OPD visit records', accept: '.pdf,.xlsx,.xls,.csv,.jpg,.jpeg,.png' },
+  { slug: 'ipd-sheets', label: 'IPD Sheets', icon: 'BedDouble', description: 'Admission/discharge records, date-wise', accept: '.pdf,.xlsx,.xls,.csv' },
+  { slug: 'opd-registers', label: 'OPD Registers', icon: 'BookOpen', description: 'OPD register entries', accept: '.pdf,.xlsx,.xls,.csv' },
+  { slug: 'ipd-registers', label: 'IPD Registers', icon: 'BookOpenCheck', description: 'IPD register entries', accept: '.pdf,.xlsx,.xls,.csv' },
+  { slug: 'panchakarma-notes', label: 'Panchakarma Notes', icon: 'Leaf', description: 'Panchakarma therapy session records', accept: '.pdf,.jpg,.jpeg,.png,.docx' },
+  { slug: 'reimbursement-forms', label: 'Reimbursement Forms', icon: 'Receipt', description: 'CGHS/insurance claim forms', accept: '.pdf,.jpg,.jpeg,.png,.xlsx,.xls' },
+  { slug: 'medical-certificates', label: 'Medical Certificates', icon: 'Award', description: 'Fitness certificates, referral letters', accept: '.pdf,.jpg,.jpeg,.png,.docx' },
+  { slug: 'prescriptions', label: 'Prescriptions', icon: 'Pill', description: 'Prescribed medications', accept: '.pdf,.jpg,.jpeg,.png' },
+  { slug: 'discharge-summaries', label: 'Discharge Summaries', icon: 'ClipboardCheck', description: 'Hospital discharge documents', accept: '.pdf,.jpg,.jpeg,.png,.docx' },
 ] as const
 
 export type DocumentCategory = typeof DOCUMENT_CATEGORIES[number]['slug']
@@ -35,6 +35,24 @@ export const FILE_TYPE_ICONS: Record<string, string> = {
   'application/vnd.ms-excel': 'Table',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'Table',
   'text/csv': 'Table',
+}
+
+const FILE_TYPE_LABELS: Record<string, string> = {
+  pdf: 'PDF',
+  jpg: 'Image',
+  jpeg: 'Image',
+  png: 'Image',
+  webp: 'Image',
+  xls: 'Excel',
+  xlsx: 'Excel',
+  csv: 'CSV',
+  docx: 'Word',
+  doc: 'Word',
+}
+
+export function getFileTypeLabel(filename: string): string {
+  const ext = filename.split('.').pop()?.toLowerCase() ?? ''
+  return FILE_TYPE_LABELS[ext] ?? 'File'
 }
 
 export function formatFileSize(bytes: number): string {
