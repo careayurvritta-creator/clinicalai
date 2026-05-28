@@ -86,7 +86,7 @@ function SessionDrawer({
       {/* Drawer */}
       <div
         ref={drawerRef}
-        className="fixed inset-y-0 left-0 z-50 w-[280px] max-w-[80vw] bg-panel-chat border-r border-border flex flex-col animate-slide-in-left md:hidden"
+        className="fixed inset-y-0 left-0 z-50 w-[280px] max-w-[80vw] bg-panel-chat border-r border-border flex flex-col animate-slide-in md:hidden"
       >
         {/* Header */}
         <div className="flex items-center justify-between h-12 px-4 border-b border-border shrink-0">
@@ -355,12 +355,6 @@ function groupSessionsByTime(sessions: ChatSession[]): { label: string; sessions
   }
 
   return Object.entries(groups)
-    .filter(([, sessions]) => sessions.length > 0)
-    .map(([label, sessions]) => ({ label, sessions }))
-}
-
-const MODULE_TITLES: Record<string, string> = {
-  chat: 'Clinical AI Chat',
-  intake: 'Case Collector',
-  'treatment-protocol': 'Treatment Protocol',
+    .filter(([, s]) => s.length > 0)
+    .map(([label, s]) => ({ label, sessions: s }))
 }
