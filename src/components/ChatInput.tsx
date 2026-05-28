@@ -273,7 +273,7 @@ export function ChatInput() {
 
   const placeholder = isDragActive
     ? 'Drop files here...'
-    : activeModule === 'intake'
+    : activeModule === 'documents'
     ? 'Describe the clinical case...'
     : activeModule === 'treatment-protocol'
     ? 'Describe symptoms, conditions, or request a protocol...'

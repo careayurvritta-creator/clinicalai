@@ -22,7 +22,7 @@ export default function Home() {
   }, [searchParams])
 
   // Chat-based modules: render ResizableLayout (chat + canvas panels)
-  if (activeModule === 'chat' || activeModule === 'intake' || activeModule === 'treatment-protocol') {
+  if (activeModule === 'chat' || activeModule === 'documents' || activeModule === 'treatment-protocol') {
     return (
       <ResizableLayout
         chatPanel={<ChatPanel key={activeModule} />}

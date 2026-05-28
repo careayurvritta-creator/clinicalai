@@ -83,7 +83,7 @@ export default function CasesPage() {
             </p>
           </div>
           <Link
-            href="/?module=intake"
+            href="/?module=documents"
             className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -170,7 +170,7 @@ export default function CasesPage() {
             </p>
             {!search && (
               <Link
-                href="/?module=intake"
+                href="/?module=documents"
                 className="inline-block mt-3 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
               >
                 Create First Case
