@@ -13,6 +13,7 @@ const defaultState: Omit<ChatState, 'isStreaming'> = {
   canvasTimestamp: 0,
   activeModule: 'chat',
   streamingModule: null,
+  activeSessionId: null,
   chatInputDraft: '',
 }
 
@@ -26,6 +27,7 @@ interface ChatActions {
   setActiveModule: (module: string) => void
   setChatInputDraft: (draft: string) => void
   setStreamingModule: (module: string | null) => void
+  createNewSession: () => string
 }
 
 function trimMessages(messages: Message[]): Message[] {
@@ -105,6 +107,12 @@ export const useChatStore = create<ChatState & ChatActions>()(
         }),
 
       setChatInputDraft: (draft) => set({ chatInputDraft: draft }),
+
+      createNewSession: () => {
+        const id = crypto.randomUUID()
+        set({ activeSessionId: id })
+        return id
+      },
     }),
     {
       name: 'clinical-ai-chat',
@@ -116,6 +124,7 @@ export const useChatStore = create<ChatState & ChatActions>()(
         canvasContent: state.canvasContent,
         canvasTimestamp: state.canvasTimestamp,
         activeModule: state.activeModule,
+        activeSessionId: state.activeSessionId,
         // chatInputDraft excluded — ephemeral, set by QuickActions/CanvasPanel
       }),
       version: 6,
