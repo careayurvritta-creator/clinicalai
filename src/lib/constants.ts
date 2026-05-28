@@ -52,3 +52,16 @@ export function getFileExtension(filename: string): string {
 export function sanitizeForPath(name: string): string {
   return name.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_').trim()
 }
+
+export const STORAGE_BUCKET = 'patient-documents'
+
+export function buildStoragePath(
+  clinicalId: string,
+  patientName: string,
+  categoryId: string,
+  filename: string
+): string {
+  const sanitizedName = patientName.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '_')
+  const datePrefix = new Date().toISOString().split('T')[0]
+  return `${clinicalId}_${sanitizedName}/${categoryId}/${datePrefix}_${filename}`
+}
