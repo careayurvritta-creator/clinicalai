@@ -29,7 +29,6 @@ interface ChatActions {
   setActiveModule: (module: string) => void
   setChatInputDraft: (draft: string) => void
   setStreamingModule: (module: string | null) => void
-  createNewSession: () => string
   createSession: (module?: string) => string
   switchSession: (sessionId: string) => void
   deleteSession: (sessionId: string) => void
@@ -157,12 +156,6 @@ export const useChatStore = create<ChatState & ChatActions>()(
         }),
 
       setChatInputDraft: (draft) => set({ chatInputDraft: draft }),
-
-      createNewSession: () => {
-        const id = crypto.randomUUID()
-        set({ activeSessionId: id })
-        return id
-      },
 
       // ─── Session management ────────────────────────────────
 
