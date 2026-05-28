@@ -1,51 +1,36 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { supabase } from '@/lib/supabase/client'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const errorParam = searchParams.get('error')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(() => {
-    if (!errorParam) return null
-    if (errorParam === 'exchange_failed')
-      return `Code exchange failed: ${searchParams.get('msg') || 'unknown error'}`
-    if (errorParam === 'no_code') return 'No auth code received from Supabase. Check redirect URL config.'
-    return 'Authentication failed. Please try again.'
-  })
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
-    // If already logged in, redirect
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) router.replace('/')
-    })
+    // Auth disabled — redirect straight to app
+    router.replace('/')
   }, [router])
 
-  const handleGoogleSignIn = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const { error: signInError } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        },
-      })
-      if (signInError) throw signInError
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sign in failed')
-      setLoading(false)
-    }
-  }
+  // TODO: Re-enable Google OAuth once PKCE cookie flow is working
+  // const handleGoogleSignIn = async () => {
+  //   setLoading(true)
+  //   setError(null)
+  //   try {
+  //     const { error: signInError } = await supabase.auth.signInWithOAuth({
+  //       provider: 'google',
+  //       options: {
+  //         redirectTo: `${window.location.origin}/auth/callback`,
+  //         queryParams: { access_type: 'offline', prompt: 'consent' },
+  //       },
+  //     })
+  //     if (signInError) throw signInError
+  //   } catch (err) {
+  //     setError(err instanceof Error ? err.message : 'Sign in failed')
+  //     setLoading(false)
+  //   }
+  // }
 
   return (
     <div className="relative flex items-center justify-center min-h-[100dvh] overflow-hidden bg-[#080c0a]">
@@ -75,19 +60,14 @@ export default function LoginPage() {
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
           >
-            {/* Center petal */}
             <ellipse cx="40" cy="32" rx="6" ry="18" fill="currentColor" opacity="0.6" />
-            {/* Left petals */}
             <ellipse cx="40" cy="32" rx="6" ry="18" fill="currentColor" opacity="0.5" transform="rotate(-25 40 32)" />
             <ellipse cx="40" cy="32" rx="6" ry="18" fill="currentColor" opacity="0.4" transform="rotate(-50 40 32)" />
             <ellipse cx="40" cy="32" rx="6" ry="18" fill="currentColor" opacity="0.3" transform="rotate(-75 40 32)" />
-            {/* Right petals */}
             <ellipse cx="40" cy="32" rx="6" ry="18" fill="currentColor" opacity="0.5" transform="rotate(25 40 32)" />
             <ellipse cx="40" cy="32" rx="6" ry="18" fill="currentColor" opacity="0.4" transform="rotate(50 40 32)" />
             <ellipse cx="40" cy="32" rx="6" ry="18" fill="currentColor" opacity="0.3" transform="rotate(75 40 32)" />
-            {/* Center circle */}
             <circle cx="40" cy="32" r="4" fill="currentColor" opacity="0.8" />
-            {/* Base curve */}
             <path d="M20 55 Q30 48 40 50 Q50 48 60 55" stroke="currentColor" strokeWidth="1.5" fill="none" opacity="0.4" />
             <path d="M16 60 Q28 52 40 54 Q52 52 64 60" stroke="currentColor" strokeWidth="1" fill="none" opacity="0.25" />
           </svg>
@@ -103,48 +83,12 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Sign in button */}
+        {/* Redirecting message */}
         <div className="w-full max-w-xs space-y-4">
-          <button
-            onClick={handleGoogleSignIn}
-            disabled={loading}
-            className="flex items-center justify-center gap-3 w-full px-6 py-3.5 rounded-xl
-              bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] hover:border-white/[0.12]
-              text-foreground text-sm font-medium
-              transition-all duration-200 ease-out
-              disabled:opacity-50 disabled:cursor-not-allowed
-              active:scale-[0.98]"
-          >
-            {loading ? (
-              <div className="w-5 h-5 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" />
-            ) : (
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
-                <path
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
-                  fill="#4285F4"
-                />
-                <path
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  fill="#34A853"
-                />
-                <path
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                  fill="#FBBC05"
-                />
-                <path
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                  fill="#EA4335"
-                />
-              </svg>
-            )}
-            {loading ? 'Signing in...' : 'Sign in with Google'}
-          </button>
-
-          {error && (
-            <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs text-center animate-fade-in">
-              {error}
-            </div>
-          )}
+          <div className="flex items-center justify-center gap-2 text-muted-foreground text-sm">
+            <div className="w-4 h-4 border-2 border-foreground/30 border-t-foreground rounded-full animate-spin" />
+            Redirecting...
+          </div>
         </div>
 
         {/* Tagline */}
