@@ -4,6 +4,7 @@ import { useChatStore } from '@/lib/store'
 import { MessageBubble } from './MessageBubble'
 import { ChatInput } from './ChatInput'
 import { CaseCollectorChat } from './CaseCollectorChat'
+import { PatientDocuments } from './PatientDocuments'
 import { useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
@@ -73,16 +74,16 @@ function ChatView() {
                 prompt="Explain the concept of Prakriti in Ayurveda and how it affects treatment."
               />
               <QuickAction
-                label="Start Case Collection"
-                description="Begin structured patient intake process"
+                label="Patient Documents"
+                description="Manage patient clinical documents and files"
                 prompt=""
-                module="intake"
+                module="documents"
               />
               <QuickAction
                 label="Treatment Protocol"
                 description="Generate research-backed treatment plans"
                 prompt=""
-                module="intake"
+                module="treatment-protocol"
               />
             </div>
           </div>
@@ -112,7 +113,9 @@ export function ChatPanel() {
 
   return (
     <div className="flex flex-col flex-1 min-h-0 h-full">
-      {activeModule === 'intake' ? (
+      {activeModule === 'documents' ? (
+        <PatientDocuments />
+      ) : activeModule === 'treatment-protocol' ? (
         <CaseCollectorChat />
       ) : (
         <ChatView />
