@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServerClient } from '@/lib/supabase/client'
+import { requireAuth } from '@/lib/supabase/auth'
 
 const patientSchema = z.object({
   name: z.string().min(1).max(200),
@@ -23,6 +24,9 @@ const patientSchema = z.object({
 })
 
 export async function GET(req: NextRequest) {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
     const supabase = createServerClient()
     const { searchParams } = new URL(req.url)
@@ -55,6 +59,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
   try {
     const body = await req.json()
     const validated = patientSchema.parse(body)

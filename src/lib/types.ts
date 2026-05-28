@@ -23,6 +23,7 @@ export interface ChatState {
   canvasContent: string
   canvasTimestamp: number
   activeModule: string
+  activeSessionId: string | null
   chatInputDraft: string
 }
 

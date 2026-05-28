@@ -8,8 +8,8 @@ import { ResizableLayout } from '@/components/ResizableLayout'
 import { useChatStore } from '@/lib/store'
 
 export default function Home() {
-  const activeModule = useChatStore((s) => s.activeModule)
-  const setActiveModule = useChatStore((s) => s.setActiveModule)
+  const activeModule = useChatStore((s: ReturnType<typeof useChatStore.getState>) => s.activeModule)
+  const setActiveModule = useChatStore((s: ReturnType<typeof useChatStore.getState>) => s.setActiveModule)
   const searchParams = useSearchParams()
 
   // Sync activeModule from URL ?module= param

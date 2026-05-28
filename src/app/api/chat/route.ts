@@ -6,6 +6,7 @@ import { createChatStream } from '@/lib/nvidia-client'
 import { SYSTEM_PROMPT } from '@/lib/types'
 import { vectorSearch, initializeVectorRAG, formatVectorResultsForContext } from '@/lib/ayurrag/vector-rag'
 import { createServerClient } from '@/lib/supabase/client'
+import { requireAuth, getUserProfile } from '@/lib/supabase/auth'
 import { analyzeQuery } from '@/lib/ayurrag/query-engine'
 
 const chatRequestSchema = z.object({
@@ -47,6 +48,7 @@ async function persistMessage(
   content: string,
   model: string,
   module: string,
+  doctorId: string | undefined,
   attachments?: Array<{ type: string; name: string }>
 ) {
   if (!sessionId) return
@@ -54,18 +56,18 @@ async function persistMessage(
   try {
     const supabase = createServerClient()
 
-    // Upsert conversation
+    // Upsert conversation with doctor_id
+    const upsertData: Record<string, unknown> = {
+      session_id: sessionId,
+      module: module,
+      ai_model: model,
+      updated_at: new Date().toISOString(),
+    }
+    if (doctorId) upsertData.doctor_id = doctorId
+
     const { data: conversation, error: convError } = await supabase
       .from('conversations')
-      .upsert(
-        {
-          session_id: sessionId,
-          module: module,
-          ai_model: model,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'session_id' }
-      )
+      .upsert(upsertData, { onConflict: 'session_id' })
       .select('id')
       .single()
 
@@ -110,6 +112,17 @@ async function persistMessage(
 export async function POST(req: NextRequest) {
   const startTime = Date.now()
 
+  // Validate auth
+  const auth = await requireAuth()
+  if (auth.error) return auth.error
+
+  // Get doctor_id from profile (fire-and-forget safe)
+  let doctorId: string | undefined
+  try {
+    const profile = await getUserProfile(auth.user.id)
+    if (profile) doctorId = profile.id
+  } catch {}
+
   try {
     const body = await req.json()
     const { messages, model, enableRAG, attachments, sessionId, module } = chatRequestSchema.parse(body)
@@ -145,7 +158,7 @@ export async function POST(req: NextRequest) {
     // Persist user message (fire-and-forget)
     const lastUserMessage = messages[messages.length - 1]
     if (lastUserMessage?.role === 'user') {
-      persistMessage(sessionId, 'user', lastUserMessage.content, model, module, attachments)
+      persistMessage(sessionId, 'user', lastUserMessage.content, model, module, doctorId, attachments)
     }
 
     let ragContext = ''
@@ -224,7 +237,7 @@ export async function POST(req: NextRequest) {
 
           // Persist assistant response (fire-and-forget)
           if (assistantContent) {
-            persistMessage(sessionId, 'assistant', assistantContent, model, module)
+            persistMessage(sessionId, 'assistant', assistantContent, model, module, doctorId)
           }
 
           console.log('[Chat API] Stream complete in', Date.now() - startTime, 'ms, length:', assistantContent.length)

@@ -24,6 +24,8 @@ export function ChatInput() {
   const setStreaming = useChatStore((state) => state.setStreaming)
   const setStreamingModule = useChatStore((state) => state.setStreamingModule)
   const activeModule = useChatStore((state) => state.activeModule)
+  const activeSessionId = useChatStore((state) => state.activeSessionId)
+  const createNewSession = useChatStore((state) => state.createNewSession)
   const chatInputDraft = useChatStore((state) => state.chatInputDraft)
   const setChatInputDraft = useChatStore((state) => state.setChatInputDraft)
 
@@ -123,6 +125,9 @@ export function ChatInput() {
     setStreaming(true)
     setStreamingModule(activeModule)
 
+    // Ensure we have a session ID
+    const sessionId = activeSessionId || createNewSession()
+
     const assistantMessage = {
       id: generateId(),
       role: 'assistant' as const,
@@ -182,6 +187,8 @@ export function ChatInput() {
           ...(a.type === 'pdf' && a.text ? { text: a.text } : {}),
           ...(a.type === 'image' && a.text ? { base64: a.text } : {}),
         })),
+        sessionId,
+        module: activeModule,
       }
 
       const response = await fetch('/api/chat', {
