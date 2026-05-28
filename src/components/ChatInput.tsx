@@ -25,7 +25,7 @@ export function ChatInput() {
   const setStreamingModule = useChatStore((state) => state.setStreamingModule)
   const activeModule = useChatStore((state) => state.activeModule)
   const activeSessionId = useChatStore((state) => state.activeSessionId)
-  const createNewSession = useChatStore((state) => state.createNewSession)
+  const createSession = useChatStore((state) => state.createSession)
   const chatInputDraft = useChatStore((state) => state.chatInputDraft)
   const setChatInputDraft = useChatStore((state) => state.setChatInputDraft)
 
@@ -125,8 +125,8 @@ export function ChatInput() {
     setStreaming(true)
     setStreamingModule(activeModule)
 
-    // Ensure we have a session ID
-    const sessionId = activeSessionId || createNewSession()
+    // Ensure we have a session
+    const sessionId = activeSessionId || createSession()
 
     const assistantMessage = {
       id: generateId(),

@@ -14,6 +14,15 @@ export interface Message {
   attachments?: Attachment[]
 }
 
+export interface ChatSession {
+  id: string
+  title: string
+  module: string
+  messages: Message[]
+  createdAt: number
+  updatedAt: number
+}
+
 export interface ChatState {
   messages: Message[]
   messagesByModule: Record<string, Message[]>
@@ -24,6 +33,7 @@ export interface ChatState {
   canvasTimestamp: number
   activeModule: string
   activeSessionId: string | null
+  sessions: Record<string, ChatSession>
   chatInputDraft: string
 }
 
