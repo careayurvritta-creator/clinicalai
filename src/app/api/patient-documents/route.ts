@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabase } from '@/lib/supabase/client'
+import { createServerClient } from '@/lib/supabase/client'
 import { STORAGE_BUCKET, buildStoragePath } from '@/lib/constants'
 
 export const dynamic = 'force-dynamic'
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'patient_id required' }, { status: 400 })
   }
 
-  const supabase = getSupabase()
+  const supabase = createServerClient()
   let query = supabase
     .from('patient_documents')
     .select('*')
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Get patient info for storage path
-  const supabase = getSupabase()
+  const supabase = createServerClient()
   const { data: patient, error: patientError } = await supabase
     .from('patients')
     .select('clinical_id, name')

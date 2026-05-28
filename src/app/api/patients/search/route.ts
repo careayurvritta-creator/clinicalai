@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabase } from '@/lib/supabase/client'
+import { createServerClient } from '@/lib/supabase/client'
 
 export const dynamic = 'force-dynamic'
+
+function getSupabase() {
+  return createServerClient()
+}
 
 // GET /api/patients/search?q=query
 export async function GET(request: NextRequest) {

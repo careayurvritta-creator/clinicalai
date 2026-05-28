@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabase } from '@/lib/supabase/client'
+import { createServerClient } from '@/lib/supabase/client'
 import { STORAGE_BUCKET } from '@/lib/constants'
 
 export const dynamic = 'force-dynamic'
@@ -10,7 +10,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const supabase = getSupabase()
+  const supabase = createServerClient()
 
   const { data, error } = await supabase
     .from('patient_documents')
@@ -39,7 +39,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const supabase = getSupabase()
+  const supabase = createServerClient()
 
   // Get document first for storage path
   const { data: doc, error: fetchError } = await supabase
