@@ -7,7 +7,7 @@ import type { ChatSession } from '@/lib/types'
 
 const MODULE_TITLES: Record<string, string> = {
   chat: 'Clinical AI Chat',
-  intake: 'Case Collector',
+  documents: 'Patient Documents',
   'treatment-protocol': 'Treatment Protocol',
 }
 
@@ -21,7 +21,7 @@ const ROUTE_TITLES: Record<string, string> = {
 const MODULE_FILTER_OPTIONS = [
   { value: 'all', label: 'All Chats' },
   { value: 'chat', label: 'Chat' },
-  { value: 'intake', label: 'Case Collector' },
+  { value: 'documents', label: 'Documents' },
   { value: 'treatment-protocol', label: 'Protocol' },
 ]
 
