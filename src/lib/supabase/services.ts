@@ -523,3 +523,101 @@ export async function deleteFile(bucket: string, path: string) {
     .from(bucket)
     .remove([path])
 }
+
+// ============================================
+// PATIENT DOCUMENTS
+// ============================================
+export interface PatientDocument {
+  id: string
+  patient_id: string
+  category: string
+  filename: string
+  storage_path: string
+  file_size: number
+  file_type: string
+  upload_date: string
+  tags: string[]
+  notes: string | null
+  uploaded_by: string | null
+  created_at: string
+  updated_at: string
+}
+
+export async function getPatientDocuments(patientId: string, category?: string) {
+  let query = getSupabase()
+    .from('patient_documents')
+    .select('*')
+    .eq('patient_id', patientId)
+    .order('upload_date', { ascending: false })
+  if (category) query = query.eq('category', category)
+  return query
+}
+
+export async function getPatientDocumentCounts(patientId: string) {
+  const { data, error } = await getSupabase()
+    .from('patient_documents')
+    .select('category')
+    .eq('patient_id', patientId)
+  if (error) return { data: null, error }
+  const counts: Record<string, number> = {}
+  for (const row of data || []) {
+    counts[row.category] = (counts[row.category] || 0) + 1
+  }
+  return { data: counts, error: null }
+}
+
+export async function createPatientDocument(data: Record<string, unknown>) {
+  return getSupabase()
+    .from('patient_documents')
+    .insert(data)
+    .select()
+    .single()
+}
+
+export async function deletePatientDocument(id: string) {
+  const { data: doc } = await getSupabase()
+    .from('patient_documents')
+    .select('storage_path')
+    .eq('id', id)
+    .single()
+  if (doc?.storage_path) {
+    await deleteFile('patient-documents', doc.storage_path)
+  }
+  return getSupabase()
+    .from('patient_documents')
+    .delete()
+    .eq('id', id)
+}
+
+export async function getSignedUrl(storagePath: string, expiresIn = 3600) {
+  return getSupabase().storage
+    .from('patient-documents')
+    .createSignedUrl(storagePath, expiresIn)
+}
+
+export async function searchPatientsByQuery(query: string) {
+  return getSupabase()
+    .from('patients')
+    .select('id, name, age, gender, phone, clinical_id, patient_code, created_at')
+    .or(`name.ilike.%${query}%,phone.ilike.%${query}%,clinical_id.ilike.%${query}%`)
+    .eq('is_archived', false)
+    .order('created_at', { ascending: false })
+    .limit(20)
+}
+
+export async function getRecentPatients(limit = 10) {
+  return getSupabase()
+    .from('patients')
+    .select('id, name, age, gender, phone, clinical_id, patient_code, created_at')
+    .eq('is_archived', false)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+}
+
+export async function getPatientById(id: string) {
+  return getSupabase()
+    .from('patients')
+    .select('id, name, age, gender, phone, clinical_id, patient_code')
+    .eq('id', id)
+    .single()
+}
