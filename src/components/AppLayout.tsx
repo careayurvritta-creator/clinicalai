@@ -1,6 +1,5 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { MobileNav } from './MobileNav'
 import { DesktopSidebar } from './DesktopSidebar'
@@ -10,16 +9,7 @@ import { ToastContainer } from './Toast'
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams()
   const activeModule = searchParams.get('module') || ''
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const pathname = usePathname()
-
-  // Close mobile menu on route change
-  useEffect(() => {
-    setMobileMenuOpen(false)
-  }, [pathname, activeModule])
-
-  // Suppress unused warning - mobileMenuOpen state is for future overlay use
-  void mobileMenuOpen
 
   // Login page renders without app shell
   if (pathname === '/login') {
@@ -39,10 +29,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Main area */}
       <div className="flex flex-col flex-1 min-w-0">
         {/* Header */}
-        <HeaderBar
-          showMenuButton
-          onMenuToggle={() => setMobileMenuOpen((prev) => !prev)}
-        />
+        <HeaderBar />
 
         {/* Content area */}
         <main

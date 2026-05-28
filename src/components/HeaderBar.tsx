@@ -27,7 +27,6 @@ const MODULE_FILTER_OPTIONS = [
 
 interface HeaderBarProps {
   onMenuToggle?: () => void
-  showMenuButton?: boolean
 }
 
 // ─── Swipeable Session Item ──────────────────────────────
@@ -445,7 +444,7 @@ function SessionDrawer({
 
 // ─── Header Bar ──────────────────────────────────────────
 
-export function HeaderBar({ onMenuToggle, showMenuButton = false }: HeaderBarProps) {
+export function HeaderBar({ onMenuToggle }: HeaderBarProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const activeModule = searchParams.get('module')
