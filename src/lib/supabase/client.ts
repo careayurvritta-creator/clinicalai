@@ -12,7 +12,12 @@ export const supabase = new Proxy({} as SupabaseClient, {
         throw new Error('Missing Supabase environment variables')
       }
       _supabase = createClient(supabaseUrl, supabaseKey, {
-        auth: { persistSession: true, autoRefreshToken: true },
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          flowType: 'pkce',
+          detectSessionInUrl: true,
+        },
         global: { headers: { 'x-application-name': 'clinical-ai' } },
       })
     }

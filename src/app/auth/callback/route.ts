@@ -5,7 +5,15 @@ import { NextResponse, type NextRequest } from 'next/server'
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
+  const errorParam = searchParams.get('error')
+  const errorDescription = searchParams.get('error_description')
   const next = searchParams.get('next') ?? '/'
+
+  // If OAuth provider returned an error
+  if (errorParam) {
+    console.error('[Auth Callback] OAuth error:', errorParam, errorDescription)
+    return NextResponse.redirect(`${origin}/login?error=auth_failed`)
+  }
 
   if (code) {
     const cookieStore = await cookies()
