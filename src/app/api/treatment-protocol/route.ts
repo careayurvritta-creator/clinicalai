@@ -225,7 +225,9 @@ export async function POST(req: NextRequest) {
       ...charakDiseases.map(c => `${c.chapter}: ${c.name} — ${c.treatment}`),
     ]
 
-    const ragContext = ragResults.length > 0 ? formatVectorResultsForContext(ragResults) : ''
+    const ragFormatted = ragResults.length > 0 ? formatVectorResultsForContext(ragResults) : null
+    const ragContext = ragFormatted?.context || ''
+    const ragSources = ragFormatted?.sources || []
     const patientData = formatPatientData(patientInfo, treatmentSelection)
 
     // Build the comprehensive LLM prompt
@@ -242,18 +244,15 @@ export async function POST(req: NextRequest) {
 
     console.log('[Treatment Protocol] Generating with LLM. Papers:', researchCtx?.papers.length || 0, 'Web:', researchCtx?.webResults.length || 0, 'RAG:', ragResults.length)
 
-    // Stream the LLM response with tuned parameters for precise, detailed output
-    const stream = await createChatStream(
-      [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: 'Generate the complete treatment protocol for this patient now.' },
-      ],
-      'mistralai/mistral-large-3-675b-instruct-2512',
-      { max_tokens: 8192, temperature: 0.4, top_p: 0.9 }
-    )
-
     const encoder = new TextEncoder()
     let fullProtocol = ''
+
+    // Auto-continuation support
+    const MAX_PROTOCOL_CONTINUATIONS = 4
+    const protocolMessages = [
+      { role: 'system' as const, content: systemPrompt },
+      { role: 'user' as const, content: 'Generate the complete treatment protocol for this patient now. Include ALL 16 sections. Do not truncate or abbreviate.' },
+    ]
 
     const readable = new ReadableStream({
       async start(controller) {
@@ -268,11 +267,59 @@ export async function POST(req: NextRequest) {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(metadata)}\n\n`))
 
         try {
+          let finishReason: string | null = null
+          let continuationCount = 0
+
+          // Initial stream
+          const stream = await createChatStream(
+            protocolMessages as any,
+            'mistralai/mistral-large-3-675b-instruct-2512',
+            { max_tokens: 8192, temperature: 0.4, top_p: 0.9 }
+          )
+
           for await (const chunk of stream) {
             const content = chunk.choices?.[0]?.delta?.content || ''
             if (content) {
               fullProtocol += content
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`))
+            }
+            const choice = chunk.choices?.[0] as unknown as Record<string, unknown> | undefined
+            if (choice?.finish_reason) {
+              finishReason = choice.finish_reason as string
+            }
+          }
+
+          // Auto-continue if hit token limit
+          while (finishReason === 'length' && continuationCount < MAX_PROTOCOL_CONTINUATIONS) {
+            continuationCount++
+            console.log(`[Treatment Protocol] Auto-continuing (${continuationCount}/${MAX_PROTOCOL_CONTINUATIONS}), current length: ${fullProtocol.length}`)
+
+            // Send continuation marker
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'continuation', attempt: continuationCount })}\n\n`))
+
+            const continueMessages = [
+              ...protocolMessages,
+              { role: 'assistant' as const, content: fullProtocol },
+              { role: 'user' as const, content: 'Continue the treatment protocol from where you left off. Do not repeat. Continue seamlessly with the next section. Include ALL remaining sections.' },
+            ]
+
+            const continueStream = await createChatStream(
+              continueMessages as any,
+              'mistralai/mistral-large-3-675b-instruct-2512',
+              { max_tokens: 8192, temperature: 0.4, top_p: 0.9 }
+            )
+
+            finishReason = null
+            for await (const chunk of continueStream) {
+              const content = chunk.choices?.[0]?.delta?.content || ''
+              if (content) {
+                fullProtocol += content
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`))
+              }
+              const choice = chunk.choices?.[0] as unknown as Record<string, unknown> | undefined
+              if (choice?.finish_reason) {
+                finishReason = choice.finish_reason as string
+              }
             }
           }
 
@@ -281,6 +328,7 @@ export async function POST(req: NextRequest) {
             persistProtocol(patientInfo, fullProtocol, researchCtx?.papers || [], charakRefs, protocolNumber)
           }
 
+          console.log('[Treatment Protocol] Complete. Length:', fullProtocol.length, 'Continuations:', continuationCount)
           controller.enqueue(encoder.encode('data: [DONE]\n\n'))
         } catch (error) {
           console.error('[Treatment Protocol] Streaming error:', error)

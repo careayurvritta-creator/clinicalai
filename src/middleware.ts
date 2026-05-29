@@ -121,59 +121,51 @@ export async function middleware(request: NextRequest) {
     return response
   }
 
-  // TODO: Re-enable auth once PKCE cookie flow is fixed
-  // Auth check temporarily disabled — Google OAuth PKCE flow needs
-  // createBrowserClient on client + createServerClient on server
-  // both using @supabase/ssr cookie storage for code verifier.
-  const supabaseResponse = NextResponse.next({ request })
+  // ─── Auth check ───────────────────────────────────────────
+  let supabaseResponse = NextResponse.next({ request })
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+
+  if (!supabaseUrl || !supabaseKey) {
+    addSecurityHeaders(supabaseResponse, pathname)
+    return supabaseResponse
+  }
+
+  const supabase = createServerClient(supabaseUrl, supabaseKey, {
+    cookies: {
+      getAll() { return request.cookies.getAll() },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+        supabaseResponse = NextResponse.next({ request })
+        cookiesToSet.forEach(({ name, value, options }) =>
+          supabaseResponse.cookies.set(name, value, options))
+      },
+    },
+  })
+
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (isProtectedRoute(pathname) && !user) {
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('next', pathname + request.nextUrl.search)
+    return NextResponse.redirect(loginUrl)
+  }
+
+  if (isAuthRoute(pathname) && user) {
+    return NextResponse.redirect(new URL('/', request.url))
+  }
+
+  if (pathname.startsWith('/admin') && user) {
+    const { data: profile } = await supabase
+      .from('profiles').select('role').eq('auth_user_id', user.id).single()
+    if (!profile || profile.role !== 'admin') {
+      return NextResponse.redirect(new URL('/', request.url))
+    }
+  }
+
   addSecurityHeaders(supabaseResponse, pathname)
   return supabaseResponse
-
-  // ─── Auth check (disabled) ───────────────────────────────
-  // let supabaseResponse = NextResponse.next({ request })
-  //
-  // const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  // const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
-  //
-  // if (!supabaseUrl || !supabaseKey) {
-  //   addSecurityHeaders(supabaseResponse, pathname)
-  //   return supabaseResponse
-  // }
-  //
-  // const supabase = createServerClient(supabaseUrl, supabaseKey, {
-  //   cookies: {
-  //     getAll() { return request.cookies.getAll() },
-  //     setAll(cookiesToSet) {
-  //       cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-  //       supabaseResponse = NextResponse.next({ request })
-  //       cookiesToSet.forEach(({ name, value, options }) =>
-  //         supabaseResponse.cookies.set(name, value, options))
-  //     },
-  //   },
-  // })
-  //
-  // const { data: { user } } = await supabase.auth.getUser()
-  //
-  // if (isProtectedRoute(pathname) && !user) {
-  //   const loginUrl = new URL('/login', request.url)
-  //   loginUrl.searchParams.set('next', pathname + request.nextUrl.search)
-  //   return NextResponse.redirect(loginUrl)
-  // }
-  //
-  // if (isAuthRoute(pathname) && user) {
-  //   return NextResponse.redirect(new URL('/', request.url))
-  // }
-  //
-  // if (pathname.startsWith('/admin') && user) {
-  //   const { data: profile } = await supabase
-  //     .from('profiles').select('role').eq('id', user.id).single()
-  //   if (!profile || profile.role !== 'admin') {
-  //     return NextResponse.redirect(new URL('/', request.url))
-  //   }
-  // }
-  //
-  // addSecurityHeaders(supabaseResponse, pathname)
-  // return supabaseResponse
 }
 
 function addSecurityHeaders(response: NextResponse, pathname: string) {

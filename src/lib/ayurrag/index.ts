@@ -5,20 +5,25 @@ export interface AyurRagConfig {
   includeSafetyWarnings: boolean
   maxContextLength: number
   enableHybridSearch: boolean
+  enableMultiQueryExpansion: boolean
+  enableClinicalCaseSearch: boolean
   fallbackToWebSearch: boolean
 }
 
 export const DEFAULT_RAG_CONFIG: AyurRagConfig = {
   includeSafetyWarnings: true,
-  maxContextLength: 2000,
+  maxContextLength: 8000,
   enableHybridSearch: true,
-  fallbackToWebSearch: true
+  enableMultiQueryExpansion: true,
+  enableClinicalCaseSearch: true,
+  fallbackToWebSearch: true,
 }
 
 export interface SearchResult {
   content: string
   source: string
   relevance: number
+  category?: string
 }
 
 export function rankResults(results: SearchResult[]): SearchResult[] {
