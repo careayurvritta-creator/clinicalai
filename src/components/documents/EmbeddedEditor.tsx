@@ -8,6 +8,7 @@ export function EmbeddedEditor() {
 
   if (!editingFile) return null
 
+  // Build Google embed URL based on mimeType
   const getEmbedUrl = () => {
     if (editingFile.mimeType.includes('spreadsheet') || editingFile.name.endsWith('.xlsx')) {
       return `https://docs.google.com/spreadsheets/d/${editingFile.id}/edit?usp=sharing`
