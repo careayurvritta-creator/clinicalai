@@ -8,8 +8,8 @@ import { useDocumentStore } from '@/lib/stores/document-store'
 import { useState } from 'react'
 
 export function DocumentLayout() {
-  const editingFile = useDocumentStore((s) => s.editingFile)
   const selectedPatient = useDocumentStore((s) => s.selectedPatient)
+  const editingFile = useDocumentStore((s) => s.editingFile)
   const [showAIChat, setShowAIChat] = useState(true)
 
   return (
