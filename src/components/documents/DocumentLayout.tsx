@@ -2,8 +2,8 @@
 
 import { PatientSidebar } from './PatientSidebar'
 import { DocumentExplorer } from './DocumentExplorer'
-import { EmbeddedEditor } from './EmbeddedEditor'
 import { AIDocumentChat } from './AIDocumentChat'
+import { EmbeddedEditor } from './EmbeddedEditor'
 import { useDocumentStore } from '@/lib/stores/document-store'
 import { useState } from 'react'
 
