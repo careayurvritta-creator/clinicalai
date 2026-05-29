@@ -1,14 +1,14 @@
 'use client'
 
 import { ReactNode, useState, useRef, useCallback, useEffect } from 'react'
-import { useChatStore } from '@/lib/store'
 
 interface ResizableLayoutProps {
   chatPanel: ReactNode
   canvasPanel: ReactNode
+  canvasContent?: string
 }
 
-export function ResizableLayout({ chatPanel, canvasPanel }: ResizableLayoutProps) {
+export function ResizableLayout({ chatPanel, canvasPanel, canvasContent = '' }: ResizableLayoutProps) {
   const [chatWidth, setChatWidth] = useState(() => {
     if (typeof window === 'undefined') return 450
     return Math.min(450, Math.floor(window.innerWidth * 0.45))
@@ -29,7 +29,6 @@ export function ResizableLayout({ chatPanel, canvasPanel }: ResizableLayoutProps
   }, [])
 
   // Auto-switch to canvas tab on mobile when new artifact content arrives
-  const canvasContent = useChatStore((state) => state.canvasContent)
   useEffect(() => {
     if (isMobile && canvasContent.length > 0 && prevCanvasLength.current === 0) {
       setActiveTab('canvas')

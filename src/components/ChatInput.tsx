@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { useChatStore } from '@/lib/store'
+import { useChatStore } from '@/stores/chat-store'
 import { generateId } from '@/lib/utils'
 import type { Attachment, Message } from '@/lib/types'
 import { ModelSelector } from './ModelSelector'
@@ -22,8 +22,6 @@ export function ChatInput() {
   const addMessage = useChatStore((state) => state.addMessage)
   const updateLastMessage = useChatStore((state) => state.updateLastMessage)
   const setStreaming = useChatStore((state) => state.setStreaming)
-  const setStreamingModule = useChatStore((state) => state.setStreamingModule)
-  const activeModule = useChatStore((state) => state.activeModule)
   const activeSessionId = useChatStore((state) => state.activeSessionId)
   const createSession = useChatStore((state) => state.createSession)
   const chatInputDraft = useChatStore((state) => state.chatInputDraft)
@@ -64,7 +62,7 @@ export function ChatInput() {
         prev.forEach(a => { if (a.preview) URL.revokeObjectURL(a.preview) })
         return []
       })
-      setStreamingModule(null)
+      // streaming complete
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -104,7 +102,7 @@ export function ChatInput() {
 
   const handleSend = async () => {
     const text = input.trim()
-    if ((!text && attachments.length === 0) || useChatStore.getState().isStreaming || isProcessing) return
+    if ((!text && attachments.length === 0) || isStreaming || isProcessing) return
 
     const currentAttachments = [...attachments]
     const userMessage: Message = {
@@ -123,7 +121,6 @@ export function ChatInput() {
     currentAttachments.forEach(a => { if (a.preview) URL.revokeObjectURL(a.preview) })
     setAttachments([])
     setStreaming(true)
-    setStreamingModule(activeModule)
 
     // Ensure we have a session
     const sessionId = activeSessionId || createSession()
@@ -188,7 +185,6 @@ export function ChatInput() {
           ...(a.type === 'image' && a.text ? { base64: a.text } : {}),
         })),
         sessionId,
-        module: activeModule,
       }
 
       const response = await fetch('/api/chat', {
@@ -248,7 +244,7 @@ export function ChatInput() {
       updateLastMessage(`Error: ${error instanceof Error ? error.message : 'Failed to get response'}`, 'error')
     } finally {
       setStreaming(false)
-      setStreamingModule(null)
+      // streaming complete
     }
   }
 
@@ -273,10 +269,6 @@ export function ChatInput() {
 
   const placeholder = isDragActive
     ? 'Drop files here...'
-    : activeModule === 'documents'
-    ? 'Describe the clinical case...'
-    : activeModule === 'treatment-protocol'
-    ? 'Describe symptoms, conditions, or request a protocol...'
     : 'Ask about Ayurvedic health...'
 
   return (
@@ -396,7 +388,7 @@ export function ChatInput() {
             </span>
           )}
           <div className="flex-shrink-0">
-            <ModelSelector />
+            <ModelSelector selectedModel={selectedModel} onModelChange={(id) => useChatStore.getState().setModel(id)} />
           </div>
         </div>
       </div>

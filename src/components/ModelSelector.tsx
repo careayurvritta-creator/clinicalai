@@ -1,16 +1,18 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { useChatStore } from '@/lib/store'
 import { MODELS } from '@/lib/types'
 
-export function ModelSelector() {
+interface ModelSelectorProps {
+  selectedModel: string
+  onModelChange: (modelId: string) => void
+}
+
+export function ModelSelector({ selectedModel, onModelChange }: ModelSelectorProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [openUpward, setOpenUpward] = useState(true)
   const buttonRef = useRef<HTMLButtonElement>(null)
-  const selectedModel = useChatStore((state) => state.selectedModel)
-  const setModel = useChatStore((state) => state.setModel)
 
   const currentModel = MODELS.find((m) => m.id === selectedModel) || MODELS[0]
 
@@ -45,7 +47,7 @@ export function ModelSelector() {
   }, [isOpen, handleKeyDown])
 
   const selectModel = (id: string) => {
-    setModel(id)
+    onModelChange(id)
     setIsOpen(false)
   }
 

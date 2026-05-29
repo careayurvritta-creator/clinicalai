@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { useChatStore } from '@/lib/store'
+import { useProtocolStore } from '@/lib/stores/protocol-store'
 import { generateId } from '@/lib/utils'
 import type { CaseData } from '@/lib/types'
 
@@ -183,9 +183,9 @@ function ReviewScreen({ caseData, onEdit }: {
 // ─── Main Component ─────────────────────────────────────────────
 
 export function CaseCollectorChat() {
-  const addMessage = useChatStore((state) => state.addMessage)
-  const setCanvasContent = useChatStore((state) => state.setCanvasContent)
-  const messages = useChatStore((state) => state.messages)
+  const addMessage = useProtocolStore((state) => state.addMessage)
+  const setCanvasContent = useProtocolStore((state) => state.setCanvasContent)
+  const messages = useProtocolStore((state) => state.messages)
 
   // Phase and navigation
   const [phase, setPhase] = useState<Phase>('wizard')

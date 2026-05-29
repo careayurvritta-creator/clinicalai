@@ -1,18 +1,18 @@
 'use client'
 
-import { useChatStore } from '@/lib/store'
+import { useProtocolStore } from '@/lib/stores/protocol-store'
 import { CanvasToolbar } from './CanvasToolbar'
 import { ProtocolRenderer } from './ProtocolRenderer'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useEffect, useRef, useState } from 'react'
+import { usePathname } from 'next/navigation'
 
 export function CanvasPanel() {
-  const canvasContent = useChatStore((state) => state.canvasContent)
-  const canvasTimestamp = useChatStore((state) => state.canvasTimestamp)
-  const isStreaming = useChatStore((state) => state.isStreaming)
-  const streamingModule = useChatStore((state) => state.streamingModule)
-  const activeModule = useChatStore((state) => state.activeModule)
+  const pathname = usePathname()
+  const canvasContent = useProtocolStore((state) => state.canvasContent)
+  const canvasTimestamp = useProtocolStore((state) => state.canvasTimestamp)
+  const isStreaming = useProtocolStore((state) => state.isStreaming)
   const contentEndRef = useRef<HTMLDivElement>(null)
   const [dismissedStale, setDismissedStale] = useState(false)
 
@@ -33,7 +33,7 @@ export function CanvasPanel() {
 
   const hasContent = canvasContent.trim().length > 0
 
-  // Content is stale if it exists but timestamp is >5 min old or from different module
+  // Content is stale if it exists but timestamp is >5 min old
   const isStale = hasContent && canvasTimestamp > 0 && (
     Date.now() - canvasTimestamp > 5 * 60 * 1000
   )
@@ -66,8 +66,8 @@ export function CanvasPanel() {
     return ''
   }
 
-  // Streaming is happening in the context that feeds this canvas
-  const isCanvasStreaming = isStreaming && (streamingModule === activeModule || streamingModule === 'treatment-protocol')
+  // Streaming is active when the store says so
+  const isCanvasStreaming = isStreaming
 
   return (
     <div className="flex flex-col flex-1 min-h-0 h-full bg-panel-canvas">
@@ -108,7 +108,9 @@ export function CanvasPanel() {
             </div>
             <h3 className="text-lg font-medium text-foreground mb-2">Output Canvas</h3>
             <p className="text-sm text-muted-foreground max-w-md">
-              Diagnosis results and treatment protocols will appear here as formatted documents.
+              {pathname === '/treatment-protocol'
+                ? 'Diagnosis results and treatment protocols will appear here as formatted documents.'
+                : 'Results and outputs will appear here.'}
             </p>
             {isCanvasStreaming && (
               <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
@@ -155,22 +157,22 @@ export function CanvasPanel() {
             )}
 
             {/* Diagnosis action buttons */}
-            {isDiagnosis && !isCanvasStreaming && (
+            {isDiagnosis && !isCanvasStreaming && pathname === '/treatment-protocol' && (
               <div className="mt-6 flex flex-wrap gap-3 pt-4 border-t border-border">
                 <button
-                  onClick={() => useChatStore.getState().setChatInputDraft('I confirm this diagnosis. Please provide the treatment plan.')}
+                  onClick={() => useProtocolStore.getState().setChatInputDraft('I confirm this diagnosis. Please provide the treatment plan.')}
                   className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
                 >
                   Confirm Diagnosis
                 </button>
                 <button
-                  onClick={() => useChatStore.getState().setChatInputDraft('I need to add more clinical information about this case.')}
+                  onClick={() => useProtocolStore.getState().setChatInputDraft('I need to add more clinical information about this case.')}
                   className="px-4 py-2 text-sm bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors"
                 >
                   Add More Information
                 </button>
                 <button
-                  onClick={() => useChatStore.getState().setChatInputDraft('Please generate a detailed treatment protocol for this diagnosis.')}
+                  onClick={() => useProtocolStore.getState().setChatInputDraft('Please generate a detailed treatment protocol for this diagnosis.')}
                   className="px-4 py-2 text-sm bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors"
                 >
                   Generate Treatment Plan
@@ -182,7 +184,7 @@ export function CanvasPanel() {
         <div ref={contentEndRef} />
       </div>
 
-      {hasContent && <CanvasToolbar />}
+      {hasContent && <CanvasToolbar canvasContent={canvasContent} onClear={() => useProtocolStore.getState().clearMessages()} />}
     </div>
   )
 }

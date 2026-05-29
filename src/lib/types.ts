@@ -131,7 +131,7 @@ You have access to:
 
 ### 3. DISEASES & CONDITIONS
 - Prameha (Diabetes), Raktagata Vata (Hypertension), Sandhivata (Arthritis)
-- Grahani (IBS), Kushhta (Skin), Swasa (Respiratory), Unmada (Mental)
+- Grahani (IBS), Kushtha (Skin), Swasa (Respiratory), Unmada (Mental)
 
 ### 4. HERBS & FORMULATIONS (700+ herbs)
 - 15 core herbs: Ashwagandha, Turmeric, Ginger, Triphala, Guggulu, Pippali, Shatavari, Neem, Brahmi, Amla, Arjuna, Guduchi, Bala, Musta, Chandan
@@ -274,4 +274,134 @@ export interface CaseData {
   desha: string
   provisionalDiagnosis: string
   provisionalReasoning: string
+}
+
+// ─── Document Template System Types ─────────────────────────────────────────
+
+export type DocumentCategory =
+  | 'opd-registers'
+  | 'therapy-registers'
+  | 'ipd-registers'
+  | 'procedure-registers'
+  | 'consultation-notes'
+  | 'invoices'
+  | 'insurance'
+  | 'admission-notes'
+  | 'treatment-plans'
+  | 'rounds-notes'
+  | 'nursing-medicine'
+  | 'nursing-panchakarma'
+  | 'discharge-plans'
+  | 'discharge-summaries'
+  | 'certificates'
+  | 'receipts'
+  | 'authorization'
+  | 'garbha-sanskar'
+  | 'lab-reports'
+  | 'prescriptions'
+
+export type DocumentFormat = 'spreadsheet' | 'document' | 'mixed'
+
+export type FieldType =
+  | 'text'
+  | 'number'
+  | 'date'
+  | 'time'
+  | 'select'
+  | 'currency'
+  | 'multiline'
+  | 'boolean'
+  | 'duration'
+  | 'vitals'
+
+export interface FieldOption {
+  value: string
+  label: string
+}
+
+export interface ValidationRule {
+  required?: boolean
+  min?: number
+  max?: number
+  pattern?: string
+  message?: string
+}
+
+export interface TemplateField {
+  name: string
+  label: string
+  type: FieldType
+  required: boolean
+  autoFillFrom?: string
+  options?: FieldOption[]
+  defaultValue?: string | number | boolean
+  validation?: ValidationRule
+  width?: number
+  description?: string
+}
+
+export interface TemplateSection {
+  id: string
+  title: string
+  fields: TemplateField[]
+  repeatable?: boolean
+  description?: string
+}
+
+export interface DocumentTemplate {
+  id: string
+  name: string
+  description: string
+  category: DocumentCategory
+  format: DocumentFormat
+  sections: TemplateSection[]
+  fields?: TemplateField[]
+  autoFillMapping?: Record<string, string>
+  validation?: Record<string, ValidationRule>
+}
+
+export interface PatientData {
+  id: string
+  clinical_id: string
+  name: string
+  age: number | null
+  gender: string | null
+  phone: string | null
+  email?: string | null
+  address?: string | null
+  occupation?: string | null
+  abha_id?: string | null
+  uhid?: string | null
+  date_of_birth?: string | null
+}
+
+export interface DocumentData {
+  id: string
+  template_id: string
+  patient_id: string
+  category: DocumentCategory
+  format: DocumentFormat
+  data: Record<string, unknown>
+  sections?: Record<string, Record<string, unknown>[]>
+  metadata: {
+    created_at: string
+    updated_at: string
+    created_by: string
+    drive_file_id?: string
+    drive_file_url?: string
+    filename: string
+    status: 'draft' | 'final' | 'signed'
+  }
+}
+
+export interface AutoFillContext {
+  patient: PatientData
+  caseData?: Record<string, unknown>
+  previousDocuments?: DocumentData[]
+  currentDate: string
+  currentTime: string
+  invoiceNumber?: string
+  dischargeNumber?: string
+  certificateNumber?: string
+  patientCode?: string
 }

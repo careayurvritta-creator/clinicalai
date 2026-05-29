@@ -253,7 +253,16 @@ export const useChatStore = create<ChatState & ChatActions>()(
     }),
     {
       name: 'clinical-ai-chat',
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => {
+        if (typeof window === 'undefined') {
+          return {
+            getItem: () => null,
+            setItem: () => {},
+            removeItem: () => {},
+          }
+        }
+        return localStorage
+      }),
       partialize: (state) => ({
         messages: state.messages,
         messagesByModule: state.messagesByModule,
@@ -267,6 +276,9 @@ export const useChatStore = create<ChatState & ChatActions>()(
       }),
       version: 7,
       migrate: (persistedState: unknown, version: number) => {
+        if (!persistedState || typeof persistedState !== 'object') {
+          return defaultState
+        }
         const state = persistedState as Record<string, unknown>
         // Clean up stale streaming messages on migration
         if (version < 4 && state?.messages) {

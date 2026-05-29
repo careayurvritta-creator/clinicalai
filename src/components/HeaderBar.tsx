@@ -1,215 +1,17 @@
 'use client'
 
-import { usePathname, useSearchParams } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useChatStore } from '@/lib/store'
 import type { ChatSession } from '@/lib/types'
 
-const MODULE_TITLES: Record<string, string> = {
-  chat: 'Clinical AI Chat',
-  documents: 'Patient Documents',
-  'treatment-protocol': 'Treatment Protocol',
-}
-
 const ROUTE_TITLES: Record<string, string> = {
-  '/': 'Home',
+  '/chat': 'Clinical AI Chat',
+  '/documents': 'Patient Documents',
+  '/treatment-protocol': 'Treatment Protocol',
   '/cases': 'Cases',
   '/patients': 'Patients',
   '/patients/new': 'New Patient',
-}
-
-const MODULE_FILTER_OPTIONS = [
-  { value: 'all', label: 'All Chats' },
-  { value: 'chat', label: 'Chat' },
-  { value: 'documents', label: 'Documents' },
-  { value: 'treatment-protocol', label: 'Protocol' },
-]
-
-interface HeaderBarProps {
-  onMenuToggle?: () => void
-}
-
-// ─── Swipeable Session Item ──────────────────────────────
-
-function SwipeableSessionItem({
-  session,
-  isActive,
-  onSwitch,
-  onDelete,
-  onRename,
-}: {
-  session: ChatSession
-  isActive: boolean
-  onSwitch: () => void
-  onDelete: () => void
-  onRename: (title: string) => void
-}) {
-  const [editing, setEditing] = useState(false)
-  const [editValue, setEditValue] = useState(session.title)
-  const [showActions, setShowActions] = useState(false)
-  const [swipeX, setSwipeX] = useState(0)
-  const [swiping, setSwiping] = useState(false)
-  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null)
-  const itemRef = useRef<HTMLDivElement>(null)
-
-  const SWIPE_THRESHOLD = 80
-  const DELETE_THRESHOLD = 120
-
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    const touch = e.touches[0]
-    touchStartRef.current = { x: touch.clientX, y: touch.clientY, time: Date.now() }
-    setSwiping(false)
-  }, [])
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!touchStartRef.current) return
-    const touch = e.touches[0]
-    const dx = touch.clientX - touchStartRef.current.x
-    const dy = touch.clientY - touchStartRef.current.y
-
-    // Only swipe left, and only if horizontal movement dominates
-    if (dx < -10 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-      setSwiping(true)
-      setSwipeX(Math.min(0, Math.max(-DELETE_THRESHOLD * 1.2, dx)))
-    }
-  }, [])
-
-  const handleTouchEnd = useCallback(() => {
-    if (!touchStartRef.current) return
-
-    if (swipeX < -DELETE_THRESHOLD) {
-      onDelete()
-    } else if (swipeX < -SWIPE_THRESHOLD) {
-      setShowActions(true)
-    }
-
-    setSwipeX(0)
-    setSwiping(false)
-    touchStartRef.current = null
-  }, [swipeX, onDelete])
-
-  const handleRename = () => {
-    if (editValue.trim() && editValue !== session.title) {
-      onRename(editValue.trim())
-    }
-    setEditing(false)
-  }
-
-  if (editing) {
-    return (
-      <div className="px-1 py-0.5">
-        <input
-          autoFocus
-          value={editValue}
-          onChange={(e) => setEditValue(e.target.value)}
-          onBlur={handleRename}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') handleRename()
-            if (e.key === 'Escape') { setEditValue(session.title); setEditing(false) }
-          }}
-          className="w-full px-3 py-2.5 text-sm bg-muted border border-primary/50 rounded-xl text-foreground outline-none"
-        />
-      </div>
-    )
-  }
-
-  return (
-    <div
-      ref={itemRef}
-      className="relative overflow-hidden rounded-xl"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-    >
-      {/* Delete background revealed on swipe */}
-      <div
-        className="absolute inset-0 flex items-center justify-end pr-4 bg-red-500/20 rounded-xl"
-        style={{ opacity: Math.min(1, Math.abs(swipeX) / SWIPE_THRESHOLD) }}
-      >
-        <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-        </svg>
-      </div>
-
-      {/* Main item */}
-      <div
-        className={`relative flex items-center gap-3 px-3 py-2.5 transition-transform ${
-          swiping ? '' : 'transition-none'
-        } ${isActive ? 'bg-primary/10' : 'active:bg-muted/50'}`}
-        style={{ transform: `translateX(${swipeX}px)` }}
-      >
-        {/* Session icon */}
-        <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-xs font-semibold ${
-          isActive ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
-        }`}>
-          {session.title.charAt(0).toUpperCase()}
-        </div>
-
-        {/* Content */}
-        <button
-          onClick={onSwitch}
-          className="flex-1 min-w-0 text-left"
-        >
-          <p className={`text-sm truncate ${isActive ? 'text-primary font-medium' : 'text-foreground'}`}>
-            {session.title}
-          </p>
-          <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1.5">
-            <span>{MODULE_TITLES[session.module] ?? session.module}</span>
-            <span className="opacity-40">·</span>
-            <span>{formatRelativeTime(session.updatedAt)}</span>
-          </p>
-        </button>
-
-        {/* Action buttons — always visible on mobile, hover on desktop */}
-        <div className={`flex items-center gap-1 shrink-0 ${
-          showActions ? 'opacity-100' : 'opacity-0 md:group-hover:opacity-100'
-        } transition-opacity`}>
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              setEditValue(session.title)
-              setEditing(true)
-              setShowActions(false)
-            }}
-            className="p-2 rounded-lg active:bg-muted text-muted-foreground touch-target"
-            title="Rename"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              onDelete()
-            }}
-            className="p-2 rounded-lg active:bg-red-500/10 text-muted-foreground active:text-red-400 touch-target"
-            title="Delete"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Tap-to-toggle actions (mobile) */}
-        {!showActions && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              setShowActions(true)
-            }}
-            className="p-2 rounded-lg active:bg-muted text-muted-foreground/60 md:hidden touch-target"
-            aria-label="More actions"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01" />
-            </svg>
-          </button>
-        )}
-      </div>
-    </div>
-  )
 }
 
 // ─── Session Drawer ──────────────────────────────────────
@@ -227,21 +29,17 @@ function SessionDrawer({
   const switchSession = useChatStore((state) => state.switchSession)
   const deleteSession = useChatStore((state) => state.deleteSession)
   const renameSession = useChatStore((state) => state.renameSession)
-  const activeModule = useChatStore((state) => state.activeModule)
   const drawerRef = useRef<HTMLDivElement>(null)
   const backdropRef = useRef<HTMLDivElement>(null)
 
   const [searchQuery, setSearchQuery] = useState('')
-  const [moduleFilter, setModuleFilter] = useState('all')
-  const [filterOpen, setFilterOpen] = useState(false)
 
   // Filter sessions
   const allSessions = Object.values(sessions).sort((a, b) => b.updatedAt - a.updatedAt)
   const filteredSessions = allSessions.filter((s) => {
-    if (moduleFilter !== 'all' && s.module !== moduleFilter) return false
     if (searchQuery) {
       const q = searchQuery.toLowerCase()
-      return s.title.toLowerCase().includes(q) || s.module.toLowerCase().includes(q)
+      return s.title.toLowerCase().includes(q)
     }
     return true
   })
@@ -280,8 +78,6 @@ function SessionDrawer({
   useEffect(() => {
     if (!open) {
       setSearchQuery('')
-      setModuleFilter('all')
-      setFilterOpen(false)
     }
   }, [open])
 
@@ -294,7 +90,7 @@ function SessionDrawer({
   }, [open])
 
   const handleNewChat = () => {
-    createSession(moduleFilter !== 'all' ? moduleFilter : activeModule)
+    createSession()
     onClose()
   }
 
@@ -382,25 +178,6 @@ function SessionDrawer({
           </div>
         </div>
 
-        {/* Module filter chips */}
-        <div className="px-3 pb-3 shrink-0">
-          <div className="flex gap-1.5 overflow-x-auto scrollbar-none pb-0.5">
-            {MODULE_FILTER_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setModuleFilter(opt.value)}
-                className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                  moduleFilter === opt.value
-                    ? 'bg-primary/20 text-primary'
-                    : 'bg-muted/50 text-muted-foreground active:text-foreground'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Session list */}
         <div className="flex-1 overflow-y-auto px-2 pb-4 scrollbar-thin">
           {grouped.length === 0 ? (
@@ -423,14 +200,39 @@ function SessionDrawer({
                 </p>
                 <div className="space-y-1">
                   {group.sessions.map((session) => (
-                    <SwipeableSessionItem
+                    <div
                       key={session.id}
-                      session={session}
-                      isActive={session.id === activeSessionId}
-                      onSwitch={() => handleSwitch(session.id)}
-                      onDelete={() => deleteSession(session.id)}
-                      onRename={(title) => renameSession(session.id, title)}
-                    />
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
+                        session.id === activeSessionId ? 'bg-primary/10' : 'active:bg-muted/50'
+                      }`}
+                      onClick={() => handleSwitch(session.id)}
+                    >
+                      <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-xs font-semibold ${
+                        session.id === activeSessionId ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
+                      }`}>
+                        {session.title.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm truncate ${session.id === activeSessionId ? 'text-primary font-medium' : 'text-foreground'}`}>
+                          {session.title}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          {formatRelativeTime(session.updatedAt)}
+                        </p>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          deleteSession(session.id)
+                        }}
+                        className="p-2 rounded-lg active:bg-red-500/10 text-muted-foreground active:text-red-400 touch-target"
+                        title="Delete"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -444,10 +246,8 @@ function SessionDrawer({
 
 // ─── Header Bar ──────────────────────────────────────────
 
-export function HeaderBar({ onMenuToggle }: HeaderBarProps) {
+export function HeaderBar() {
   const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const activeModule = searchParams.get('module')
   const [mounted, setMounted] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
 
@@ -458,22 +258,16 @@ export function HeaderBar({ onMenuToggle }: HeaderBarProps) {
   useEffect(() => setMounted(true), [])
 
   const getTitle = () => {
-    if (pathname === '/' && activeModule && MODULE_TITLES[activeModule]) {
-      return MODULE_TITLES[activeModule]
-    }
-    if (ROUTE_TITLES[pathname]) {
-      return ROUTE_TITLES[pathname]
-    }
+    if (ROUTE_TITLES[pathname]) return ROUTE_TITLES[pathname]
     if (pathname.startsWith('/cases/')) return 'Case Details'
     if (pathname.startsWith('/patients/')) return 'Patient Details'
     return 'AyurVritta'
   }
 
   const handleNewChat = () => {
-    const mod = activeModule || 'chat'
-    createSession(mod)
-    if (pathname !== '/') {
-      window.location.href = `/?module=${mod}`
+    createSession()
+    if (pathname !== '/chat') {
+      window.location.href = '/chat'
     }
   }
 

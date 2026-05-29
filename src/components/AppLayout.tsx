@@ -1,14 +1,12 @@
 'use client'
 
-import { usePathname, useSearchParams } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { MobileNav } from './MobileNav'
 import { DesktopSidebar } from './DesktopSidebar'
 import { HeaderBar } from './HeaderBar'
 import { ToastContainer } from './Toast'
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
-  const searchParams = useSearchParams()
-  const activeModule = searchParams.get('module') || ''
   const pathname = usePathname()
 
   // Login page renders without app shell
@@ -41,7 +39,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </main>
 
         {/* Mobile bottom nav */}
-        <MobileNav activeModule={activeModule} />
+        <MobileNav />
       </div>
 
       {/* Toast notifications */}

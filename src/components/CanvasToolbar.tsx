@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useChatStore } from '@/lib/store'
 import { exportProtocolToPDF } from '@/lib/pdf-export'
 
 const PROTOCOL_MARKERS = [
@@ -15,10 +14,12 @@ function checkIsProtocol(content: string): boolean {
   return content.length > 500 && PROTOCOL_MARKERS.some(m => content.includes(m))
 }
 
-export function CanvasToolbar() {
-  const canvasContent = useChatStore((state) => state.canvasContent)
-  const clearMessages = useChatStore((state) => state.clearMessages)
-  const setChatInputDraft = useChatStore((state) => state.setChatInputDraft)
+interface CanvasToolbarProps {
+  canvasContent: string
+  onClear?: () => void
+}
+
+export function CanvasToolbar({ canvasContent, onClear }: CanvasToolbarProps) {
   const [isExporting, setIsExporting] = useState(false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const clearTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -63,8 +64,7 @@ export function CanvasToolbar() {
   const handleClear = () => {
     if (showClearConfirm) {
       if (clearTimerRef.current) clearTimeout(clearTimerRef.current)
-      clearMessages()
-      setChatInputDraft('')
+      onClear?.()
       setShowClearConfirm(false)
     } else {
       setShowClearConfirm(true)
