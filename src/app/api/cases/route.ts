@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase/client'
-import { requireAuth } from '@/lib/supabase/auth'
+import { requireAuth } from '@/lib/supabase/auth-server'
 
 export async function GET(req: NextRequest) {
   // TODO: Re-enable auth once PKCE cookie flow is fixed

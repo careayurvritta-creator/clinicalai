@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServerClient } from '@/lib/supabase/client'
-import { requireAuth } from '@/lib/supabase/auth'
+import { requireAuth } from '@/lib/supabase/auth-server'
 
 const patientSchema = z.object({
   name: z.string().min(1).max(200),
