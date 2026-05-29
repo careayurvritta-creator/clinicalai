@@ -94,8 +94,7 @@ async function persistMessage(opts: {
 
     // Increment message count
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase.rpc as any)('increment_message_count', { conv_id: conversation.id })
+      await supabase.rpc('increment_message_count', { conv_id: conversation.id })
     } catch {
       // Fallback: manual update
       const { count } = await supabase
