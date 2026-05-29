@@ -8,7 +8,7 @@ import { useDocumentStore } from '@/lib/stores/document-store'
 import { useState } from 'react'
 
 export function DocumentLayout() {
-  const editingDocument = useDocumentStore((s) => s.editingDocument)
+  const editingFile = useDocumentStore((s) => s.editingFile)
   const selectedPatient = useDocumentStore((s) => s.selectedPatient)
   const [showAIChat, setShowAIChat] = useState(true)
 
@@ -18,7 +18,7 @@ export function DocumentLayout() {
 
       <div className="flex-1 flex min-w-0">
         <div className="flex-1 min-w-0 flex flex-col">
-          {editingDocument ? (
+          {editingFile ? (
             <EmbeddedEditor />
           ) : selectedPatient ? (
             <DocumentExplorer />

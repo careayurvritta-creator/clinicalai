@@ -49,7 +49,6 @@ export function DocumentExplorer() {
   if (!currentCategory) {
     return (
       <div className="flex flex-col min-h-0 h-full">
-        <BreadcrumbNav />
         <div className="flex-1 overflow-y-auto p-4">
           <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
             {CATEGORIES.map((cat) => (
