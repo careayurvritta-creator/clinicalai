@@ -23,6 +23,7 @@ interface ProtocolStoreState {
   canvasContent: string
   canvasTimestamp: number
   isStreaming: boolean
+  chatInputDraft: string
   activeSessionId: string | null
   sessions: Record<string, ProtocolSession>
   caseData: Record<string, unknown>
@@ -35,6 +36,7 @@ interface ProtocolStoreActions {
   setModel: (model: string) => void
   setCanvasContent: (content: string) => void
   clearMessages: () => void
+  setChatInputDraft: (draft: string) => void
   setCaseData: (data: Record<string, unknown>) => void
   createSession: (patientName: string) => string
   switchSession: (sessionId: string) => void
@@ -51,6 +53,7 @@ export const useProtocolStore = create<ProtocolStoreState & ProtocolStoreActions
       canvasContent: '',
       canvasTimestamp: 0,
       isStreaming: false,
+      chatInputDraft: '',
       activeSessionId: null,
       sessions: {},
       caseData: {},
@@ -93,6 +96,7 @@ export const useProtocolStore = create<ProtocolStoreState & ProtocolStoreActions
 
       clearMessages: () =>
         set({ messages: [], canvasContent: '', canvasTimestamp: 0, isStreaming: false }),
+      setChatInputDraft: (draft) => set({ chatInputDraft: draft }),
 
       createSession: (patientName: string) => {
         const id = crypto.randomUUID()
