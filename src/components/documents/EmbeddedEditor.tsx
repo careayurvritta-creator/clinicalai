@@ -42,6 +42,7 @@ export function EmbeddedEditor() {
           Open in Drive
         </a>
       </div>
+
       <iframe
         src={getEmbedUrl()}
         className="flex-1 w-full border-0"
