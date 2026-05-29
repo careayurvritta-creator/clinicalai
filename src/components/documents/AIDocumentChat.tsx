@@ -12,9 +12,9 @@ export function AIDocumentChat() {
   const updateLastChatMessage = useDocumentStore((s) => s.updateLastChatMessage)
   const clearChatMessages = useDocumentStore((s) => s.clearChatMessages)
   const isStreaming = useDocumentStore((s) => s.isStreaming)
-  const setStreaming = useDocumentStore((s) => s.setStreaming)
+  const setStreaming = useDocumentStore((s) => s.setChatStreaming)
   const selectedModel = useDocumentStore((s) => s.selectedModel)
-  const setModel = useDocumentStore((s) => s.setModel)
+  const setModel = useDocumentStore((s) => s.setChatModel)
   const selectedPatient = useDocumentStore((s) => s.selectedPatient)
 
   const [input, setInput] = useState('')
@@ -57,7 +57,7 @@ export function AIDocumentChat() {
       // Build context for AI
       const templateList = ALL_TEMPLATES.map(t => `- ${t.id}: ${t.name} (${t.format})`).join('\n')
       const patientContext = selectedPatient
-        ? `Current patient: ${selectedPatient.name} (Folder ID: ${selectedPatient.driveFolderId})`
+        ? `Current patient: ${selectedPatient.name} (Folder ID: ${selectedPatient.clinicalId})`
         : 'No patient selected'
 
       const systemPrompt = `You are a document generation assistant for an Ayurvedic clinical practice. You help create clinical documents from templates.
@@ -164,7 +164,7 @@ If the user asks a general question, answer it helpfully.`
         body: JSON.stringify({
           templateId,
           patientName: selectedPatient.name,
-          clinicalId: selectedPatient.driveFolderId,
+          clinicalId: selectedPatient.clinicalId,
         }),
       })
 

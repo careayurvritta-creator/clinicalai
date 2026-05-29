@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useDocumentStore } from '@/lib/stores/document-store'
+import { ModeSwitcher } from '@/components/shared/ModeSwitcher'
 
 interface DrivePatient {
   name: string
@@ -54,7 +55,8 @@ export function PatientSidebar() {
     selectPatient({
       id: patient.folderId,
       name: patient.name,
-      driveFolderId: patient.folderId,
+      clinicalId: patient.clinicalId,
+      folderUrl: `https://drive.google.com/drive/folders/${patient.folderId}`,
     })
   }
 
@@ -78,6 +80,11 @@ export function PatientSidebar() {
 
   return (
     <div className="flex flex-col w-[240px] border-r border-border bg-panel-sidebar flex-shrink-0">
+      {/* Mode Switcher */}
+      <div className="border-b border-border">
+        <ModeSwitcher />
+      </div>
+
       {/* Header */}
       <div className="px-3 py-3 border-b border-border">
         <div className="flex items-center justify-between mb-2">
@@ -143,13 +150,13 @@ export function PatientSidebar() {
                 key={patient.folderId}
                 onClick={() => handleSelect(patient)}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors ${
-                  selectedPatient?.driveFolderId === patient.folderId
+                  selectedPatient?.id === patient.folderId
                     ? 'bg-primary/10 text-primary'
                     : 'text-foreground hover:bg-muted/50'
                 }`}
               >
                 <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs font-semibold ${
-                  selectedPatient?.driveFolderId === patient.folderId
+                  selectedPatient?.id === patient.folderId
                     ? 'bg-primary/20 text-primary'
                     : 'bg-muted text-muted-foreground'
                 }`}>

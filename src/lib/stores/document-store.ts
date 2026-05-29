@@ -2,134 +2,195 @@
 
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import type { Message, DocumentCategory } from '../types'
+import type { Message } from '../types'
 import { DEFAULT_MODEL } from '../types'
 
-interface PatientInfo {
+export interface PatientFolder {
   id: string
   name: string
-  driveFolderId: string
-  driveFolderUrl?: string
+  clinicalId: string
+  folderUrl: string
 }
 
-interface DocumentInfo {
+export interface DriveFile {
   id: string
   name: string
-  category: DocumentCategory
-  driveFileId: string
-  driveFileUrl?: string
   mimeType: string
   size?: number
-  createdAt: string
-  updatedAt: string
+  modifiedTime: string
+  webViewLink?: string
 }
 
-interface DocumentStoreState {
-  // Patient selection
-  selectedPatient: PatientInfo | null
-  patients: PatientInfo[]
+export interface Breadcrumb {
+  id: string
+  label: string
+  type: 'root' | 'patient' | 'category' | 'file'
+}
 
-  // Folder navigation
-  currentCategory: DocumentCategory | null
-  documents: DocumentInfo[]
-
-  // Document editing
-  editingDocument: DocumentInfo | null
-
-  // AI Chat sidebar
+interface DocumentState {
+  patients: PatientFolder[]
+  selectedPatient: PatientFolder | null
+  patientsLoading: boolean
+  currentFolderId: string | null
+  currentCategory: string | null
+  files: DriveFile[]
+  breadcrumbs: Breadcrumb[]
+  filesLoading: boolean
+  editingFile: DriveFile | null
+  editorMode: 'explorer' | 'spreadsheet' | 'document'
   chatMessages: Message[]
   selectedModel: string
   isStreaming: boolean
-
-  // Google Drive
   driveConnected: boolean
   rootFolderId: string | null
 }
 
-interface DocumentStoreActions {
-  // Patient
-  selectPatient: (patient: PatientInfo) => void
+interface DocumentActions {
+  setPatients: (patients: PatientFolder[]) => void
+  selectPatient: (patient: PatientFolder) => void
   clearPatient: () => void
-  setPatients: (patients: PatientInfo[]) => void
-  addPatient: (patient: PatientInfo) => void
-
-  // Folder navigation
-  setCurrentCategory: (category: DocumentCategory | null) => void
-  setDocuments: (docs: DocumentInfo[]) => void
-  addDocument: (doc: DocumentInfo) => void
-  removeDocument: (docId: string) => void
-
-  // Document editing
-  openDocument: (doc: DocumentInfo) => void
-  closeDocument: () => void
-
-  // AI Chat
+  addPatient: (patient: PatientFolder) => void
+  setLoadingPatients: (loading: boolean) => void
+  navigateToCategory: (categoryId: string, categoryLabel: string) => void
+  navigateToFolder: (folderId: string, label: string) => void
+  navigateUp: () => void
+  navigateToRoot: () => void
+  setFiles: (files: DriveFile[]) => void
+  setLoadingFiles: (loading: boolean) => void
+  openFile: (file: DriveFile) => void
+  closeEditor: () => void
   addChatMessage: (message: Message) => void
   updateLastChatMessage: (content: string, status?: Message['status']) => void
   clearChatMessages: () => void
-  setStreaming: (streaming: boolean) => void
-  setModel: (model: string) => void
-
-  // Drive
+  setChatStreaming: (streaming: boolean) => void
+  setChatModel: (model: string) => void
   setDriveConnected: (connected: boolean) => void
   setRootFolderId: (id: string | null) => void
 }
 
-export const useDocumentStore = create<DocumentStoreState & DocumentStoreActions>()(
+export const useDocumentStore = create<DocumentState & DocumentActions>()(
   persist(
     (set) => ({
-      selectedPatient: null,
       patients: [],
+      selectedPatient: null,
+      patientsLoading: false,
+      currentFolderId: null,
       currentCategory: null,
-      documents: [],
-      editingDocument: null,
+      files: [],
+      breadcrumbs: [],
+      filesLoading: false,
+      editingFile: null,
+      editorMode: 'explorer',
       chatMessages: [],
       selectedModel: DEFAULT_MODEL,
       isStreaming: false,
       driveConnected: false,
       rootFolderId: null,
 
-      // Patient
-      selectPatient: (patient) => set({ selectedPatient: patient, currentCategory: null, documents: [], editingDocument: null }),
-      clearPatient: () => set({ selectedPatient: null, currentCategory: null, documents: [], editingDocument: null }),
       setPatients: (patients) => set({ patients }),
-      addPatient: (patient) => set((state) => ({ patients: [...state.patients, patient] })),
+      selectPatient: (patient) =>
+        set({
+          selectedPatient: patient,
+          currentFolderId: null,
+          currentCategory: null,
+          files: [],
+          editingFile: null,
+          editorMode: 'explorer',
+          breadcrumbs: [
+            { id: 'root', label: 'Patients', type: 'root' },
+            { id: patient.id, label: `${patient.name} (${patient.clinicalId})`, type: 'patient' },
+          ],
+        }),
+      clearPatient: () =>
+        set({
+          selectedPatient: null,
+          currentFolderId: null,
+          currentCategory: null,
+          files: [],
+          breadcrumbs: [],
+          editingFile: null,
+          editorMode: 'explorer',
+        }),
+      addPatient: (patient) => set((s) => ({ patients: [...s.patients, patient] })),
+      setLoadingPatients: (loading) => set({ patientsLoading: loading }),
 
-      // Folder navigation
-      setCurrentCategory: (category) => set({ currentCategory: category, editingDocument: null }),
-      setDocuments: (docs) => set({ documents: docs }),
-      addDocument: (doc) => set((state) => ({ documents: [...state.documents, doc] })),
-      removeDocument: (docId) => set((state) => ({ documents: state.documents.filter(d => d.id !== docId) })),
-
-      // Document editing
-      openDocument: (doc) => set({ editingDocument: doc }),
-      closeDocument: () => set({ editingDocument: null }),
-
-      // AI Chat
-      addChatMessage: (message) => set((state) => ({ chatMessages: [...state.chatMessages, message] })),
-      updateLastChatMessage: (content, status) =>
-        set((state) => {
-          const messages = [...state.chatMessages]
-          const last = messages[messages.length - 1]
-          if (last) {
-            messages[messages.length - 1] = { ...last, content, status: status ?? last.status }
+      navigateToCategory: (categoryId, categoryLabel) =>
+        set((s) => ({
+          currentFolderId: categoryId,
+          currentCategory: categoryLabel,
+          files: [],
+          editingFile: null,
+          editorMode: 'explorer',
+          breadcrumbs: [
+            ...s.breadcrumbs.filter((b) => b.type === 'root' || b.type === 'patient'),
+            { id: categoryId, label: categoryLabel, type: 'category' },
+          ],
+        })),
+      navigateToFolder: (folderId, label) =>
+        set((s) => ({
+          currentFolderId: folderId,
+          files: [],
+          editingFile: null,
+          editorMode: 'explorer',
+          breadcrumbs: [...s.breadcrumbs, { id: folderId, label, type: 'file' }],
+        })),
+      navigateUp: () =>
+        set((s) => {
+          const crumbs = s.breadcrumbs
+          if (crumbs.length <= 1) return s
+          const newCrumbs = crumbs.slice(0, -1)
+          const lastCrumb = newCrumbs[newCrumbs.length - 1]
+          return {
+            breadcrumbs: newCrumbs,
+            currentFolderId: lastCrumb?.id ?? null,
+            currentCategory: lastCrumb?.type === 'category' ? lastCrumb.label : null,
+            files: [],
+            editingFile: null,
+            editorMode: 'explorer',
           }
+        }),
+      navigateToRoot: () =>
+        set({
+          currentFolderId: null,
+          currentCategory: null,
+          files: [],
+          breadcrumbs: [],
+          editingFile: null,
+          editorMode: 'explorer',
+          selectedPatient: null,
+        }),
+      setFiles: (files) => set({ files }),
+      setLoadingFiles: (loading) => set({ filesLoading: loading }),
+
+      openFile: (file) => {
+        const isSheet = file.mimeType.includes('spreadsheet') || file.name.endsWith('.xlsx')
+        const isDoc = file.mimeType.includes('document') || file.name.endsWith('.docx')
+        set({ editingFile: file, editorMode: isSheet ? 'spreadsheet' : isDoc ? 'document' : 'explorer' })
+      },
+      closeEditor: () => set({ editingFile: null, editorMode: 'explorer' }),
+
+      addChatMessage: (message) => set((s) => ({ chatMessages: [...s.chatMessages, message] })),
+      updateLastChatMessage: (content, status) =>
+        set((s) => {
+          const messages = [...s.chatMessages]
+          const last = messages[messages.length - 1]
+          if (last) messages[messages.length - 1] = { ...last, content, status: status ?? last.status }
           return { chatMessages: messages }
         }),
       clearChatMessages: () => set({ chatMessages: [], isStreaming: false }),
-      setStreaming: (streaming) => set({ isStreaming: streaming }),
-      setModel: (model) => set({ selectedModel: model }),
+      setChatStreaming: (streaming) => set({ isStreaming: streaming }),
+      setChatModel: (model) => set({ selectedModel: model }),
 
-      // Drive
       setDriveConnected: (connected) => set({ driveConnected: connected }),
       setRootFolderId: (id) => set({ rootFolderId: id }),
     }),
     {
-      name: 'clinical-ai-documents',
-      storage: createJSONStorage(() => localStorage),
+      name: 'clinical-ai-documents-v2',
+      storage: createJSONStorage(() => {
+        if (typeof window === 'undefined') return { getItem: () => null, setItem: () => {}, removeItem: () => {} }
+        return localStorage
+      }),
       partialize: (state) => ({
-        selectedPatient: state.selectedPatient,
-        patients: state.patients,
         selectedModel: state.selectedModel,
         driveConnected: state.driveConnected,
         rootFolderId: state.rootFolderId,
