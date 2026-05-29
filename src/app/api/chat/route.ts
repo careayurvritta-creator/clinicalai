@@ -2,11 +2,15 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { createChatStream } from '@/lib/nvidia-client'
 import { SYSTEM_PROMPT } from '@/lib/types'
 import { vectorSearch, initializeVectorRAG, formatVectorResultsForContext, detectQueryIntent } from '@/lib/ayurrag/vector-rag'
 import { createServerClient } from '@/lib/supabase/client'
 import { analyzeQuery } from '@/lib/ayurrag/query-engine'
+import {
+  DEFAULT_MODEL, MAX_CHAT_CONTINUATIONS,
+  AYURVEDIC_TERMS, INTENT_FOCUS_INSTRUCTIONS,
+  streamWithAutoContinuation, type IntentType,
+} from '@/lib/llm-stream-utils'
 
 const chatRequestSchema = z.object({
   messages: z.array(
@@ -15,7 +19,7 @@ const chatRequestSchema = z.object({
       content: z.string().max(100000),
     })
   ),
-  model: z.string().default('mistralai/mistral-large-3-675b-instruct-2512'),
+  model: z.string().default(DEFAULT_MODEL),
   enableRAG: z.boolean().default(true),
   attachments: z.array(z.object({
     type: z.enum(['image', 'pdf']),
@@ -27,8 +31,6 @@ const chatRequestSchema = z.object({
   module: z.string().default('chat'),
 })
 
-// Max auto-continuations when LLM hits token limit
-const MAX_AUTO_CONTINUATIONS = 3
 let ragInitialized = false
 
 async function ensureRAGInitialized() {
@@ -44,32 +46,28 @@ async function ensureRAGInitialized() {
 
 // ─── Conversation Persistence ────────────────────────────────────────────────
 
-async function persistMessage(
-  sessionId: string | undefined,
-  role: 'user' | 'assistant',
-  content: string,
-  model: string,
-  module: string,
-  doctorId: string | undefined,
-  ragSources?: string[],
-  attachments?: Array<{ type: string; name: string }>
-) {
+async function persistMessage(opts: {
+  sessionId?: string
+  role: 'user' | 'assistant'
+  content: string
+  model: string
+  module: string
+  ragSources?: string[]
+}) {
+  const { sessionId, role, content, model, module: mod, ragSources } = opts
   if (!sessionId) return
 
   try {
     const supabase = createServerClient()
 
-    const upsertData: Record<string, unknown> = {
-      session_id: sessionId,
-      module: module,
-      ai_model: model,
-      updated_at: new Date().toISOString(),
-    }
-    if (doctorId) upsertData.doctor_id = doctorId
-
     const { data: conversation, error: convError } = await supabase
       .from('conversations')
-      .upsert(upsertData, { onConflict: 'session_id' })
+      .upsert({
+        session_id: sessionId,
+        module: mod,
+        ai_model: model,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'session_id' })
       .select('id')
       .single()
 
@@ -94,16 +92,18 @@ async function persistMessage(
       console.warn('[Chat API] Failed to insert message:', msgError.message)
     }
 
-    const { count } = await supabase
-      .from('messages')
-      .select('*', { count: 'exact', head: true })
-      .eq('conversation_id', conversation.id)
-
-    if (count !== null) {
-      await supabase
-        .from('conversations')
-        .update({ message_count: count })
-        .eq('id', conversation.id)
+    // Increment message count
+    try {
+      await (supabase.rpc as Function)('increment_message_count', { conv_id: conversation.id })
+    } catch {
+      // Fallback: manual update
+      const { count } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('conversation_id', conversation.id)
+      if (count !== null) {
+        await supabase.from('conversations').update({ message_count: count }).eq('id', conversation.id)
+      }
     }
   } catch (error) {
     console.warn('[Chat API] Persistence error:', error)
@@ -123,14 +123,7 @@ function extractConversationContext(messages: Array<{ role: string; content: str
   const allText = userMessages.join(' ').toLowerCase()
   const keyTerms: string[] = []
 
-  const ayurvedicTerms = [
-    'vata', 'pitta', 'kapha', 'dosha', 'prakriti', 'vikriti',
-    'agni', 'ama', 'panchakarma', 'basti', 'vamana', 'virechana',
-    'nasya', 'chikitsa', 'shodhana', 'shamana', 'rasayana',
-    'sandhivata', 'amavata', 'prameha', 'kushtha', 'swasa',
-  ]
-
-  for (const term of ayurvedicTerms) {
+  for (const term of AYURVEDIC_TERMS) {
     if (allText.includes(term)) keyTerms.push(term)
   }
 
@@ -139,148 +132,16 @@ function extractConversationContext(messages: Array<{ role: string; content: str
   return `\n\n[Conversation Context: The discussion has been about ${keyTerms.slice(0, 5).join(', ')}. Consider this context when interpreting the current query.]`
 }
 
-// ─── Dynamic System Prompt ───────────────────────────────────────────────────
+// ─── Build System Prompt ─────────────────────────────────────────────────────
 
 function buildDynamicSystemPrompt(
   basePrompt: string,
   ragContext: string,
-  intent: string,
+  intent: IntentType,
   conversationContext: string
 ): string {
-  let dynamicInstructions = ''
-
-  switch (intent) {
-    case 'diagnosis':
-      dynamicInstructions = `
-FOCUS: This is a diagnostic query. Provide:
-- Differential diagnosis with dosha involvement
-- Samprapti (pathogenesis) if available
-- Key clinical features to look for
-- Recommended investigations (both Ayurvedic and modern)
-- Prognosis based on classical texts
-`
-      break
-    case 'treatment':
-      dynamicInstructions = `
-FOCUS: This is a treatment query. Provide:
-- Treatment principles (Chikitsa Sutra)
-- Specific Panchakarma procedures if applicable
-- Internal medications with dosage and anupana
-- External therapies
-- Duration and frequency
-- Expected outcomes
-- Precautions and contraindications
-`
-      break
-    case 'herb':
-      dynamicInstructions = `
-FOCUS: This is a herb query. Provide:
-- Rasa, Guna, Virya, Vipaka properties
-- Dosha Karma (effect on each dosha)
-- Classical formulations containing this herb
-- Dosage and anupana (vehicle)
-- Contraindications and drug interactions
-- Modern research evidence if available
-`
-      break
-    case 'drug_interaction':
-      dynamicInstructions = `
-FOCUS: This involves drug interactions. CRITICAL:
-- Check all herb-drug interactions
-- Specify severity (high/medium/low)
-- Provide mechanism of interaction
-- Suggest safe alternatives if contraindicated
-- Recommend monitoring parameters
-- ALWAYS include safety warnings
-`
-      break
-    case 'prakriti':
-      dynamicInstructions = `
-FOCUS: This is a constitution/prakriti query. Provide:
-- Detailed prakriti characteristics
-- Physical, mental, and behavioral traits
-- Dietary recommendations (pathya/apathya)
-- Lifestyle guidelines (dinacharya/ritucharya)
-- Exercise and yoga recommendations
-- Seasonal adjustments
-`
-      break
-    case 'diet':
-      dynamicInstructions = `
-FOCUS: This is a dietary query. Provide:
-- Pathya (recommended foods) with rationale
-- Apathya (foods to avoid) with reasoning
-- Seasonal dietary adjustments (Ritucharya)
-- Meal timing and preparation methods
-- Specific recipes if helpful
-- Foods that balance the relevant dosha
-`
-      break
-    case 'procedure':
-      dynamicInstructions = `
-FOCUS: This is a procedure/therapy query. Provide:
-- Detailed step-by-step procedure
-- Pre-procedure preparation (Poorvakarma)
-- Main procedure (Pradhana Karma)
-- Post-procedure care (Paschat Karma)
-- Duration and frequency
-- Indications and contraindications
-- Expected outcomes
-`
-      break
-    case 'research':
-      dynamicInstructions = `
-FOCUS: This is a research/evidence query. Provide:
-- Summary of relevant studies
-- Evidence quality assessment
-- Clinical trial results if available
-- Limitations of current evidence
-- Areas needing more research
-- Practical clinical implications
-`
-      break
-    default:
-      dynamicInstructions = ''
-  }
-
+  const dynamicInstructions = INTENT_FOCUS_INSTRUCTIONS[intent] || ''
   return `${basePrompt}${conversationContext}${dynamicInstructions}\n\n${ragContext}\n\nIMPORTANT: Use the knowledge base information provided above to give accurate, evidence-based responses. Cite specific sources when available. If the knowledge base contains relevant clinical cases, reference them to support your recommendations.`
-}
-
-// ─── Stream a Single LLM Call ────────────────────────────────────────────────
-
-interface StreamResult {
-  content: string
-  finishReason: string | null
-}
-
-async function streamLLMResponse(
-  messages: Array<{ role: string; content: string }>,
-  model: string,
-  controller: ReadableStreamDefaultController<Uint8Array>,
-  encoder: TextEncoder,
-  existingContent: string = ''
-): Promise<StreamResult> {
-  const stream = await createChatStream(messages as any, model)
-  let content = existingContent
-  let finishReason: string | null = null
-
-  for await (const chunk of stream) {
-    const data = JSON.stringify(chunk)
-    try {
-      const delta = chunk.choices?.[0]?.delta as Record<string, string> | undefined
-      const chunkContent = delta?.content || delta?.reasoning_content || ''
-      if (chunkContent) content += chunkContent
-
-      // Capture finish reason
-      const choice = chunk.choices?.[0] as unknown as Record<string, unknown> | undefined
-      if (choice?.finish_reason) {
-        finishReason = choice.finish_reason as string
-      }
-    } catch {}
-    controller.enqueue(encoder.encode(`data: ${data}\n\n`))
-  }
-
-  return { content, finishReason }
 }
 
 // ─── POST Handler ────────────────────────────────────────────────────────────
@@ -323,7 +184,7 @@ export async function POST(req: NextRequest) {
     // Persist user message (fire-and-forget)
     const lastUserMessage = messages[messages.length - 1]
     if (lastUserMessage?.role === 'user') {
-      persistMessage(sessionId, 'user', lastUserMessage.content, model, module, undefined)
+      persistMessage({ sessionId, role: 'user', content: lastUserMessage.content, model, module })
     }
 
     // ─── RAG Enhancement ───────────────────────────────────────────────────
@@ -331,7 +192,7 @@ export async function POST(req: NextRequest) {
     let ragContext = ''
     let ragSources: string[] = []
     let ragResultCount = 0
-    let queryIntent = 'general'
+    let queryIntent: IntentType = 'general'
 
     if (enableRAG) {
       await ensureRAGInitialized()
@@ -339,12 +200,13 @@ export async function POST(req: NextRequest) {
       const searchMessage = [...messages].reverse().find(m => m.role === 'user')
       if (searchMessage) {
         try {
-          const queryAnalysis = analyzeQuery(searchMessage.content)
+          // Single intent detection call (used for both RAG filtering and prompt building)
           const intent = detectQueryIntent(searchMessage.content)
-          queryIntent = intent.primaryIntent
+          queryIntent = intent.primaryIntent as IntentType
+          const queryAnalysis = analyzeQuery(searchMessage.content)
 
           console.log('[Chat API] Query analysis:', {
-            intent: intent.primaryIntent,
+            intent: queryIntent,
             complexity: intent.complexity,
             entities: queryAnalysis.entities.length,
             safety: queryAnalysis.requiresSafetyWarning,
@@ -399,7 +261,6 @@ export async function POST(req: NextRequest) {
 
     console.log('[Chat API] Stream starting in', Date.now() - startTime, 'ms')
 
-    let assistantContent = ''
     const encoder = new TextEncoder()
     const readable = new ReadableStream({
       async start(controller) {
@@ -415,45 +276,22 @@ export async function POST(req: NextRequest) {
             controller.enqueue(encoder.encode(`data: ${metaEvent}\n\n`))
           }
 
-          // Initial LLM call
-          let result = await streamLLMResponse(systemMessages as any, model, controller, encoder, '')
-
-          assistantContent = result.content
-          let continuationCount = 0
-
-          // Auto-continue if LLM hit token limit
-          while (
-            result.finishReason === 'length' &&
-            continuationCount < MAX_AUTO_CONTINUATIONS
-          ) {
-            continuationCount++
-            console.log(`[Chat API] Auto-continuing (${continuationCount}/${MAX_AUTO_CONTINUATIONS}), current length: ${assistantContent.length}`)
-
-            // Send a marker event so the client knows continuation is happening
-            const continueEvent = JSON.stringify({
-              type: 'continuation',
-              attempt: continuationCount,
-              totalLength: assistantContent.length,
-            })
-            controller.enqueue(encoder.encode(`data: ${continueEvent}\n\n`))
-
-            // Build continuation messages: original system + conversation + "continue from where you left off"
-            const continueMessages = [
-              ...systemMessages,
-              { role: 'assistant' as const, content: assistantContent },
-              { role: 'user' as const, content: 'Continue from where you left off. Do not repeat what you already wrote. Continue seamlessly.' },
-            ]
-
-            result = await streamLLMResponse(continueMessages as any, model, controller, encoder, assistantContent)
-            assistantContent = result.content
-          }
+          // Stream with auto-continuation
+          const { content: assistantContent, continuationCount } = await streamWithAutoContinuation(
+            systemMessages as any,
+            model,
+            controller,
+            encoder,
+            MAX_CHAT_CONTINUATIONS,
+            'Continue from where you left off. Do not repeat what you already wrote. Continue seamlessly.',
+          )
 
           controller.enqueue(encoder.encode('data: [DONE]\n\n'))
           controller.close()
 
           // Persist complete assistant response
           if (assistantContent) {
-            persistMessage(sessionId, 'assistant', assistantContent, model, module, undefined, ragSources)
+            persistMessage({ sessionId, role: 'assistant', content: assistantContent, model, module, ragSources })
           }
 
           console.log('[Chat API] Stream complete in', Date.now() - startTime, 'ms, length:', assistantContent.length, 'continuations:', continuationCount)

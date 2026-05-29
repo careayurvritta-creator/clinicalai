@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { supabase } from '@/lib/supabase/client'
+import { signInWithEmail, signUpWithEmail, signInWithGoogle } from '@/lib/supabase/auth'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -25,11 +25,7 @@ export default function LoginPage() {
     setLoading(true)
     setError(null)
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-      if (signInError) throw signInError
+      await signInWithEmail(email, password)
       const next = searchParams.get('next') || '/'
       router.replace(next)
     } catch (err) {
@@ -44,14 +40,7 @@ export default function LoginPage() {
     setError(null)
     setSuccess(null)
     try {
-      const { error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { full_name: fullName },
-        },
-      })
-      if (signUpError) throw signUpError
+      await signUpWithEmail(email, password, fullName)
       setSuccess('Account created! You can now sign in.')
       setMode('signin')
     } catch (err) {
@@ -65,13 +54,7 @@ export default function LoginPage() {
     setLoading(true)
     setError(null)
     try {
-      const { error: signInError } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      })
-      if (signInError) throw signInError
+      await signInWithGoogle()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign in failed')
       setLoading(false)

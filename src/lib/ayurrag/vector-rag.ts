@@ -3,19 +3,11 @@
  *
  * Uses NVIDIA NIM embeddings + Supabase pgvector for semantic search.
  * Falls back to full-text search (tsvector) if embedding fails.
- *
- * ENHANCEMENTS:
- * - Multi-query expansion for broader recall
- * - Clinical case search from knowledge base
- * - Conversation-aware context building
- * - Increased context budget (8000 tokens)
- * - Structured citation formatting
- * - Query intent-based source filtering
- * - Deduplication with semantic similarity
  */
 
 import { generateSearchEmbedding } from '@/lib/embedding-client'
 import { semanticSearch, searchKnowledgeBase } from '@/lib/supabase/services'
+import { DISEASE_CONCEPT_MAP, AYURVEDIC_TERMS } from '@/lib/llm-stream-utils'
 
 // ─── Interfaces ──────────────────────────────────────────────────────────────
 
@@ -271,62 +263,27 @@ function expandQuery(query: string, intent: QueryIntent): string[] {
   const queries = [query]
   const lower = query.toLowerCase()
 
-  // Add Sanskrit/Hindi term variations
-  const sanskritMap: Record<string, string[]> = {
-    'arthritis': ['sandhivata', 'amavata', 'joint pain'],
-    'diabetes': ['prameha', 'madhumeha', 'blood sugar'],
-    'hypertension': ['raktachapa', 'uchcha raktachapa', 'high blood pressure'],
-    'asthma': ['swasa', 'tamaka swasa', 'breathing difficulty'],
-    'skin disease': ['kushtha', 'twak roga', 'dermatitis'],
-    'digestive': ['grahani', 'agnimandya', 'ajirna', 'digestion'],
-    'anxiety': ['chittodvega', 'vata vyadhi', 'mental health'],
-    'insomnia': ['anidra', 'nidranasha', 'sleep disorder'],
-    'obesity': ['sthaulya', 'medoroga', 'weight gain'],
-    'headache': ['shirahshoola', 'ardhavabhedaka', 'migraine'],
-    'constipation': ['vibandha', 'malabaddhata', 'bowel'],
-    'fever': ['jwara', 'sannipata jwara'],
-    'cough': ['kasa', 'vataja kasa'],
-    'cold': ['pratishyaya', 'shirahkapha'],
-    'acidity': ['amlapitta', 'parinama shoola'],
-    'gastric': ['ajirna', 'agnimandya'],
-    'joint pain': ['sandhishoola', 'sandhigata vata'],
-    'back pain': ['katishoola', 'pristha shoola', 'gridhrasi'],
-    'eye disease': ['netra roga', 'drishti dosha'],
-    'heart': ['hridroga', 'hrudaya'],
-    'kidney': ['mutravaha srotas', 'mutra roga'],
-    'liver': ['yakrit', 'pleeha'],
-    'thyroid': ['galaganda', 'meda dhatu'],
-    'pcos': ['artava kshaya', 'raja dosha'],
-    'menstrual': ['rajodushti', 'artava vyadhi'],
-  }
-
-  for (const [english, sanskritTerms] of Object.entries(sanskritMap)) {
+  // Use shared disease concept map — short-circuit after 5 queries
+  for (const [english, sanskritTerms] of Object.entries(DISEASE_CONCEPT_MAP)) {
     if (lower.includes(english)) {
-      queries.push(...sanskritTerms)
+      queries.push(...sanskritTerms.slice(0, 2))
+      if (queries.length >= 5) break
     }
   }
 
-  // Add clinical term variations based on intent
-  if (intent.primaryIntent === 'treatment') {
+  // Add clinical term variations based on intent (limited)
+  if (intent.primaryIntent === 'treatment' && queries.length < 5) {
     queries.push(`${query} ayurvedic treatment protocol`)
-    queries.push(`${query} panchakarma`)
-    queries.push(`${query} chikitsa`)
   }
-
-  if (intent.primaryIntent === 'diagnosis') {
-    queries.push(`${query} samprapti`)
-    queries.push(`${query} ayurvedic diagnosis`)
-    queries.push(`${query} dosha involvement`)
+  if (intent.primaryIntent === 'diagnosis' && queries.length < 5) {
+    queries.push(`${query} samprapti ayurvedic diagnosis`)
   }
-
-  if (intent.primaryIntent === 'herb') {
+  if (intent.primaryIntent === 'herb' && queries.length < 5) {
     queries.push(`${query} rasa guna virya vipaka`)
-    queries.push(`${query} classical formulation`)
-    queries.push(`${query} dosage anupana`)
   }
 
-  // Deduplicate
-  return [...new Set(queries)]
+  // Deduplicate and limit to 5
+  return [...new Set(queries)].slice(0, 5)
 }
 
 // ─── Hybrid Re-ranking ───────────────────────────────────────────────────────
@@ -395,22 +352,8 @@ function hybridRerank(
 }
 
 function extractSanskritTerms(query: string): string[] {
-  const terms: string[] = []
-  const sanskritPatterns = [
-    'vata', 'pitta', 'kapha', 'dosha', 'dhatu', 'mala', 'srotas',
-    'agni', 'ama', 'ojas', 'prakriti', 'vikriti', 'samprapti',
-    'chikitsa', 'shodhana', 'shamana', 'basti', 'vamana', 'virechana',
-    'nasya', 'raktamokshana', 'purvakarma', 'paschatkarma',
-    'rasa', 'guna', 'virya', 'vipaka', 'prabhava',
-    'pathya', 'apathya', 'dinacharya', 'ritucharya',
-    'sandhivata', 'amavata', 'prameha', 'kushtha', 'swasa',
-    'grahani', 'rajodushti', 'shirahshoola', 'katishoola',
-  ]
   const lower = query.toLowerCase()
-  for (const pattern of sanskritPatterns) {
-    if (lower.includes(pattern)) terms.push(pattern)
-  }
-  return terms
+  return AYURVEDIC_TERMS.filter(term => lower.includes(term))
 }
 
 // ─── Main Vector Search ──────────────────────────────────────────────────────
@@ -437,6 +380,7 @@ export async function vectorSearch(
 
   const intent = detectQueryIntent(query)
   const results: VectorSearchResult[] = []
+  const dedupMap = new Map<string, number>()
   let embeddingUsed = false
 
   // Phase 1: Multi-query semantic search
@@ -453,21 +397,24 @@ export async function vectorSearch(
     const validEmbeddings = embeddings.filter(Boolean) as number[][]
     embeddingUsed = validEmbeddings.length > 0
 
-    // Search with each embedding
-    for (const embedding of validEmbeddings) {
-      const { data: semanticResults, error } = await semanticSearch(
-        embedding,
-        config.minRelevance * 0.8, // Lower threshold for expanded queries
-        config.maxResults,
-        undefined
-      )
+    // Run semantic searches in parallel for all embeddings
+    const searchPromises = validEmbeddings.map(embedding =>
+      semanticSearch(embedding, config.minRelevance * 0.8, config.maxResults, undefined)
+        .catch(err => {
+          console.error('[VectorRAG] Semantic search failed:', err)
+          return { data: null, error: err }
+        })
+    )
 
+    const searchResults = await Promise.all(searchPromises)
+
+    for (const { data: semanticResults, error } of searchResults) {
       if (!error && semanticResults) {
         for (const r of semanticResults) {
-          const existingIndex = results.findIndex(
-            existing => existing.metadata?.source_id === r.source_id && existing.metadata?.source_table === r.source_table
-          )
-          if (existingIndex === -1) {
+          const key = `${r.source_table}:${r.source_id}`
+          const existingIndex = dedupMap.get(key)
+          if (existingIndex === undefined) {
+            dedupMap.set(key, results.length)
             results.push({
               id: r.id,
               type: (r.source_table === 'clinical_cases' || r.source_table === 'case_studies') ? 'clinical_case' : 'ayur_knowledge',
@@ -494,7 +441,7 @@ export async function vectorSearch(
     console.error('[VectorRAG] Embedding search failed:', embeddingError)
   }
 
-  // Phase 2: Full-text search complement
+  // Phase 2: Full-text search complement (reuse dedupMap from Phase 1)
   if (results.length < config.maxResults) {
     try {
       const remaining = config.maxResults - results.length
@@ -516,14 +463,10 @@ export async function vectorSearch(
       )
 
       if (!textError && textResults) {
-        const existingKeys = new Set(
-          results.map(r => `${r.metadata?.source_table}:${r.metadata?.source_id}`)
-        )
-
         for (const tr of textResults) {
           const key = `${tr.source_table}:${tr.source_id}`
-          if (!existingKeys.has(key)) {
-            existingKeys.add(key)
+          if (!dedupMap.has(key)) {
+            dedupMap.set(key, results.length)
             results.push({
               id: tr.source_id,
               type: tr.source_table === 'clinical_cases' ? 'clinical_case' : 'ayur_knowledge',
@@ -614,16 +557,17 @@ export function formatVectorResultsForContext(results: VectorSearchResult[]): RA
   let context = '\n## Relevant Knowledge Base Information:\n\n'
   const sources: string[] = []
   let totalTokens = 0
-  const maxTokens = 8000 // Increased from 3000
+  const maxTokens = 8000
+  const sourcesSet = new Set<string>()
 
   for (const [category, items] of sortedCategories) {
     const categoryHeader = `### ${category}\n`
     const categoryContent = items
-      .slice(0, 5) // Max 5 items per category
+      .slice(0, 5)
       .map(r => {
         const source = r.source ? ` [Source: ${r.source}]` : ''
         const table = r.metadata?.source_table ? ` (${r.metadata.source_table})` : ''
-        if (r.source && !sources.includes(r.source)) sources.push(r.source)
+        if (r.source) sourcesSet.add(r.source)
         return `- ${r.content}${source}${table}`
       })
       .join('\n')
@@ -662,7 +606,7 @@ export function formatVectorResultsForContext(results: VectorSearchResult[]): RA
 
   return {
     context,
-    sources,
+    sources: [...sourcesSet],
     resultCount: deduped.length,
     categories: [...new Set(deduped.map(r => r.category))],
   }

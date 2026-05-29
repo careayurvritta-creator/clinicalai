@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { getComprehensiveResearchContext, type ResearchPaper } from '@/lib/research-analyzer'
 import { vectorSearch, initializeVectorRAG, formatVectorResultsForContext } from '@/lib/ayurrag/vector-rag'
 import { getCharakTreatmentProtocols, getCharakDiseaseDescriptions } from '@/lib/ayurknowledge/charak'
-import { createChatStream } from '@/lib/nvidia-client'
+import { DEFAULT_MODEL, MAX_PROTOCOL_CONTINUATIONS, streamWithAutoContinuation } from '@/lib/llm-stream-utils'
 import { createServerClient } from '@/lib/supabase/client'
 import { embedTreatmentProtocol } from '@/lib/input-learning'
 import { buildProtocolPrompt } from '@/lib/treatment-prompts'
@@ -267,61 +267,17 @@ export async function POST(req: NextRequest) {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(metadata)}\n\n`))
 
         try {
-          let finishReason: string | null = null
-          let continuationCount = 0
-
-          // Initial stream
-          const stream = await createChatStream(
+          // Use shared auto-continuation utility
+          const { content: fullProtocolResult, continuationCount } = await streamWithAutoContinuation(
             protocolMessages as any,
-            'mistralai/mistral-large-3-675b-instruct-2512',
+            DEFAULT_MODEL,
+            controller,
+            encoder,
+            MAX_PROTOCOL_CONTINUATIONS,
+            'Continue the treatment protocol from where you left off. Do not repeat. Continue seamlessly with the next section. Include ALL remaining sections.',
             { max_tokens: 8192, temperature: 0.4, top_p: 0.9 }
           )
-
-          for await (const chunk of stream) {
-            const content = chunk.choices?.[0]?.delta?.content || ''
-            if (content) {
-              fullProtocol += content
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`))
-            }
-            const choice = chunk.choices?.[0] as unknown as Record<string, unknown> | undefined
-            if (choice?.finish_reason) {
-              finishReason = choice.finish_reason as string
-            }
-          }
-
-          // Auto-continue if hit token limit
-          while (finishReason === 'length' && continuationCount < MAX_PROTOCOL_CONTINUATIONS) {
-            continuationCount++
-            console.log(`[Treatment Protocol] Auto-continuing (${continuationCount}/${MAX_PROTOCOL_CONTINUATIONS}), current length: ${fullProtocol.length}`)
-
-            // Send continuation marker
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'continuation', attempt: continuationCount })}\n\n`))
-
-            const continueMessages = [
-              ...protocolMessages,
-              { role: 'assistant' as const, content: fullProtocol },
-              { role: 'user' as const, content: 'Continue the treatment protocol from where you left off. Do not repeat. Continue seamlessly with the next section. Include ALL remaining sections.' },
-            ]
-
-            const continueStream = await createChatStream(
-              continueMessages as any,
-              'mistralai/mistral-large-3-675b-instruct-2512',
-              { max_tokens: 8192, temperature: 0.4, top_p: 0.9 }
-            )
-
-            finishReason = null
-            for await (const chunk of continueStream) {
-              const content = chunk.choices?.[0]?.delta?.content || ''
-              if (content) {
-                fullProtocol += content
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`))
-              }
-              const choice = chunk.choices?.[0] as unknown as Record<string, unknown> | undefined
-              if (choice?.finish_reason) {
-                finishReason = choice.finish_reason as string
-              }
-            }
-          }
+          fullProtocol = fullProtocolResult
 
           // Persist after streaming completes
           if (fullProtocol.length > 100) {
