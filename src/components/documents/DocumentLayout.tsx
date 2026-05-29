@@ -18,7 +18,7 @@ export function DocumentLayout() {
 
       <div className="flex-1 flex min-w-0">
         <div className="flex-1 min-w-0 flex flex-col">
-          {editingFile ? (
+          {editingDocument ? (
             <EmbeddedEditor />
           ) : selectedPatient ? (
             <DocumentExplorer />

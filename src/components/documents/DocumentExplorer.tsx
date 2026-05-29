@@ -47,23 +47,23 @@ export function DocumentExplorer() {
       setLoading(true)
       try {
         const params = new URLSearchParams({
-          patientFolderId: selectedPatient.driveFolderId,
+          patientFolderId: selectedPatient.id,
           category: currentCategory,
         })
         const res = await fetch(`/api/drive/files?${params}`)
         if (!res.ok) throw new Error('Failed to fetch files')
         const data = await res.json()
-        setDocuments(data.files ?? [])
+        setFiles(data.files ?? [])
       } catch (err) {
         console.error('Failed to fetch files:', err)
-        setDocuments([])
+        setFiles([])
       } finally {
         setLoading(false)
       }
     }
 
     fetchFiles()
-  }, [currentCategory, selectedPatient, setDocuments])
+  }, [currentCategory, selectedPatient, setFiles])
 
   if (!selectedPatient) return null
 
@@ -83,7 +83,7 @@ export function DocumentExplorer() {
             {CATEGORIES.map((cat) => (
               <button
                 key={cat.id}
-                onClick={() => setCurrentCategory(cat.id)}
+                onClick={() => navigateToCategory(cat.id, cat.label)}
                 className="flex flex-col items-center gap-2 p-3 rounded-xl bg-muted/30 hover:bg-muted border border-border hover:border-primary/30 transition-all"
               >
                 <svg className="w-6 h-6 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -106,7 +106,7 @@ export function DocumentExplorer() {
       {/* Breadcrumb */}
       <div className="px-4 py-2 border-b border-border text-sm flex items-center gap-1">
         <button
-          onClick={() => setCurrentCategory(null)}
+          onClick={() => navigateToCategory(null)}
           className="text-muted-foreground hover:text-primary transition-colors"
         >
           {selectedPatient.name}
