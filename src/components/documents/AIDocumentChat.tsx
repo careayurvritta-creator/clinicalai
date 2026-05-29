@@ -57,7 +57,7 @@ export function AIDocumentChat() {
       // Build context for AI
       const templateList = ALL_TEMPLATES.map(t => `- ${t.id}: ${t.name} (${t.format})`).join('\n')
       const patientContext = selectedPatient
-        ? `Current patient: ${selectedPatient.name} (Folder ID: ${selectedPatient.clinicalId})`
+        ? `Current patient: ${selectedPatient.name} (${selectedPatient.clinicalId})`
         : 'No patient selected'
 
       const systemPrompt = `You are a document generation assistant for an Ayurvedic clinical practice. You help create clinical documents from templates.

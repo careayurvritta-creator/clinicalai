@@ -8,15 +8,16 @@ export function EmbeddedEditor() {
 
   if (!editingFile) return null
 
-  // Build Google embed URL based on mimeType
+  const fileId = editingFile.id
+
   const getEmbedUrl = () => {
-    if (editingFile.mimeType.includes('spreadsheet') || editingFile.name.endsWith('.xlsx')) {
-      return `https://docs.google.com/spreadsheets/d/${editingFile.id}/edit?usp=sharing`
+    if (editingFile.mimeType.includes('spreadsheet')) {
+      return `https://docs.google.com/spreadsheets/d/${fileId}/edit?usp=sharing`
     }
-    if (editingFile.mimeType.includes('document') || editingFile.name.endsWith('.docx')) {
-      return `https://docs.google.com/document/d/${editingFile.id}/edit?usp=sharing`
+    if (editingFile.mimeType.includes('document')) {
+      return `https://docs.google.com/document/d/${fileId}/edit?usp=sharing`
     }
-    return `https://drive.google.com/file/d/${editingFile.id}/preview`
+    return `https://drive.google.com/file/d/${fileId}/preview`
   }
 
   return (
@@ -32,10 +33,12 @@ export function EmbeddedEditor() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <span className="text-sm font-medium text-foreground truncate">{editingFile.name}</span>
+          <span className="text-sm font-medium text-foreground truncate">
+            {editingFile.name}
+          </span>
         </div>
         <a
-          href={editingFile.webViewLink || `https://drive.google.com/file/d/${editingFile.id}/view`}
+          href={editingFile.webViewLink || `https://drive.google.com/file/d/${fileId}/view`}
           target="_blank"
           rel="noopener noreferrer"
           className="text-xs text-primary hover:underline"

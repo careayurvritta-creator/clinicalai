@@ -1,7 +1,6 @@
 'use client'
 
 import { useDocumentStore } from '@/lib/stores/document-store'
-import { BreadcrumbNav } from './BreadcrumbNav'
 
 const CATEGORIES = [
   { id: '01-OPD-Registers', label: 'OPD Registers' },
@@ -34,8 +33,8 @@ export function DocumentExplorer() {
   const files = useDocumentStore((s) => s.files)
   const filesLoading = useDocumentStore((s) => s.filesLoading)
   const navigateToCategory = useDocumentStore((s) => s.navigateToCategory)
-  const navigateToCategory = useDocumentStore((s) => s.navigateToCategory as (cat: string | null) => void)
   const openFile = useDocumentStore((s) => s.openFile)
+  const navigateUp = useDocumentStore((s) => s.navigateUp)
 
   if (!selectedPatient) return null
 
@@ -43,7 +42,10 @@ export function DocumentExplorer() {
   if (!currentCategory) {
     return (
       <div className="flex flex-col min-h-0 h-full">
-        <BreadcrumbNav />
+        <div className="px-4 py-3 border-b border-border">
+          <h3 className="text-sm font-semibold text-foreground">{selectedPatient.name}</h3>
+          <p className="text-xs text-muted-foreground">Select a document category</p>
+        </div>
         <div className="flex-1 overflow-y-auto p-4">
           <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
             {CATEGORIES.map((cat) => (
@@ -67,7 +69,17 @@ export function DocumentExplorer() {
   // File list view
   return (
     <div className="flex flex-col min-h-0 h-full">
-      <BreadcrumbNav />
+      <div className="px-4 py-2 border-b border-border flex items-center gap-2">
+        <button
+          onClick={navigateUp}
+          className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <span className="text-sm font-medium text-foreground">{currentCategory}</span>
+      </div>
       <div className="flex-1 overflow-y-auto">
         {filesLoading ? (
           <div className="flex items-center justify-center py-12">
