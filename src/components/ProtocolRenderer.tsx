@@ -232,16 +232,20 @@ export function ProtocolRenderer({ content }: { content: string }) {
           <h4 className="text-sm font-semibold text-muted-foreground mb-3 tracking-wide uppercase">Contents</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
             {sections.map((s) => (
-              <a
+              <button
                 key={s.id}
-                href={`#${s.id}`}
-                className="text-xs text-muted-foreground hover:text-primary transition-colors truncate py-0.5 flex items-center gap-1.5"
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById(s.id)
+                  el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                }}
+                className="text-xs text-muted-foreground hover:text-primary transition-colors truncate py-0.5 flex items-center gap-1.5 text-left"
               >
                 {s.sectionNumber && (
                   <span className="text-primary/70 font-mono">{s.sectionNumber}.</span>
                 )}
                 {s.title}
-              </a>
+              </button>
             ))}
           </div>
         </nav>
