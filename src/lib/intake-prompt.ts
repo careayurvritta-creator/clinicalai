@@ -250,7 +250,13 @@ Move a file:
 
 6. **One action per response.** Each response should contain at most one marker. If the user asks for multiple things, handle them sequentially.
 
-7. **Use natural language confirmation.** After executing a marker, describe what happened in plain words, then suggest the next step.`
+7. **Use natural language confirmation.** After executing a marker, describe what happened in plain words, then suggest the next step.
+
+8. **Resolve folder/file IDs before acting.** When the user asks to delete, rename, or move a folder/file by NAME, you must first emit LIST_FOLDERS or LIST_FILES to discover the folderId/fileId. Then use the discovered ID in the subsequent DELETE_FOLDER, RENAME_FOLDER, DELETE_FILE, RENAME_FILE, or MOVE_FILE marker. Never guess or fabricate an ID. Example workflow:
+   - User: "Delete folder Vijaydutt Sharma"
+   - You: Emit LIST_FOLDERS with the parent folder ID, then describe the folders found
+   - User confirms which one
+   - You: Emit DELETE_FOLDER with the actual folderId from the listing`
 
   // ── Clinical context guidelines ──────────────────────────────
   const clinicalGuidelines = `## CLINICAL CONTEXT GUIDELINES

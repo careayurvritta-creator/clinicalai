@@ -324,6 +324,10 @@ export function AIDocumentChat() {
           if (marker.folderId || marker.navType === 'root') await handleNavigateTo(marker.folderId ?? '', marker.label, marker.navType)
           break
         case 'delete_file':
+          if (!marker.fileId) {
+            addSystemMessage(`Cannot delete file: no file ID provided. I need to list files first to find the ID.`)
+            break
+          }
           if (!pendingConfirmation) {
             setPendingConfirmation(marker)
             addSystemMessage(`Are you sure you want to delete "${marker.fileName}"? Type "yes" to confirm.`)
@@ -333,9 +337,17 @@ export function AIDocumentChat() {
           }
           break
         case 'rename_file':
+          if (!marker.fileId) {
+            addSystemMessage(`Cannot rename: no file ID provided. I need to list files first to find the ID.`)
+            break
+          }
           await handleRenameFile(marker.fileId, marker.newName)
           break
         case 'move_file':
+          if (!marker.fileId) {
+            addSystemMessage(`Cannot move: no file ID provided. I need to list files first to find the ID.`)
+            break
+          }
           await handleMoveFile(marker.fileId, marker.newParentFolderId)
           break
         case 'create_folder':
@@ -343,7 +355,10 @@ export function AIDocumentChat() {
           else addSystemMessage('Cannot create folder: no parent folder specified.')
           break
         case 'delete_folder':
-          if (!marker.folderId) break
+          if (!marker.folderId) {
+            addSystemMessage(`Cannot delete folder: no folder ID provided. I need to list folders first to find the ID. Please try again.`)
+            break
+          }
           if (!pendingConfirmation) {
             setPendingConfirmation(marker)
             addSystemMessage(`Are you sure you want to delete folder "${marker.name}"? Type "yes" to confirm.`)
