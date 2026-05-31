@@ -1,10 +1,25 @@
-import type { PatientRecord } from './types'
+interface PatientDemographicsPartial {
+  name?: string
+  age?: number | null
+  gender?: string | null
+  phone?: string | null
+  email?: string | null
+  address?: string | null
+  occupation?: string | null
+  date_of_birth?: string | null
+  blood_group?: string | null
+  height_cm?: number | null
+  weight_kg?: number | null
+  emergency_contact?: string | null
+  emergency_phone?: string | null
+  uhid?: string | null
+}
 
 interface IntakePromptContext {
   selectedPatient: {
     name: string
     clinicalId: string
-    demographics?: Partial<PatientRecord>
+    demographics?: PatientDemographicsPartial
   } | null
   collectedDemographics: Record<string, unknown>
 }

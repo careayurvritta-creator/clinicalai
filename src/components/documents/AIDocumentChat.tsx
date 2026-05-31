@@ -5,6 +5,8 @@ import { useDocumentStore } from '@/lib/stores/document-store'
 import { ALL_TEMPLATES } from '@/lib/templates'
 import type { Message } from '@/lib/types'
 import { DEFAULT_MODEL, MODELS } from '@/lib/types'
+import { buildIntakeSystemPrompt } from '@/lib/intake-prompt'
+import { parseIntakeMarkers } from '@/lib/intake-markers'
 
 export function AIDocumentChat() {
   const chatMessages = useDocumentStore((s) => s.chatMessages)
@@ -16,15 +18,24 @@ export function AIDocumentChat() {
   const selectedModel = useDocumentStore((s) => s.selectedModel)
   const setModel = useDocumentStore((s) => s.setChatModel)
   const selectedPatient = useDocumentStore((s) => s.selectedPatient)
+  const collectedDemographics = useDocumentStore((s) => s.collectedDemographics)
+  const updateCollectedDemographics = useDocumentStore((s) => s.updateCollectedDemographics)
+  const resetCollectedDemographics = useDocumentStore((s) => s.resetCollectedDemographics)
+  const setPatientSupabaseId = useDocumentStore((s) => s.setPatientSupabaseId)
+  const updatePatientDemographics = useDocumentStore((s) => s.updatePatientDemographics)
+  const clearPatient = useDocumentStore((s) => s.clearPatient)
+  const setIntakeMode = useDocumentStore((s) => s.setIntakeMode)
 
   const [input, setInput] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
-  // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [chatMessages])
+
+  const makeId = () => crypto.randomUUID()
+  const now = () => Date.now()
 
   const handleSend = async () => {
     const text = input.trim()
@@ -32,50 +43,22 @@ export function AIDocumentChat() {
 
     setInput('')
 
-    // Add user message
-    const userMsg: Message = {
-      id: crypto.randomUUID(),
-      role: 'user',
-      content: text,
-      timestamp: Date.now(),
-      status: 'complete',
-    }
+    const userMsg: Message = { id: makeId(), role: 'user', content: text, timestamp: now(), status: 'complete' }
     addChatMessage(userMsg)
 
-    // Add placeholder for AI response
-    const aiMsg: Message = {
-      id: crypto.randomUUID(),
-      role: 'assistant',
-      content: '',
-      timestamp: Date.now(),
-      status: 'streaming',
-    }
+    const aiMsg: Message = { id: makeId(), role: 'assistant', content: '', timestamp: now(), status: 'streaming' }
     addChatMessage(aiMsg)
     setStreaming(true)
 
     try {
-      // Build context for AI
-      const templateList = ALL_TEMPLATES.map(t => `- ${t.id}: ${t.name} (${t.format})`).join('\n')
-      const patientContext = selectedPatient
-        ? `Current patient: ${selectedPatient.name} (${selectedPatient.clinicalId})`
-        : 'No patient selected'
-
-      const systemPrompt = `You are a document generation assistant for an Ayurvedic clinical practice. You help create clinical documents from templates.
-
-Available templates:
-${templateList}
-
-${patientContext}
-
-When the user asks to create a document:
-1. Identify the appropriate template
-2. Ask for any missing required fields
-3. Confirm the data before generating
-4. Use the /api/documents/generate endpoint to create the document
-
-Respond concisely. If the user asks to create a document and you have enough info, say you'll create it and include the template ID and any data you can extract from the request.
-
-If the user asks a general question, answer it helpfully.`
+      const systemPrompt = buildIntakeSystemPrompt({
+        selectedPatient: selectedPatient ? {
+          name: selectedPatient.name,
+          clinicalId: selectedPatient.clinicalId,
+          demographics: selectedPatient.demographics,
+        } : null,
+        collectedDemographics,
+      })
 
       const res = await fetch('/api/chat', {
         method: 'POST',
@@ -124,15 +107,28 @@ If the user asks a general question, answer it helpfully.`
         }
       }
 
-      updateLastChatMessage(accumulated, 'complete')
+      // Parse markers from response
+      const { markers, cleanText } = parseIntakeMarkers(accumulated)
 
-      // Check if AI wants to generate a document
-      if (accumulated.includes('/api/documents/generate')) {
-        // Parse the template ID from the response
-        const templateMatch = accumulated.match(/template[_-]?id['":\s]+([a-z-]+)/i)
-        if (templateMatch) {
-          // Auto-trigger document generation
-          await handleGenerateDocument(templateMatch[1])
+      // Display clean text (without markers)
+      if (markers.length > 0) {
+        updateLastChatMessage(cleanText || 'Done.', 'complete')
+      } else {
+        updateLastChatMessage(accumulated, 'complete')
+      }
+
+      // Execute actions
+      for (const marker of markers) {
+        switch (marker.type) {
+          case 'save_demographics':
+            await handleSaveDemographics(marker.data)
+            break
+          case 'generate_document':
+            await handleGenerateWithData(marker.templateId, marker.data)
+            break
+          case 'update_demographics':
+            await handleUpdateDemographic(marker.field, marker.value)
+            break
         }
       }
     } catch (err) {
@@ -145,13 +141,59 @@ If the user asks a general question, answer it helpfully.`
     }
   }
 
-  const handleGenerateDocument = async (templateId: string) => {
+  const handleSaveDemographics = async (demographics: Record<string, unknown>) => {
+    try {
+      const res = await fetch('/api/patients/intake', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'save_demographics',
+          demographics,
+          driveFolderId: selectedPatient?.id,
+        }),
+      })
+
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.details || err.error || 'Failed to save')
+      }
+
+      const data = await res.json()
+
+      // Update store
+      updateCollectedDemographics(demographics)
+      if (data.patient) {
+        setPatientSupabaseId(data.patient.id, data.patient.uhid)
+        updatePatientDemographics(data.patient)
+      }
+
+      addChatMessage({
+        id: makeId(),
+        role: 'assistant',
+        content: `Patient demographics saved.\n\n**UHID:** ${data.patient?.uhid}\n**Clinical ID:** ${data.patient?.clinical_id}\n\nAll future documents will auto-fill from this data. What document would you like to generate?`,
+        timestamp: now(),
+        status: 'complete',
+      })
+
+      resetCollectedDemographics()
+    } catch (err) {
+      addChatMessage({
+        id: makeId(),
+        role: 'assistant',
+        content: `Failed to save demographics: ${err instanceof Error ? err.message : 'Unknown error'}`,
+        timestamp: now(),
+        status: 'error',
+      })
+    }
+  }
+
+  const handleGenerateWithData = async (templateId: string, documentData: Record<string, unknown>) => {
     if (!selectedPatient) {
       addChatMessage({
-        id: crypto.randomUUID(),
+        id: makeId(),
         role: 'assistant',
         content: 'Please select a patient first before generating documents.',
-        timestamp: Date.now(),
+        timestamp: now(),
         status: 'complete',
       })
       return
@@ -165,6 +207,7 @@ If the user asks a general question, answer it helpfully.`
           templateId,
           patientName: selectedPatient.name,
           clinicalId: selectedPatient.clinicalId,
+          data: documentData,
         }),
       })
 
@@ -172,18 +215,62 @@ If the user asks a general question, answer it helpfully.`
       const data = await res.json()
 
       addChatMessage({
-        id: crypto.randomUUID(),
+        id: makeId(),
         role: 'assistant',
-        content: `Document created successfully!\n\n**${data.document.title}**\n\n[Open in Google Drive](${data.document.url})`,
-        timestamp: Date.now(),
+        content: `Document created!\n\n**${data.document.title}**\n\n[Open in Google Drive](${data.document.url})`,
+        timestamp: now(),
         status: 'complete',
       })
     } catch (err) {
       addChatMessage({
-        id: crypto.randomUUID(),
+        id: makeId(),
         role: 'assistant',
         content: `Failed to generate document: ${err instanceof Error ? err.message : 'Unknown error'}`,
-        timestamp: Date.now(),
+        timestamp: now(),
+        status: 'error',
+      })
+    }
+  }
+
+  const handleUpdateDemographic = async (field: string, value: unknown) => {
+    if (!selectedPatient?.supabasePatientId) {
+      updateCollectedDemographics({ [field]: value })
+      addChatMessage({
+        id: makeId(),
+        role: 'assistant',
+        content: `Updated ${field} locally. Save demographics to persist.`,
+        timestamp: now(),
+        status: 'complete',
+      })
+      return
+    }
+
+    try {
+      const res = await fetch('/api/patients/intake', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update',
+          patientId: selectedPatient.supabasePatientId,
+          updates: { [field]: value },
+        }),
+      })
+
+      if (!res.ok) throw new Error('Update failed')
+
+      addChatMessage({
+        id: makeId(),
+        role: 'assistant',
+        content: `Updated ${field} to "${value}".`,
+        timestamp: now(),
+        status: 'complete',
+      })
+    } catch (err) {
+      addChatMessage({
+        id: makeId(),
+        role: 'assistant',
+        content: `Failed to update ${field}: ${err instanceof Error ? err.message : 'Unknown error'}`,
+        timestamp: now(),
         status: 'error',
       })
     }
@@ -194,6 +281,20 @@ If the user asks a general question, answer it helpfully.`
       e.preventDefault()
       handleSend()
     }
+  }
+
+  const handleNewPatient = () => {
+    clearPatient()
+    resetCollectedDemographics()
+    clearChatMessages()
+    setIntakeMode('creating_patient')
+    addChatMessage({
+      id: makeId(),
+      role: 'assistant',
+      content: "Let's register a new patient. What is the patient's full name?",
+      timestamp: now(),
+      status: 'complete',
+    })
   }
 
   return (
@@ -237,15 +338,15 @@ If the user asks a general question, answer it helpfully.`
             <svg className="w-10 h-10 mb-3 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
-            <p className="text-xs font-medium">AI Document Assistant</p>
+            <p className="text-xs font-medium">Patient Intake Assistant</p>
             <p className="text-[10px] mt-1 max-w-[200px]">
-              Ask me to create invoices, consultation notes, prescriptions, and more.
+              Register patients, collect demographics, and generate clinical documents.
             </p>
             <div className="mt-4 space-y-1.5 w-full">
               {[
-                'Create an invoice for today',
-                'Generate a prescription',
-                'Make a discharge summary',
+                'Register a new patient',
+                'Create OPD visit entry',
+                'Update my phone number',
               ].map((suggestion) => (
                 <button
                   key={suggestion}

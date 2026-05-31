@@ -18,6 +18,12 @@ export function PatientSidebar() {
   const selectedPatient = useDocumentStore((s) => s.selectedPatient)
   const selectPatient = useDocumentStore((s) => s.selectPatient)
   const clearPatient = useDocumentStore((s) => s.clearPatient)
+  const updatePatientDemographics = useDocumentStore((s) => s.updatePatientDemographics)
+  const setPatientSupabaseId = useDocumentStore((s) => s.setPatientSupabaseId)
+  const resetCollectedDemographics = useDocumentStore((s) => s.resetCollectedDemographics)
+  const clearChatMessages = useDocumentStore((s) => s.clearChatMessages)
+  const setIntakeMode = useDocumentStore((s) => s.setIntakeMode)
+  const addChatMessage = useDocumentStore((s) => s.addChatMessage)
 
   const fetchPatients = useCallback(async (search?: string) => {
     setLoading(true)
@@ -39,7 +45,6 @@ export function PatientSidebar() {
     fetchPatients()
   }, [fetchPatients])
 
-  // Debounced search
   useEffect(() => {
     const timer = setTimeout(() => {
       if (searchQuery) {
@@ -51,31 +56,46 @@ export function PatientSidebar() {
     return () => clearTimeout(timer)
   }, [searchQuery, fetchPatients])
 
-  const handleSelect = (patient: DrivePatient) => {
+  const handleSelect = async (patient: DrivePatient) => {
     selectPatient({
       id: patient.folderId,
       name: patient.name,
       clinicalId: patient.clinicalId,
       folderUrl: `https://drive.google.com/drive/folders/${patient.folderId}`,
     })
+
+    // Try to load Supabase demographics
+    try {
+      const linkRes = await fetch(`/api/patients/drive-link?folderId=${patient.folderId}`)
+      if (linkRes.ok) {
+        const linkData = await linkRes.json()
+        setPatientSupabaseId(linkData.patientId, '')
+
+        const patientRes = await fetch(`/api/patients/intake?folderId=${patient.folderId}`)
+        if (patientRes.ok) {
+          const patientData = await patientRes.json()
+          if (patientData.patient) {
+            updatePatientDemographics(patientData.patient)
+          }
+        }
+      }
+    } catch {
+      // No Supabase record yet — chatbot will collect demographics
+    }
   }
 
-  const handleCreatePatient = async () => {
-    const name = prompt('Patient Name:')
-    const id = prompt('Clinical ID (e.g., AAH230):')
-    if (!name || !id) return
-
-    try {
-      const res = await fetch('/api/drive/patients', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ patientName: name, clinicalId: id }),
-      })
-      if (!res.ok) throw new Error('Failed to create patient folder')
-      fetchPatients()
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to create patient')
-    }
+  const handleCreatePatient = () => {
+    clearPatient()
+    resetCollectedDemographics()
+    clearChatMessages()
+    setIntakeMode('creating_patient')
+    addChatMessage({
+      id: crypto.randomUUID(),
+      role: 'assistant',
+      content: "Let's register a new patient. What is the patient's full name?",
+      timestamp: Date.now(),
+      status: 'complete',
+    })
   }
 
   return (
@@ -164,7 +184,12 @@ export function PatientSidebar() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium truncate">{patient.name}</div>
-                  <div className="text-[10px] text-muted-foreground">{patient.clinicalId}</div>
+                  <div className="text-[10px] text-muted-foreground">
+                    {patient.clinicalId}
+                    {selectedPatient?.id === patient.folderId && selectedPatient.uhid && (
+                      <span className="ml-1 text-primary">| {selectedPatient.uhid}</span>
+                    )}
+                  </div>
                 </div>
               </button>
             ))}

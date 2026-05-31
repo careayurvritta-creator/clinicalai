@@ -5,11 +5,31 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import type { Message, PatientRecord } from '../types'
 import { DEFAULT_MODEL } from '../types'
 
+export interface PatientDemographics {
+  name?: string
+  age?: number | null
+  gender?: string | null
+  phone?: string | null
+  email?: string | null
+  address?: string | null
+  occupation?: string | null
+  date_of_birth?: string | null
+  blood_group?: string | null
+  height_cm?: number | null
+  weight_kg?: number | null
+  emergency_contact?: string | null
+  emergency_phone?: string | null
+  uhid?: string | null
+}
+
 export interface PatientFolder {
   id: string
   name: string
   clinicalId: string
   folderUrl: string
+  supabasePatientId?: string
+  uhid?: string
+  demographics?: PatientDemographics
 }
 
 export interface DriveFile {
@@ -47,6 +67,7 @@ interface DocumentState {
   intakeMode: 'idle' | 'creating_patient' | 'editing_patient' | 'generating_document'
   intakeData: Record<string, unknown>
   selectedPatientRecord: PatientRecord | null
+  collectedDemographics: Partial<PatientDemographics>
 }
 
 interface DocumentActions {
@@ -75,6 +96,10 @@ interface DocumentActions {
   updateIntakeData: (field: string, value: unknown) => void
   clearIntake: () => void
   setSelectedPatientRecord: (record: PatientRecord | null) => void
+  updateCollectedDemographics: (data: Partial<PatientDemographics>) => void
+  resetCollectedDemographics: () => void
+  setPatientSupabaseId: (id: string, uhid: string) => void
+  updatePatientDemographics: (demographics: PatientDemographics) => void
 }
 
 export const useDocumentStore = create<DocumentState & DocumentActions>()(
@@ -98,6 +123,7 @@ export const useDocumentStore = create<DocumentState & DocumentActions>()(
       intakeMode: 'idle',
       intakeData: {},
       selectedPatientRecord: null,
+      collectedDemographics: {},
 
       setPatients: (patients) => set({ patients }),
       selectPatient: (patient) =>
@@ -199,8 +225,23 @@ export const useDocumentStore = create<DocumentState & DocumentActions>()(
       setIntakeMode: (mode) => set({ intakeMode: mode }),
       setIntakeData: (data) => set({ intakeData: data }),
       updateIntakeData: (field, value) => set((s) => ({ intakeData: { ...s.intakeData, [field]: value } })),
-      clearIntake: () => set({ intakeMode: 'idle', intakeData: {} }),
+      clearIntake: () => set({ intakeMode: 'idle', intakeData: {}, collectedDemographics: {} }),
       setSelectedPatientRecord: (record) => set({ selectedPatientRecord: record }),
+      updateCollectedDemographics: (data) =>
+        set((s) => ({ collectedDemographics: { ...s.collectedDemographics, ...data } })),
+      resetCollectedDemographics: () => set({ collectedDemographics: {} }),
+      setPatientSupabaseId: (id, uhid) =>
+        set((s) => ({
+          selectedPatient: s.selectedPatient
+            ? { ...s.selectedPatient, supabasePatientId: id, uhid }
+            : s.selectedPatient,
+        })),
+      updatePatientDemographics: (demographics) =>
+        set((s) => ({
+          selectedPatient: s.selectedPatient
+            ? { ...s.selectedPatient, demographics, uhid: demographics.uhid ?? s.selectedPatient.uhid }
+            : s.selectedPatient,
+        })),
     }),
     {
       name: 'clinical-ai-documents-v2',
