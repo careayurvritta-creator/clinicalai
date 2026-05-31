@@ -2,6 +2,36 @@
 
 import type { drive_v3 } from 'googleapis'
 
+const GOOGLE_DRIVE_SHARE_EMAIL = process.env.GOOGLE_DRIVE_SHARE_EMAIL
+
+// Share a folder/file with a user so it appears in their "Shared with me"
+async function shareWithUser(drive: drive_v3.Drive, fileId: string, email: string): Promise<void> {
+  try {
+    await drive.permissions.create({
+      fileId,
+      requestBody: {
+        role: 'writer',
+        type: 'user',
+        emailAddress: email,
+      },
+      sendNotificationEmail: false,
+    })
+  } catch (err: unknown) {
+    // Ignore "already has permission" errors
+    const message = err instanceof Error ? err.message : String(err)
+    if (!message.includes('alreadyExists') && !message.includes('duplicate')) {
+      console.error(`[Drive] Failed to share ${fileId} with ${email}:`, message)
+    }
+  }
+}
+
+// Ensure a folder is shared with the configured user
+async function ensureShared(drive: drive_v3.Drive, fileId: string): Promise<void> {
+  if (GOOGLE_DRIVE_SHARE_EMAIL) {
+    await shareWithUser(drive, fileId, GOOGLE_DRIVE_SHARE_EMAIL)
+  }
+}
+
 // Standard 20-category folder structure for each patient
 export const PATIENT_FOLDER_CATEGORIES = [
   { name: '01-OPD-Registers', label: 'OPD Visit Registers' },
@@ -46,7 +76,10 @@ export async function getOrCreateRootFolder(
   })
 
   if (res.data.files && res.data.files.length > 0) {
-    return res.data.files[0].id!
+    const existingId = res.data.files[0].id!
+    // Ensure sharing on every access (idempotent)
+    await ensureShared(drive, existingId)
+    return existingId
   }
 
   // Create root folder
@@ -61,7 +94,10 @@ export async function getOrCreateRootFolder(
     fields: 'id',
   })
 
-  return folder.data.id!
+  const folderId = folder.data.id!
+  // Share root folder so it appears in user's "Shared with me"
+  await ensureShared(drive, folderId)
+  return folderId
 }
 
 // ─── Patient Folder ──────────────────────────────────────
