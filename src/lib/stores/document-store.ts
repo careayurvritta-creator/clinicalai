@@ -2,7 +2,7 @@
 
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import type { Message } from '../types'
+import type { Message, PatientRecord } from '../types'
 import { DEFAULT_MODEL } from '../types'
 
 export interface PatientFolder {
@@ -43,6 +43,10 @@ interface DocumentState {
   isStreaming: boolean
   driveConnected: boolean
   rootFolderId: string | null
+  // Patient intake state
+  intakeMode: 'idle' | 'creating_patient' | 'editing_patient' | 'generating_document'
+  intakeData: Record<string, unknown>
+  selectedPatientRecord: PatientRecord | null
 }
 
 interface DocumentActions {
@@ -66,6 +70,11 @@ interface DocumentActions {
   setChatModel: (model: string) => void
   setDriveConnected: (connected: boolean) => void
   setRootFolderId: (id: string | null) => void
+  setIntakeMode: (mode: DocumentState['intakeMode']) => void
+  setIntakeData: (data: Record<string, unknown>) => void
+  updateIntakeData: (field: string, value: unknown) => void
+  clearIntake: () => void
+  setSelectedPatientRecord: (record: PatientRecord | null) => void
 }
 
 export const useDocumentStore = create<DocumentState & DocumentActions>()(
@@ -86,6 +95,9 @@ export const useDocumentStore = create<DocumentState & DocumentActions>()(
       isStreaming: false,
       driveConnected: false,
       rootFolderId: null,
+      intakeMode: 'idle',
+      intakeData: {},
+      selectedPatientRecord: null,
 
       setPatients: (patients) => set({ patients }),
       selectPatient: (patient) =>
@@ -183,6 +195,12 @@ export const useDocumentStore = create<DocumentState & DocumentActions>()(
 
       setDriveConnected: (connected) => set({ driveConnected: connected }),
       setRootFolderId: (id) => set({ rootFolderId: id }),
+
+      setIntakeMode: (mode) => set({ intakeMode: mode }),
+      setIntakeData: (data) => set({ intakeData: data }),
+      updateIntakeData: (field, value) => set((s) => ({ intakeData: { ...s.intakeData, [field]: value } })),
+      clearIntake: () => set({ intakeMode: 'idle', intakeData: {} }),
+      setSelectedPatientRecord: (record) => set({ selectedPatientRecord: record }),
     }),
     {
       name: 'clinical-ai-documents-v2',
