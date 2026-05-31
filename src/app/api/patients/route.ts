@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createServerClient } from '@/lib/supabase/client'
 import { requireAuth } from '@/lib/supabase/auth-server'
+import { generateUHID } from '@/lib/uhid'
 
 const patientSchema = z.object({
   name: z.string().min(1).max(200),
@@ -21,6 +22,7 @@ const patientSchema = z.object({
   emergency_phone: z.string().optional(),
   notes: z.string().optional(),
   doctor_id: z.string().uuid().optional(),
+  uhid: z.string().optional(),
 })
 
 export async function GET(req: NextRequest) {
@@ -42,7 +44,7 @@ export async function GET(req: NextRequest) {
       .range(offset, offset + limit - 1)
 
     if (search) {
-      query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%,patient_code.ilike.%${search}%`)
+      query = query.or(`name.ilike.%${search}%,phone.ilike.%${search}%,patient_code.ilike.%${search}%,uhid.ilike.%${search}%`)
     }
 
     const { data, error, count } = await query
@@ -72,6 +74,9 @@ export async function POST(req: NextRequest) {
     // Generate patient code
     const patientCode = `PAT-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 5).toUpperCase()}`
 
+    // Generate UHID if not provided
+    const uhid = validated.uhid || await generateUHID()
+
     // Calculate BMI if height and weight provided
     let bmi: number | undefined
     if (validated.height_cm && validated.weight_kg) {
@@ -84,6 +89,8 @@ export async function POST(req: NextRequest) {
       .insert({
         ...validated,
         patient_code: patientCode,
+        uhid,
+        ...(bmi !== undefined && { bmi }),
       })
       .select()
       .single()
