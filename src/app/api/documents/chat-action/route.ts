@@ -141,6 +141,10 @@ const listFoldersSchema = z.object({
   parentFolderId: z.string().min(1),
 })
 
+const getRootFolderSchema = z.object({
+  action: z.literal('get_root_folder'),
+})
+
 // ─── Discriminated Union ──────────────────────────────────────
 
 const requestSchema = z.discriminatedUnion('action', [
@@ -163,6 +167,7 @@ const requestSchema = z.discriminatedUnion('action', [
   renameFolderSchema,
   deleteFolderSchema,
   listFoldersSchema,
+  getRootFolderSchema,
 ])
 
 // ─── Route Handler ──────────────────────────────────────────
@@ -219,6 +224,9 @@ export async function POST(request: NextRequest) {
         return handleDeleteFolder(parsed)
       case 'list_folders':
         return handleListFolders(parsed)
+
+      case 'get_root_folder':
+        return handleGetRootFolder()
 
       default:
         return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
@@ -784,4 +792,10 @@ async function handleListFolders(data: z.infer<typeof listFoldersSchema>) {
   const folders = await listFiles(drive, data.parentFolderId, 'application/vnd.google-apps.folder')
 
   return NextResponse.json({ success: true, folders })
+}
+
+async function handleGetRootFolder() {
+  const { drive } = getDriveClients('service-account')
+  const rootFolderId = await getOrCreateRootFolder(drive)
+  return NextResponse.json({ success: true, rootFolderId })
 }

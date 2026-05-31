@@ -31,7 +31,7 @@ export function buildIntakeSystemPrompt(ctx: IntakePromptContext): string {
   // ── Patient context ──────────────────────────────────────────
   const patientContext = selectedPatient
     ? `Current patient: **${selectedPatient.name}** (${selectedPatient.clinicalId})`
-    : 'No patient selected yet. Ask the user to select or create a patient first.'
+    : 'NO PATIENT SELECTED. You cannot generate documents, create folders, or perform file operations without a patient. Ask the user to select a patient from the sidebar or say "register new patient" to create one.'
 
   const existing = selectedPatient?.demographics
     ? formatDemographics(selectedPatient.demographics)

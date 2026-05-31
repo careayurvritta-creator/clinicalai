@@ -47,6 +47,7 @@ export function AIDocumentChat() {
   const [pendingConfirmation, setPendingConfirmation] = useState<IntakeMarker | null>(null)
   const [sessionActions, setSessionActions] = useState<string[]>([])
   const [isUploading, setIsUploading] = useState(false)
+  const setRootFolderId = useDocumentStore((s) => s.setRootFolderId)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -76,6 +77,14 @@ export function AIDocumentChat() {
     return res.json()
   }, [])
 
+  // Initialize root folder ID on mount
+  useEffect(() => {
+    if (rootFolderId) return
+    callChatAction({ action: 'get_root_folder' })
+      .then((data) => { if (data.rootFolderId) setRootFolderId(data.rootFolderId) })
+      .catch(() => {})
+  }, [rootFolderId, setRootFolderId, callChatAction])
+
   // ─── Marker Handlers ─────────────────────────────
 
   const handleSaveDemographics = useCallback(async (demographics: Record<string, unknown>) => {
@@ -95,8 +104,13 @@ export function AIDocumentChat() {
   }, [callChatAction, updateCollectedDemographics, setPatientSupabaseId, updatePatientDemographics, addSystemMessage, resetCollectedDemographics])
 
   const handleGenerateDocument = useCallback(async (templateId: string, documentData: Record<string, unknown>) => {
-    if (!selectedPatient?.supabasePatientId) {
-      addSystemMessage('Please select or create a patient first.')
+    if (!selectedPatient) {
+      addSystemMessage('No patient selected. Please select a patient from the sidebar or register a new one first.')
+      return
+    }
+    if (!selectedPatient.supabasePatientId) {
+      addSystemMessage(`Patient "${selectedPatient.name}" is selected but has no linked record. Creating one now...`)
+      // Try to create the patient record via SAVE_DEMOGRAPHICS flow
       return
     }
     try {
@@ -123,8 +137,12 @@ export function AIDocumentChat() {
   }, [selectedPatient, callChatAction, addSystemMessage])
 
   const handleGenerateBulk = useCallback(async (documents: Array<{ templateId: string; data?: Record<string, unknown> }>) => {
-    if (!selectedPatient?.supabasePatientId) {
-      addSystemMessage('Please select or create a patient first.')
+    if (!selectedPatient) {
+      addSystemMessage('No patient selected. Please select a patient from the sidebar or register a new one first.')
+      return
+    }
+    if (!selectedPatient.supabasePatientId) {
+      addSystemMessage(`Patient "${selectedPatient.name}" has no linked record yet. Please register them first.`)
       return
     }
     addSystemMessage(`Generating ${documents.length} documents...`)
