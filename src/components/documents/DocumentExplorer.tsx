@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef, useCallback } from 'react'
 import { useDocumentStore } from '@/lib/stores/document-store'
 import { BreadcrumbNav } from './BreadcrumbNav'
 
@@ -51,11 +52,126 @@ const CATEGORY_ICONS: Record<string, string> = {
 export function DocumentExplorer() {
   const selectedPatient = useDocumentStore((s) => s.selectedPatient)
   const currentCategory = useDocumentStore((s) => s.currentCategory)
+  const currentFolderId = useDocumentStore((s) => s.currentFolderId)
   const files = useDocumentStore((s) => s.files)
   const filesLoading = useDocumentStore((s) => s.filesLoading)
+  const setFiles = useDocumentStore((s) => s.setFiles)
+  const setLoadingFiles = useDocumentStore((s) => s.setLoadingFiles)
   const navigateToCategory = useDocumentStore((s) => s.navigateToCategory)
+  const navigateToFolder = useDocumentStore((s) => s.navigateToFolder)
   const openFile = useDocumentStore((s) => s.openFile)
-  const navigateUp = useDocumentStore((s) => s.navigateUp)
+  const fetchedRef = useRef<string | null>(null)
+
+  // Resolve category label → actual Drive folder ID, then fetch files
+  const handleCategoryClick = useCallback(async (catId: string, catLabel: string) => {
+    if (!selectedPatient) return
+    setLoadingFiles(true)
+
+    try {
+      // selectedPatient.id is the patient's root Drive folder ID
+      const rootFolderId = selectedPatient.id
+      if (!rootFolderId) {
+        setFiles([])
+        setLoadingFiles(false)
+        return
+      }
+
+      // List subfolders in the patient root to find the category folder
+      const listRes = await fetch('/api/documents/chat-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'list_folders', parentFolderId: rootFolderId }),
+      })
+      if (!listRes.ok) throw new Error('Failed to list folders')
+      const listData = await listRes.json()
+
+      // Find the matching category folder by comparing the numeric prefix
+      const categoryFolders = listData.folders as Array<{ id: string; name: string }>
+      const catPrefix = catId.split('-')[0] // e.g. '01'
+      const targetFolder = categoryFolders.find(f => f.name.startsWith(catPrefix + '-'))
+
+      if (!targetFolder) {
+        // Category folder doesn't exist yet — navigate with root folder ID
+        // and show empty state. The AI can create it via CREATE_FOLDER.
+        navigateToCategory(catId, catLabel, rootFolderId)
+        setFiles([])
+        setLoadingFiles(false)
+        return
+      }
+
+      // Navigate with the REAL Drive folder ID
+      navigateToCategory(catId, catLabel, targetFolder.id)
+      fetchedRef.current = targetFolder.id
+
+      // Fetch files inside the category folder
+      const filesRes = await fetch('/api/documents/chat-action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'list_files', folderId: targetFolder.id }),
+      })
+      if (!filesRes.ok) throw new Error('Failed to list files')
+      const filesData = await filesRes.json()
+
+      const mappedFiles = (filesData.files as Array<{ id: string; name: string; mimeType: string; size?: string; modifiedTime?: string; webViewLink?: string }>)
+        .filter(f => f.mimeType !== 'application/vnd.google-apps.folder')
+        .map(f => ({
+          id: f.id,
+          name: f.name,
+          mimeType: f.mimeType || '',
+          size: f.size ? Number(f.size) : undefined,
+          modifiedTime: f.modifiedTime || '',
+          webViewLink: f.webViewLink,
+        }))
+      setFiles(mappedFiles)
+      setLoadingFiles(false)
+    } catch (err) {
+      setFiles([])
+      setLoadingFiles(false)
+    }
+  }, [selectedPatient, setFiles, setLoadingFiles, navigateToCategory])
+
+  // Auto-fetch files when navigating to a subfolder within a category
+  useEffect(() => {
+    if (!currentFolderId || !currentCategory) return
+    if (fetchedRef.current === currentFolderId) return
+    fetchedRef.current = currentFolderId
+
+    let cancelled = false
+    const fetchFiles = async () => {
+      setLoadingFiles(true)
+      try {
+        const filesRes = await fetch('/api/documents/chat-action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'list_files', folderId: currentFolderId }),
+        })
+        if (!filesRes.ok) throw new Error('Failed to list files')
+        const filesData = await filesRes.json()
+
+        if (!cancelled) {
+          const mappedFiles = (filesData.files as Array<{ id: string; name: string; mimeType: string; size?: string; modifiedTime?: string; webViewLink?: string }>)
+            .filter(f => f.mimeType !== 'application/vnd.google-apps.folder')
+            .map(f => ({
+              id: f.id,
+              name: f.name,
+              mimeType: f.mimeType || '',
+              size: f.size ? Number(f.size) : undefined,
+              modifiedTime: f.modifiedTime || '',
+              webViewLink: f.webViewLink,
+            }))
+          setFiles(mappedFiles)
+          setLoadingFiles(false)
+        }
+      } catch {
+        if (!cancelled) {
+          setFiles([])
+          setLoadingFiles(false)
+        }
+      }
+    }
+    fetchFiles()
+    return () => { cancelled = true }
+  }, [currentFolderId, currentCategory, setFiles, setLoadingFiles])
 
   if (!selectedPatient) return null
 
@@ -72,7 +188,7 @@ export function DocumentExplorer() {
             {CATEGORIES.map((cat) => (
               <button
                 key={cat.id}
-                onClick={() => navigateToCategory(cat.id, cat.label)}
+                onClick={() => handleCategoryClick(cat.id, cat.label)}
                 className="flex flex-col items-center gap-2 p-3 rounded-xl bg-muted/30 hover:bg-muted border border-border hover:border-primary/30 transition-all"
               >
                 <svg className="w-6 h-6 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -121,7 +237,7 @@ export function DocumentExplorer() {
                   {file.size ? `${Math.round(file.size / 1024)} KB` : ''}
                 </div>
                 <div className="text-[10px] text-muted-foreground flex-shrink-0">
-                  {new Date(file.modifiedTime).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                  {file.modifiedTime ? new Date(file.modifiedTime).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : ''}
                 </div>
               </button>
             ))}

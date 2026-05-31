@@ -150,7 +150,7 @@ export function AIDocumentChat() {
     } catch (err) {
       addSystemMessage(`Generation failed: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error')
     }
-  }, [selectedPatient, callChatAction, addSystemMessage])
+  }, [selectedPatient, callChatAction, addSystemMessage, collectedDemographics, setPatientSupabaseId, updatePatientDemographics])
 
   const handleGenerateBulk = useCallback(async (documents: Array<{ templateId: string; data?: Record<string, unknown> }>) => {
     if (!selectedPatient) {
@@ -199,7 +199,7 @@ export function AIDocumentChat() {
     } catch (err) {
       addSystemMessage(`Bulk generation failed: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error')
     }
-  }, [selectedPatient, callChatAction, addSystemMessage])
+  }, [selectedPatient, callChatAction, addSystemMessage, collectedDemographics, setPatientSupabaseId, updatePatientDemographics])
 
   const handleUpdateDemographic = useCallback(async (field: string, value: unknown) => {
     if (!selectedPatient?.supabasePatientId) {
@@ -508,6 +508,8 @@ export function AIDocumentChat() {
     }
 
     const userMsg: Message = { id: makeId(), role: 'user', content: text, timestamp: now(), status: 'complete' }
+    // Capture messages before adding user message to avoid duplicate in API call
+    const priorMessages = chatMessages.map(m => ({ role: m.role, content: m.content }))
     addChatMessage(userMsg)
 
     const aiMsg: Message = { id: makeId(), role: 'assistant', content: '', timestamp: now(), status: 'streaming' }
@@ -536,7 +538,7 @@ export function AIDocumentChat() {
         body: JSON.stringify({
           messages: [
             { role: 'system', content: systemPrompt },
-            ...chatMessages.map(m => ({ role: m.role, content: m.content })),
+            ...priorMessages,
             { role: 'user', content: text },
           ],
           model: selectedModel,
@@ -550,14 +552,17 @@ export function AIDocumentChat() {
       if (!reader) throw new Error('No response stream')
 
       let accumulated = ''
+      let buffer = ''
       const decoder = new TextDecoder()
 
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
 
-        const chunk = decoder.decode(value, { stream: true })
-        const lines = chunk.split('\n')
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        // Keep the last incomplete line in the buffer
+        buffer = lines.pop() || ''
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {

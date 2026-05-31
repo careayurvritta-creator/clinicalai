@@ -76,7 +76,7 @@ interface DocumentActions {
   clearPatient: () => void
   addPatient: (patient: PatientFolder) => void
   setLoadingPatients: (loading: boolean) => void
-  navigateToCategory: (categoryId: string, categoryLabel: string) => void
+  navigateToCategory: (categoryId: string, categoryLabel: string, driveFolderId?: string) => void
   navigateToFolder: (folderId: string, label: string) => void
   navigateUp: () => void
   navigateToRoot: () => void
@@ -152,16 +152,16 @@ export const useDocumentStore = create<DocumentState & DocumentActions>()(
       addPatient: (patient) => set((s) => ({ patients: [...s.patients, patient] })),
       setLoadingPatients: (loading) => set({ patientsLoading: loading }),
 
-      navigateToCategory: (categoryId, categoryLabel) =>
+      navigateToCategory: (categoryId, categoryLabel, driveFolderId?) =>
         set((s) => ({
-          currentFolderId: categoryId,
+          currentFolderId: driveFolderId || categoryId,
           currentCategory: categoryLabel,
           files: [],
           editingFile: null,
           editorMode: 'explorer',
           breadcrumbs: [
             ...s.breadcrumbs.filter((b) => b.type === 'root' || b.type === 'patient'),
-            { id: categoryId, label: categoryLabel, type: 'category' },
+            { id: driveFolderId || categoryId, label: categoryLabel, type: 'category' },
           ],
         })),
       navigateToFolder: (folderId, label) =>
@@ -188,15 +188,17 @@ export const useDocumentStore = create<DocumentState & DocumentActions>()(
           }
         }),
       navigateToRoot: () =>
-        set({
+        set((s) => ({
           currentFolderId: null,
           currentCategory: null,
           files: [],
-          breadcrumbs: [],
+          breadcrumbs: s.selectedPatient
+            ? [{ id: s.selectedPatient.id, label: s.selectedPatient.name, type: 'patient' as const }]
+            : [],
           editingFile: null,
           editorMode: 'explorer',
-          selectedPatient: null,
-        }),
+          // Don't clear selectedPatient — keep it selected
+        })),
       setFiles: (files) => set({ files }),
       setLoadingFiles: (loading) => set({ filesLoading: loading }),
 

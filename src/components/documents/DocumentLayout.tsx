@@ -13,7 +13,7 @@ export function DocumentLayout() {
   const [showAIChat, setShowAIChat] = useState(true)
 
   return (
-    <div className="flex h-full w-full overflow-hidden">
+    <div className="relative flex h-full w-full overflow-hidden">
       <PatientSidebar />
 
       <div className="flex-1 flex min-w-0">

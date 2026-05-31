@@ -42,17 +42,9 @@ export function PatientSidebar() {
   }, [])
 
   useEffect(() => {
-    fetchPatients()
-  }, [fetchPatients])
-
-  useEffect(() => {
     const timer = setTimeout(() => {
-      if (searchQuery) {
-        fetchPatients(searchQuery)
-      } else {
-        fetchPatients()
-      }
-    }, 300)
+      fetchPatients(searchQuery || undefined)
+    }, searchQuery ? 300 : 0)
     return () => clearTimeout(timer)
   }, [searchQuery, fetchPatients])
 
@@ -69,7 +61,7 @@ export function PatientSidebar() {
       const linkRes = await fetch(`/api/patients/drive-link?folderId=${patient.folderId}`)
       if (linkRes.ok) {
         const linkData = await linkRes.json()
-        setPatientSupabaseId(linkData.patientId, '')
+        setPatientSupabaseId(linkData.patientId, linkData.clinicalId || patient.clinicalId || '')
 
         const patientRes = await fetch(`/api/patients/intake?folderId=${patient.folderId}`)
         if (patientRes.ok) {
