@@ -21,7 +21,7 @@ const ALLOWED_UPDATE_FIELDS = new Set([
   'name', 'age', 'gender', 'phone', 'email', 'address', 'occupation',
   'area', 'blood_group', 'height_cm', 'weight_kg', 'date_of_birth',
   'emergency_contact', 'emergency_phone', 'allergies', 'medical_history',
-  'current_medications', 'notes', 'bmi', 'abha_id',
+  'current_medications', 'notes', 'bmi', 'abha_id', 'prakriti', 'vikriti',
 ])
 
 // ─── Action Schemas ──────────────────────────────────────────

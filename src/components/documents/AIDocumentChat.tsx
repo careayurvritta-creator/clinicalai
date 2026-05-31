@@ -373,7 +373,7 @@ export function AIDocumentChat() {
 
     // Warn when patient selected but no category
     if (!currentFolderId && selectedPatient) {
-      addSystemMessage('No category selected. File will be uploaded to the patient\'s root folder. Navigate to a specific category first for better organization.', 'streaming')
+      addSystemMessage('No category selected. File will be uploaded to the patient\'s root folder. Navigate to a specific category first for better organization.')
     }
 
     setIsUploading(true)

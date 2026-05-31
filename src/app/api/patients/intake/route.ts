@@ -116,7 +116,8 @@ export async function POST(request: NextRequest) {
       const allowedFields = new Set([
         'name', 'age', 'gender', 'phone', 'email', 'address', 'occupation',
         'area', 'blood_group', 'height_cm', 'weight_kg', 'date_of_birth',
-        'emergency_contact', 'emergency_phone', 'notes', 'prakriti', 'vikriti',
+        'emergency_contact', 'emergency_phone', 'allergies', 'medical_history',
+        'current_medications', 'notes', 'bmi', 'abha_id', 'prakriti', 'vikriti',
       ])
       const safeUpdates: Record<string, unknown> = {}
       for (const [key, value] of Object.entries(updates)) {
