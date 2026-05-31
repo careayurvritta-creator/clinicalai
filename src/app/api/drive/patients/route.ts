@@ -3,6 +3,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDriveClients } from '@/lib/google-drive/client'
 import { getOrCreateRootFolder, listPatientsFromDrive, getOrCreatePatientFolder } from '@/lib/google-drive/folders'
+import { createServerClient } from '@/lib/supabase/client'
+import { generateUHID } from '@/lib/uhid'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,7 +13,6 @@ export async function GET(request: NextRequest) {
   const search = searchParams.get('search') ?? undefined
 
   try {
-    // Use service account by default
     const { drive } = getDriveClients('service-account')
     const rootFolderId = await getOrCreateRootFolder(drive)
     const patients = await listPatientsFromDrive(drive, rootFolderId, search)
@@ -31,20 +32,56 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { patientName, clinicalId } = body
 
-    if (!patientName || !clinicalId) {
+    if (!patientName) {
       return NextResponse.json(
-        { error: 'patientName and clinicalId are required' },
+        { error: 'patientName is required' },
         { status: 400 }
       )
     }
 
+    const supabase = createServerClient()
+    const cid = clinicalId || `AAH-${Date.now().toString(36).toUpperCase()}`
+
+    // Create Supabase patient record first
+    const uhid = await generateUHID()
+    const { data: patient, error: patientError } = await supabase
+      .from('patients')
+      .insert({
+        name: patientName,
+        uhid,
+        clinical_id: cid,
+      })
+      .select()
+      .single()
+
+    if (patientError) {
+      console.error('Supabase patient create error:', patientError)
+    }
+
+    // Create Drive folder
     const { drive } = getDriveClients('service-account')
     const rootFolderId = await getOrCreateRootFolder(drive)
-    const result = await getOrCreatePatientFolder(drive, rootFolderId, patientName, clinicalId)
+    const result = await getOrCreatePatientFolder(drive, rootFolderId, patientName, cid)
+
+    // Link Drive folder to Supabase patient
+    if (patient) {
+      await supabase.from('patient_drive_links').insert({
+        patient_id: patient.id,
+        drive_folder_id: result.folderId,
+        clinical_id: cid,
+      })
+    }
 
     return NextResponse.json({
       folderId: result.folderId,
       categoryFolders: result.categoryFolders,
+      clinicalId: cid,
+      patient: patient ? {
+        id: patient.id,
+        name: patient.name,
+        uhid: patient.uhid,
+        clinicalId: patient.clinical_id,
+      } : null,
     })
   } catch (error) {
     console.error('Drive create patient folder error:', error)

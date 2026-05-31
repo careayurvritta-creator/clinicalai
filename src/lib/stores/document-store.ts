@@ -8,7 +8,7 @@ import { DEFAULT_MODEL } from '../types'
 export interface PatientDemographics {
   name?: string
   age?: number | null
-  gender?: string | null
+  gender?: 'Male' | 'Female' | 'Other' | string | null
   phone?: string | null
   email?: string | null
   address?: string | null

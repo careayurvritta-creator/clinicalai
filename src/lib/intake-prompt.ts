@@ -32,7 +32,7 @@ export function buildIntakeSystemPrompt(ctx: IntakePromptContext): string {
     : 'No patient selected yet.'
 
   const existing = selectedPatient?.demographics
-    ? formatDemographics(selectedPatient.demographics)
+    ? formatDemographics(selectedPatient.demographics as Record<string, unknown>)
     : 'No existing demographics on file.'
 
   const collected = Object.keys(collectedDemographics).length > 0
