@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ayurved-ai-v1'
+const CACHE_NAME = 'ayurved-ai-v2'
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
@@ -35,6 +35,9 @@ self.addEventListener('fetch', (event) => {
 
   // Skip API requests
   if (event.request.url.includes('/api/')) return
+
+  // Skip auth routes — must hit server for PKCE code exchange
+  if (event.request.url.includes('/auth/')) return
 
   event.respondWith(
     fetch(event.request)

@@ -14,8 +14,12 @@ export async function getServerSession() {
       get(name: string) {
         return cookieStore.get(name)?.value
       },
-      set() {},
-      remove() {},
+      set(name: string, value: string, options: Record<string, unknown>) {
+        try { cookieStore.set({ name, value, ...options }) } catch { /* called from RSC, ignore */ }
+      },
+      remove(name: string, options: Record<string, unknown>) {
+        try { cookieStore.set({ name, value: '', ...options }) } catch { /* called from RSC, ignore */ }
+      },
     },
   })
 
@@ -33,8 +37,12 @@ export async function getAuthUser() {
       get(name: string) {
         return cookieStore.get(name)?.value
       },
-      set() {},
-      remove() {},
+      set(name: string, value: string, options: Record<string, unknown>) {
+        try { cookieStore.set({ name, value, ...options }) } catch { /* called from RSC, ignore */ }
+      },
+      remove(name: string, options: Record<string, unknown>) {
+        try { cookieStore.set({ name, value: '', ...options }) } catch { /* called from RSC, ignore */ }
+      },
     },
   })
 
