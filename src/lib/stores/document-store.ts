@@ -68,6 +68,7 @@ interface DocumentState {
   intakeData: Record<string, unknown>
   selectedPatientRecord: PatientRecord | null
   collectedDemographics: Partial<PatientDemographics>
+  refreshPatientsToken: number
 }
 
 interface DocumentActions {
@@ -100,6 +101,7 @@ interface DocumentActions {
   resetCollectedDemographics: () => void
   setPatientSupabaseId: (id: string, uhid: string) => void
   updatePatientDemographics: (demographics: PatientDemographics) => void
+  triggerPatientRefresh: () => void
 }
 
 export const useDocumentStore = create<DocumentState & DocumentActions>()(
@@ -124,6 +126,7 @@ export const useDocumentStore = create<DocumentState & DocumentActions>()(
       intakeData: {},
       selectedPatientRecord: null,
       collectedDemographics: {},
+      refreshPatientsToken: 0,
 
       setPatients: (patients) => set({ patients }),
       selectPatient: (patient) =>
@@ -193,7 +196,10 @@ export const useDocumentStore = create<DocumentState & DocumentActions>()(
           currentCategory: null,
           files: [],
           breadcrumbs: s.selectedPatient
-            ? [{ id: s.selectedPatient.id, label: s.selectedPatient.name, type: 'patient' as const }]
+            ? [
+                { id: 'root', label: 'Patients', type: 'root' as const },
+                { id: s.selectedPatient.id, label: `${s.selectedPatient.name} (${s.selectedPatient.clinicalId})`, type: 'patient' as const },
+              ]
             : [],
           editingFile: null,
           editorMode: 'explorer',
@@ -244,6 +250,7 @@ export const useDocumentStore = create<DocumentState & DocumentActions>()(
             ? { ...s.selectedPatient, demographics, uhid: demographics.uhid ?? s.selectedPatient.uhid }
             : s.selectedPatient,
         })),
+      triggerPatientRefresh: () => set((s) => ({ refreshPatientsToken: s.refreshPatientsToken + 1 })),
     }),
     {
       name: 'clinical-ai-documents-v2',

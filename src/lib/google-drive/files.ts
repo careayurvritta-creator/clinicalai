@@ -181,8 +181,10 @@ export async function countFiles(
 export async function searchFiles(
   drive: drive_v3.Drive,
   query: string,
-  rootFolderId?: string
-): Promise<FileInfo[]> {
+  rootFolderId?: string,
+  pageToken?: string,
+  pageSize: number = 100
+): Promise<{ files: FileInfo[]; nextPageToken?: string }> {
   let q = `name contains '${query}' and trashed = false`
   if (rootFolderId) {
     q += ` and '${rootFolderId}' in parents`
@@ -190,19 +192,23 @@ export async function searchFiles(
 
   const response = await drive.files.list({
     q,
-    fields: 'files(id, name, mimeType, size, createdTime, modifiedTime, webViewLink, iconLink)',
+    fields: 'files(id, name, mimeType, size, createdTime, modifiedTime, webViewLink, iconLink), nextPageToken',
     orderBy: 'modifiedTime desc',
-    pageSize: 50,
+    pageSize,
+    pageToken,
   })
 
-  return (response.data.files || []).map((f) => ({
-    id: f.id!,
-    name: f.name!,
-    mimeType: f.mimeType!,
-    size: f.size ?? undefined,
-    createdTime: f.createdTime ?? undefined,
-    modifiedTime: f.modifiedTime ?? undefined,
-    webViewLink: f.webViewLink ?? undefined,
-    iconLink: f.iconLink ?? undefined,
-  }))
+  return {
+    files: (response.data.files || []).map((f) => ({
+      id: f.id!,
+      name: f.name!,
+      mimeType: f.mimeType!,
+      size: f.size ?? undefined,
+      createdTime: f.createdTime ?? undefined,
+      modifiedTime: f.modifiedTime ?? undefined,
+      webViewLink: f.webViewLink ?? undefined,
+      iconLink: f.iconLink ?? undefined,
+    })),
+    nextPageToken: response.data.nextPageToken ?? undefined,
+  }
 }

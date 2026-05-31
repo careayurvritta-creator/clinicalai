@@ -24,6 +24,7 @@ export function PatientSidebar() {
   const clearChatMessages = useDocumentStore((s) => s.clearChatMessages)
   const setIntakeMode = useDocumentStore((s) => s.setIntakeMode)
   const addChatMessage = useDocumentStore((s) => s.addChatMessage)
+  const refreshPatientsToken = useDocumentStore((s) => s.refreshPatientsToken)
 
   const fetchPatients = useCallback(async (search?: string) => {
     setLoading(true)
@@ -48,6 +49,13 @@ export function PatientSidebar() {
     return () => clearTimeout(timer)
   }, [searchQuery, fetchPatients])
 
+  // Re-fetch when another component triggers a patient refresh (e.g., after AI creates a patient)
+  useEffect(() => {
+    if (refreshPatientsToken > 0) {
+      fetchPatients(searchQuery || undefined)
+    }
+  }, [refreshPatientsToken, fetchPatients, searchQuery])
+
   const handleSelect = async (patient: DrivePatient) => {
     selectPatient({
       id: patient.folderId,
@@ -61,13 +69,15 @@ export function PatientSidebar() {
       const linkRes = await fetch(`/api/patients/drive-link?folderId=${patient.folderId}`)
       if (linkRes.ok) {
         const linkData = await linkRes.json()
-        setPatientSupabaseId(linkData.patientId, linkData.clinicalId || patient.clinicalId || '')
 
         const patientRes = await fetch(`/api/patients/intake?folderId=${patient.folderId}`)
         if (patientRes.ok) {
           const patientData = await patientRes.json()
           if (patientData.patient) {
             updatePatientDemographics(patientData.patient)
+            setPatientSupabaseId(linkData.patientId, patientData.patient.uhid || linkData.clinicalId || patient.clinicalId || '')
+          } else {
+            setPatientSupabaseId(linkData.patientId, linkData.clinicalId || patient.clinicalId || '')
           }
         }
       }

@@ -16,6 +16,14 @@ import { createDocument, readDocument } from '@/lib/google-drive/docs'
 export const maxDuration = 120
 export const dynamic = 'force-dynamic'
 
+// ─── Allowed fields for patient updates (security whitelist) ────────
+const ALLOWED_UPDATE_FIELDS = new Set([
+  'name', 'age', 'gender', 'phone', 'email', 'address', 'occupation',
+  'area', 'blood_group', 'height_cm', 'weight_kg', 'date_of_birth',
+  'emergency_contact', 'emergency_phone', 'allergies', 'medical_history',
+  'current_medications', 'notes', 'bmi', 'abha_id',
+])
+
 // ─── Action Schemas ──────────────────────────────────────────
 
 const createActionSchema = z.object({
@@ -316,9 +324,21 @@ async function handleUpdatePatient(
   supabase: ReturnType<typeof createServerClient>,
   data: z.infer<typeof updateActionSchema>
 ) {
+  // Whitelist fields to prevent overwriting system columns
+  const safeUpdates: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(data.updates)) {
+    if (ALLOWED_UPDATE_FIELDS.has(key)) {
+      safeUpdates[key] = value
+    }
+  }
+
+  if (Object.keys(safeUpdates).length === 0) {
+    return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
+  }
+
   const { data: patient, error } = await supabase
     .from('patients')
-    .update(data.updates)
+    .update(safeUpdates)
     .eq('id', data.patientId)
     .select()
     .single()
@@ -617,9 +637,9 @@ async function handleSearchFiles(data: z.infer<typeof searchFilesSchema>) {
     rootFolderId = await getOrCreateRootFolder(drive)
   }
 
-  const files = await searchFiles(drive, data.query, rootFolderId)
+  const result = await searchFiles(drive, data.query, rootFolderId)
 
-  return NextResponse.json({ success: true, files })
+  return NextResponse.json({ success: true, files: result.files, nextPageToken: result.nextPageToken })
 }
 
 async function handleReadDocument(data: z.infer<typeof readDocumentSchema>) {

@@ -112,14 +112,31 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'patientId required' }, { status: 400 })
       }
 
+      // Whitelist fields to prevent overwriting system columns
+      const allowedFields = new Set([
+        'name', 'age', 'gender', 'phone', 'email', 'address', 'occupation',
+        'area', 'blood_group', 'height_cm', 'weight_kg', 'date_of_birth',
+        'emergency_contact', 'emergency_phone', 'notes', 'prakriti', 'vikriti',
+      ])
+      const safeUpdates: Record<string, unknown> = {}
+      for (const [key, value] of Object.entries(updates)) {
+        if (allowedFields.has(key)) {
+          safeUpdates[key] = value
+        }
+      }
+
+      if (Object.keys(safeUpdates).length === 0) {
+        return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
+      }
+
       // Convert numeric fields
-      if (updates.age) updates.age = Number(updates.age)
-      if (updates.height_cm) updates.height_cm = Number(updates.height_cm)
-      if (updates.weight_kg) updates.weight_kg = Number(updates.weight_kg)
+      if (safeUpdates.age) safeUpdates.age = Number(safeUpdates.age)
+      if (safeUpdates.height_cm) safeUpdates.height_cm = Number(safeUpdates.height_cm)
+      if (safeUpdates.weight_kg) safeUpdates.weight_kg = Number(safeUpdates.weight_kg)
 
       const { data: patient, error: updateError } = await supabase
         .from('patients')
-        .update(updates)
+        .update(safeUpdates)
         .eq('id', patientId)
         .select()
         .single()

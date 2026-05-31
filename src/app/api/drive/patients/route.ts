@@ -15,9 +15,10 @@ export async function GET(request: NextRequest) {
   try {
     const { drive } = getDriveClients('service-account')
     const rootFolderId = await getOrCreateRootFolder(drive)
-    const patients = await listPatientsFromDrive(drive, rootFolderId, search)
+    const pageToken = searchParams.get('pageToken') ?? undefined
+    const result = await listPatientsFromDrive(drive, rootFolderId, search, pageToken)
 
-    return NextResponse.json({ patients, rootFolderId })
+    return NextResponse.json({ patients: result.patients, rootFolderId, nextPageToken: result.nextPageToken })
   } catch (error) {
     console.error('Drive patients list error:', error)
     return NextResponse.json(

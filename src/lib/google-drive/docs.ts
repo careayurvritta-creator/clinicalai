@@ -45,35 +45,67 @@ export async function createDocument(
     })
     currentIndex += section.title.length + 1
 
-    // Section fields
-    for (const field of section.fields) {
-      const value = data?.[field.name]
-      const displayValue = value !== undefined && value !== null
-        ? String(value)
-        : field.defaultValue !== undefined
-          ? String(field.defaultValue)
-          : ''
+    // Section fields — handle repeatable sections (arrays) vs single fields
+    if (section.repeatable && Array.isArray(data?.[section.id])) {
+      const rows = data[section.id] as Record<string, unknown>[]
+      for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
+        const row = rows[rowIdx]
+        const rowHeader = `  ${rowIdx + 1}.\n`
+        requests.push({
+          insertText: { location: { index: currentIndex }, text: rowHeader },
+        })
+        currentIndex += rowHeader.length
 
-      const lineText = `${field.label}: ${displayValue}\n`
-      requests.push({
-        insertText: {
-          location: { index: currentIndex },
-          text: lineText,
-        },
-      })
+        for (const field of section.fields) {
+          const value = row[field.name]
+          const displayValue = value !== undefined && value !== null ? String(value) : ''
+          const lineText = `    ${field.label}: ${displayValue}\n`
+          requests.push({
+            insertText: { location: { index: currentIndex }, text: lineText },
+          })
+          requests.push({
+            updateTextStyle: {
+              range: {
+                startIndex: currentIndex,
+                endIndex: currentIndex + field.label.length + 1,
+              },
+              textStyle: { bold: true },
+              fields: 'bold',
+            },
+          })
+          currentIndex += lineText.length
+        }
+      }
+    } else {
+      for (const field of section.fields) {
+        const value = data?.[field.name]
+        const displayValue = value !== undefined && value !== null
+          ? String(value)
+          : field.defaultValue !== undefined
+            ? String(field.defaultValue)
+            : ''
 
-      // Bold the field label
-      requests.push({
-        updateTextStyle: {
-          range: {
-            startIndex: currentIndex,
-            endIndex: currentIndex + field.label.length + 1,
+        const lineText = `${field.label}: ${displayValue}\n`
+        requests.push({
+          insertText: {
+            location: { index: currentIndex },
+            text: lineText,
           },
-          textStyle: { bold: true },
-          fields: 'bold',
-        },
-      })
-      currentIndex += lineText.length
+        })
+
+        // Bold the field label
+        requests.push({
+          updateTextStyle: {
+            range: {
+              startIndex: currentIndex,
+              endIndex: currentIndex + field.label.length + 1,
+            },
+            textStyle: { bold: true },
+            fields: 'bold',
+          },
+        })
+        currentIndex += lineText.length
+      }
     }
 
     // Add spacing between sections

@@ -173,8 +173,9 @@ export interface DrivePatient {
 export async function listPatientsFromDrive(
   drive: drive_v3.Drive,
   rootFolderId: string,
-  searchQuery?: string
-): Promise<DrivePatient[]> {
+  searchQuery?: string,
+  pageToken?: string
+): Promise<{ patients: DrivePatient[]; nextPageToken?: string }> {
   let q = `'${rootFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`
 
   if (searchQuery) {
@@ -183,10 +184,11 @@ export async function listPatientsFromDrive(
 
   const res = await drive.files.list({
     q,
-    fields: 'files(id, name)',
+    fields: 'files(id, name), nextPageToken',
     spaces: 'drive',
     pageSize: 100,
     orderBy: 'name',
+    ...(pageToken ? { pageToken } : {}),
   })
 
   const patients: DrivePatient[] = []
@@ -203,7 +205,10 @@ export async function listPatientsFromDrive(
     }
   }
 
-  return patients
+  return {
+    patients,
+    nextPageToken: res.data.nextPageToken ?? undefined,
+  }
 }
 
 // ─── List Files in Category ──────────────────────────────

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useDocumentStore } from '@/lib/stores/document-store'
 
 export function EmbeddedEditor() {
@@ -8,19 +8,47 @@ export function EmbeddedEditor() {
   const closeEditor = useDocumentStore((s) => s.closeEditor)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [embedUrl, setEmbedUrl] = useState<string | null>(null)
+
+  // Fetch server-side embed URL (with public permission) when file changes
+  useEffect(() => {
+    if (!editingFile) return
+    let cancelled = false
+
+    const fetchEmbedUrl = async () => {
+      try {
+        const res = await fetch(`/api/drive/embed?fileId=${editingFile.id}`)
+        if (!res.ok) throw new Error('Failed to get embed URL')
+        const data = await res.json()
+        if (!cancelled) {
+          setEmbedUrl(data.embedUrl)
+          setError(false)
+          setLoading(true)
+        }
+      } catch {
+        if (!cancelled) {
+          // Fall back to client-side URL construction
+          setEmbedUrl(getClientSideUrl(editingFile))
+        }
+      }
+    }
+
+    fetchEmbedUrl()
+    return () => { cancelled = true }
+  }, [editingFile?.id])
 
   if (!editingFile) return null
 
   const fileId = editingFile.id
 
-  const getEmbedUrl = () => {
-    if (editingFile.mimeType.includes('spreadsheet')) {
-      return `https://docs.google.com/spreadsheets/d/${fileId}/preview`
+  const getClientSideUrl = (file: typeof editingFile) => {
+    if (file.mimeType.includes('spreadsheet')) {
+      return `https://docs.google.com/spreadsheets/d/${file.id}/preview`
     }
-    if (editingFile.mimeType.includes('document')) {
-      return `https://docs.google.com/document/d/${fileId}/preview`
+    if (file.mimeType.includes('document')) {
+      return `https://docs.google.com/document/d/${file.id}/preview`
     }
-    return `https://drive.google.com/file/d/${fileId}/preview`
+    return `https://drive.google.com/file/d/${file.id}/preview`
   }
 
   return (
@@ -75,7 +103,7 @@ export function EmbeddedEditor() {
           </div>
         )}
         <iframe
-          src={getEmbedUrl()}
+          src={embedUrl || getClientSideUrl(editingFile)}
           className="w-full h-full border-0"
           title={editingFile.name}
           allow="autoplay; same-origin"

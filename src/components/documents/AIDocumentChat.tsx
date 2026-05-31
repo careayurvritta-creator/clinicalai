@@ -38,6 +38,7 @@ export function AIDocumentChat() {
   const setFiles = useDocumentStore((s) => s.setFiles)
   const navigateToCategory = useDocumentStore((s) => s.navigateToCategory)
   const navigateToFolder = useDocumentStore((s) => s.navigateToFolder)
+  const triggerPatientRefresh = useDocumentStore((s) => s.triggerPatientRefresh)
   const openFile = useDocumentStore((s) => s.openFile)
   const currentCategory = useDocumentStore((s) => s.currentCategory)
   const rootFolderId = useDocumentStore((s) => s.rootFolderId)
@@ -98,10 +99,11 @@ export function AIDocumentChat() {
       addSystemMessage(`Patient saved.\n\n**UHID:** ${data.patient?.uhid}\n**Name:** ${data.patient?.name}\n\nWhat document would you like to generate?`)
       setSessionActions(prev => [...prev, `Created patient ${demographics.name}`])
       resetCollectedDemographics()
+      triggerPatientRefresh()
     } catch (err) {
       addSystemMessage(`Failed to save: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error')
     }
-  }, [callChatAction, updateCollectedDemographics, setPatientSupabaseId, updatePatientDemographics, addSystemMessage, resetCollectedDemographics])
+  }, [callChatAction, updateCollectedDemographics, setPatientSupabaseId, updatePatientDemographics, addSystemMessage, resetCollectedDemographics, triggerPatientRefresh])
 
   const handleGenerateDocument = useCallback(async (templateId: string, documentData: Record<string, unknown>) => {
     if (!selectedPatient) {
@@ -362,13 +364,27 @@ export function AIDocumentChat() {
 
   const handleFileUpload = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return
+
+    // Block upload when no patient and no folder selected
+    if (!currentFolderId && !selectedPatient) {
+      addSystemMessage('Cannot upload: no patient or category selected. Please select a patient first.')
+      return
+    }
+
+    // Warn when patient selected but no category
+    if (!currentFolderId && selectedPatient) {
+      addSystemMessage('No category selected. File will be uploaded to the patient\'s root folder. Navigate to a specific category first for better organization.', 'streaming')
+    }
+
     setIsUploading(true)
+
+    const targetFolderId = currentFolderId || selectedPatient?.id
 
     for (const file of Array.from(files)) {
       try {
         const formData = new FormData()
         formData.append('file', file)
-        if (currentFolderId) formData.append('folderId', currentFolderId)
+        if (targetFolderId) formData.append('folderId', targetFolderId)
 
         addSystemMessage(`Uploading "${file.name}"...`, 'streaming')
 
@@ -393,7 +409,7 @@ export function AIDocumentChat() {
     setIsUploading(false)
     // Reset file input so same file can be re-uploaded
     if (fileInputRef.current) fileInputRef.current.value = ''
-  }, [currentFolderId, addSystemMessage, updateLastChatMessage])
+  }, [currentFolderId, selectedPatient, addSystemMessage, updateLastChatMessage])
 
   // ─── Marker Router ───────────────────────────────
 
