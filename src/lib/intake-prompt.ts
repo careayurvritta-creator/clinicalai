@@ -10,6 +10,7 @@ export interface IntakePromptContext {
   } | null
   collectedDemographics: Record<string, unknown>
   currentLocation?: { category?: string; folderId?: string }
+  rootFolderId?: string
   recentActions?: string[]
   ragContext?: string
 }
@@ -22,6 +23,7 @@ export function buildIntakeSystemPrompt(ctx: IntakePromptContext): string {
     selectedPatient,
     collectedDemographics,
     currentLocation,
+    rootFolderId,
     recentActions,
     ragContext,
   } = ctx
@@ -43,6 +45,9 @@ export function buildIntakeSystemPrompt(ctx: IntakePromptContext): string {
   const locationContext = currentLocation
     ? `Current location: ${currentLocation.category ? `Category "${currentLocation.category}"` : 'Root'}${currentLocation.folderId ? ` (folderId: ${currentLocation.folderId})` : ''}`
     : 'Navigation state: at root level.'
+  const rootContext = rootFolderId
+    ? `\nPatient root folder ID: ${rootFolderId}`
+    : ''
 
   // ── Recent actions ───────────────────────────────────────────
   const actionsContext = recentActions && recentActions.length > 0
@@ -256,7 +261,11 @@ Move a file:
    - User: "Delete folder Vijaydutt Sharma"
    - You: Emit LIST_FOLDERS with the parent folder ID, then describe the folders found
    - User confirms which one
-   - You: Emit DELETE_FOLDER with the actual folderId from the listing`
+   - You: Emit DELETE_FOLDER with the actual folderId from the listing
+
+9. **Always provide folder IDs.** When emitting LIST_FOLDERS, LIST_FILES, CREATE_FOLDER, NAVIGATE_TO, or SEARCH_FILES, always include the folderId or parentFolderId. If the user is at root level, use the patient root folder ID. If no folder context is available, use the root folder ID. NEVER omit the folderId — the system cannot operate without it.
+
+10. **Execute actions fully.** When you emit a marker, you are commanding the system to perform that action. Do not just describe what you would do — emit the actual marker. For example, when the user says "create a folder called X", emit CREATE_FOLDER immediately with the parent folder ID and name.`
 
   // ── Clinical context guidelines ──────────────────────────────
   const clinicalGuidelines = `## CLINICAL CONTEXT GUIDELINES
@@ -332,7 +341,7 @@ ${existing}
 **Collected this session:**
 ${collected}
 
-${locationContext}
+${locationContext}${rootContext}
 
 ${actionsContext ? `\n${actionsContext}\n` : ''}
 ${ragBlock}

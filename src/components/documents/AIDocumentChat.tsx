@@ -292,8 +292,19 @@ export function AIDocumentChat() {
     try {
       await callChatAction({ action: 'delete_folder', folderId, confirmation: true })
       addSystemMessage(`Folder "${name}" deleted.`)
+      setSessionActions(prev => [...prev, `Deleted folder ${name}`])
     } catch (err) {
       addSystemMessage(`Folder deletion failed: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error')
+    }
+  }, [callChatAction, addSystemMessage])
+
+  const handleRenameFolder = useCallback(async (folderId: string, newName: string) => {
+    try {
+      await callChatAction({ action: 'rename_folder', folderId, newName })
+      addSystemMessage(`Folder renamed to "${newName}".`)
+      setSessionActions(prev => [...prev, `Renamed folder to ${newName}`])
+    } catch (err) {
+      addSystemMessage(`Folder rename failed: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error')
     }
   }, [callChatAction, addSystemMessage])
 
@@ -337,6 +348,9 @@ export function AIDocumentChat() {
   // ─── Marker Router ───────────────────────────────
 
   const processMarkers = useCallback(async (markers: IntakeMarker[]) => {
+    // Resolve folder IDs — use currentFolderId or rootFolderId as fallback
+    const effectiveFolderId = currentFolderId || rootFolderId || ''
+
     for (const marker of markers) {
       switch (marker.type) {
         case 'save_demographics':
@@ -352,20 +366,24 @@ export function AIDocumentChat() {
           await handleUpdateDemographic(marker.field, marker.value)
           break
         case 'list_files':
-          if (marker.folderId) await handleListFiles(marker.folderId, marker.categoryName)
+          await handleListFiles(marker.folderId || effectiveFolderId, marker.categoryName)
           break
         case 'search_files':
           await handleSearchFiles(marker.query)
           break
         case 'read_document':
+          if (!marker.fileId) {
+            addSystemMessage('Cannot read document: no file ID provided.')
+            break
+          }
           await handleReadDocument(marker.fileId, marker.mimeType, marker.fileName)
           break
         case 'navigate_to':
-          if (marker.folderId || marker.navType === 'root') await handleNavigateTo(marker.folderId ?? '', marker.label, marker.navType)
+          await handleNavigateTo(marker.folderId || effectiveFolderId, marker.label, marker.navType)
           break
         case 'delete_file':
           if (!marker.fileId) {
-            addSystemMessage(`Cannot delete file: no file ID provided. I need to list files first to find the ID.`)
+            addSystemMessage('Cannot delete file: no file ID provided. I need to list files first to find the ID.')
             break
           }
           if (!pendingConfirmation) {
@@ -378,25 +396,24 @@ export function AIDocumentChat() {
           break
         case 'rename_file':
           if (!marker.fileId) {
-            addSystemMessage(`Cannot rename: no file ID provided. I need to list files first to find the ID.`)
+            addSystemMessage('Cannot rename file: no file ID provided. I need to list files first to find the ID.')
             break
           }
           await handleRenameFile(marker.fileId, marker.newName)
           break
         case 'move_file':
           if (!marker.fileId) {
-            addSystemMessage(`Cannot move: no file ID provided. I need to list files first to find the ID.`)
+            addSystemMessage('Cannot move file: no file ID provided. I need to list files first to find the ID.')
             break
           }
           await handleMoveFile(marker.fileId, marker.newParentFolderId)
           break
         case 'create_folder':
-          if (marker.parentFolderId) await handleCreateFolder(marker.parentFolderId, marker.name)
-          else addSystemMessage('Cannot create folder: no parent folder specified.')
+          await handleCreateFolder(marker.parentFolderId || effectiveFolderId, marker.name)
           break
         case 'delete_folder':
           if (!marker.folderId) {
-            addSystemMessage(`Cannot delete folder: no folder ID provided. I need to list folders first to find the ID. Please try again.`)
+            addSystemMessage('Cannot delete folder: no folder ID provided. I need to list folders first to find the ID.')
             break
           }
           if (!pendingConfirmation) {
@@ -408,14 +425,18 @@ export function AIDocumentChat() {
           }
           break
         case 'rename_folder':
-          await handleRenameFile(marker.folderId, marker.newName)
+          if (!marker.folderId) {
+            addSystemMessage('Cannot rename folder: no folder ID provided. I need to list folders first to find the ID.')
+            break
+          }
+          await handleRenameFolder(marker.folderId, marker.newName)
           break
         case 'list_folders':
-          if (marker.parentFolderId) await handleListFolders(marker.parentFolderId)
+          await handleListFolders(marker.parentFolderId || effectiveFolderId)
           break
       }
     }
-  }, [pendingConfirmation, handleSaveDemographics, handleGenerateDocument, handleGenerateBulk, handleUpdateDemographic, handleListFiles, handleListFolders, handleSearchFiles, handleReadDocument, handleNavigateTo, handleDeleteFile, handleRenameFile, handleMoveFile, handleCreateFolder, handleDeleteFolder, addSystemMessage])
+  }, [pendingConfirmation, currentFolderId, rootFolderId, handleSaveDemographics, handleGenerateDocument, handleGenerateBulk, handleUpdateDemographic, handleListFiles, handleListFolders, handleSearchFiles, handleReadDocument, handleNavigateTo, handleDeleteFile, handleRenameFile, handleMoveFile, handleCreateFolder, handleDeleteFolder, handleRenameFolder, addSystemMessage])
 
   // ─── Send Message ────────────────────────────────
 
@@ -451,7 +472,11 @@ export function AIDocumentChat() {
           demographics: selectedPatient.demographics ? { ...selectedPatient.demographics } as Record<string, unknown> : undefined,
         } : null,
         collectedDemographics,
-        currentLocation: currentCategory ? { category: currentCategory } : undefined,
+        currentLocation: {
+          category: currentCategory || undefined,
+          folderId: currentFolderId || undefined,
+        },
+        rootFolderId: rootFolderId || undefined,
         recentActions: sessionActions.slice(-5),
       })
 
