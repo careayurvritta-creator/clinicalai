@@ -92,19 +92,7 @@ async function persistMessage(opts: {
       console.warn('[Chat API] Failed to insert message:', msgError.message)
     }
 
-    // Increment message count
-    try {
-      await supabase.rpc('increment_message_count', { conv_id: conversation.id })
-    } catch {
-      // Fallback: manual update
-      const { count } = await supabase
-        .from('messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('conversation_id', conversation.id)
-      if (count !== null) {
-        await supabase.from('conversations').update({ message_count: count }).eq('id', conversation.id)
-      }
-    }
+    // Message count is auto-incremented by DB trigger on messages table
   } catch (error) {
     console.warn('[Chat API] Persistence error:', error)
   }
