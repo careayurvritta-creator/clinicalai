@@ -130,6 +130,40 @@ export async function getShareableLink(
   return file.data.webViewLink || ''
 }
 
+// Upload a file to a folder
+export async function uploadFile(
+  drive: drive_v3.Drive,
+  folderId: string,
+  fileName: string,
+  mimeType: string,
+  buffer: Buffer
+): Promise<FileInfo> {
+  const response = await drive.files.create({
+    requestBody: {
+      name: fileName,
+      parents: [folderId],
+      mimeType,
+    },
+    media: {
+      mimeType,
+      body: Buffer.from(buffer),
+    },
+    fields: 'id, name, mimeType, size, createdTime, modifiedTime, webViewLink, iconLink',
+  })
+
+  const f = response.data
+  return {
+    id: f.id!,
+    name: f.name!,
+    mimeType: f.mimeType!,
+    size: f.size ?? undefined,
+    createdTime: f.createdTime ?? undefined,
+    modifiedTime: f.modifiedTime ?? undefined,
+    webViewLink: f.webViewLink ?? undefined,
+    iconLink: f.iconLink ?? undefined,
+  }
+}
+
 // Count files in a folder
 export async function countFiles(
   drive: drive_v3.Drive,

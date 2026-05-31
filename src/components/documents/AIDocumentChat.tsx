@@ -41,12 +41,15 @@ export function AIDocumentChat() {
   const openFile = useDocumentStore((s) => s.openFile)
   const currentCategory = useDocumentStore((s) => s.currentCategory)
   const rootFolderId = useDocumentStore((s) => s.rootFolderId)
+  const currentFolderId = useDocumentStore((s) => s.currentFolderId)
 
   const [input, setInput] = useState('')
   const [pendingConfirmation, setPendingConfirmation] = useState<IntakeMarker | null>(null)
   const [sessionActions, setSessionActions] = useState<string[]>([])
+  const [isUploading, setIsUploading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -293,6 +296,43 @@ export function AIDocumentChat() {
       addSystemMessage(`Folder deletion failed: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error')
     }
   }, [callChatAction, addSystemMessage])
+
+  // ─── File Upload ─────────────────────────────────
+
+  const handleFileUpload = useCallback(async (files: FileList | null) => {
+    if (!files || files.length === 0) return
+    setIsUploading(true)
+
+    for (const file of Array.from(files)) {
+      try {
+        const formData = new FormData()
+        formData.append('file', file)
+        if (currentFolderId) formData.append('folderId', currentFolderId)
+
+        addSystemMessage(`Uploading "${file.name}"...`, 'streaming')
+
+        const res = await fetch('/api/documents/upload', {
+          method: 'POST',
+          body: formData,
+        })
+
+        if (!res.ok) {
+          const err = await res.json()
+          throw new Error(err.error || 'Upload failed')
+        }
+
+        const data = await res.json()
+        updateLastChatMessage(`Uploaded **${file.name}** successfully.`)
+        setSessionActions(prev => [...prev, `Uploaded ${file.name}`])
+      } catch (err) {
+        updateLastChatMessage(`Upload failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      }
+    }
+
+    setIsUploading(false)
+    // Reset file input so same file can be re-uploaded
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }, [currentFolderId, addSystemMessage, updateLastChatMessage])
 
   // ─── Marker Router ───────────────────────────────
 
@@ -592,7 +632,32 @@ export function AIDocumentChat() {
 
       {/* Input */}
       <div className="px-3 py-2 border-t border-border">
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+          multiple
+          onChange={(e) => handleFileUpload(e.target.files)}
+        />
         <div className="flex items-end gap-2">
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="p-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Attach file (PDF, Word, Excel, JPG, PNG)"
+          >
+            {isUploading ? (
+              <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+            ) : (
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+              </svg>
+            )}
+          </button>
           <textarea
             ref={inputRef}
             value={input}
