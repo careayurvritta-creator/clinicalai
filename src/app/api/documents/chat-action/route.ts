@@ -287,12 +287,19 @@ async function handleCreatePatient(
     return NextResponse.json({ error: 'Failed to create patient', details: error.message }, { status: 500 })
   }
 
-  // Create Drive folder
+  // Create Drive folder and link to patient
   let driveFolder: { folderId: string; categoryFolders: Record<string, string> } | null = null
   try {
     const { drive } = getDriveClients('service-account')
     const rootFolderId = await getOrCreateRootFolder(drive)
     driveFolder = await getOrCreatePatientFolder(drive, rootFolderId, data.name, uhid)
+
+    // Save the Drive link so the patient can be found from the sidebar
+    await supabase.from('patient_drive_links').upsert({
+      patient_id: patient.id,
+      drive_folder_id: driveFolder.folderId,
+      clinical_id: uhid,
+    }, { onConflict: 'patient_id' })
   } catch (driveError) {
     console.error('[Chat Action] Drive folder creation error:', driveError)
     // Continue — patient is created in Supabase even if Drive fails
