@@ -108,15 +108,31 @@ export function AIDocumentChat() {
       addSystemMessage('No patient selected. Please select a patient from the sidebar or register a new one first.')
       return
     }
-    if (!selectedPatient.supabasePatientId) {
-      addSystemMessage(`Patient "${selectedPatient.name}" is selected but has no linked record. Creating one now...`)
-      // Try to create the patient record via SAVE_DEMOGRAPHICS flow
-      return
+
+    // Auto-create patient record if missing (e.g., selected from sidebar without Supabase record)
+    let patientId = selectedPatient.supabasePatientId
+    if (!patientId) {
+      try {
+        addSystemMessage(`Linking patient "${selectedPatient.name}" to database...`)
+        const createData = await callChatAction({
+          action: 'create_patient',
+          name: selectedPatient.name,
+          ...collectedDemographics,
+        })
+        if (createData.patient) {
+          patientId = createData.patient.id
+          setPatientSupabaseId(createData.patient.id, createData.patient.uhid)
+          updatePatientDemographics(createData.patient)
+        }
+      } catch (err) {
+        addSystemMessage(`Failed to create patient record: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error')
+        return
+      }
     }
     try {
       const data = await callChatAction({
         action: 'generate_document',
-        patientId: selectedPatient.supabasePatientId,
+        patientId,
         templateId,
         data: documentData,
       })
@@ -141,15 +157,31 @@ export function AIDocumentChat() {
       addSystemMessage('No patient selected. Please select a patient from the sidebar or register a new one first.')
       return
     }
-    if (!selectedPatient.supabasePatientId) {
-      addSystemMessage(`Patient "${selectedPatient.name}" has no linked record yet. Please register them first.`)
-      return
+
+    let patientId = selectedPatient.supabasePatientId
+    if (!patientId) {
+      try {
+        addSystemMessage(`Linking patient "${selectedPatient.name}" to database...`)
+        const createData = await callChatAction({
+          action: 'create_patient',
+          name: selectedPatient.name,
+          ...collectedDemographics,
+        })
+        if (createData.patient) {
+          patientId = createData.patient.id
+          setPatientSupabaseId(createData.patient.id, createData.patient.uhid)
+          updatePatientDemographics(createData.patient)
+        }
+      } catch (err) {
+        addSystemMessage(`Failed to create patient record: ${err instanceof Error ? err.message : 'Unknown error'}`, 'error')
+        return
+      }
     }
     addSystemMessage(`Generating ${documents.length} documents...`)
     try {
       const data = await callChatAction({
         action: 'generate_bulk',
-        patientId: selectedPatient.supabasePatientId,
+        patientId,
         documents,
       })
       const results = data.results as Array<{ success: boolean; document?: { title: string; url: string }; error?: string }>
