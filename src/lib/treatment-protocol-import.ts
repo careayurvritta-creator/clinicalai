@@ -21,11 +21,11 @@ interface ImportedDemographics {
  */
 export async function importFromTreatmentProtocol(
   patientName: string,
-  clinicalId?: string
+  _clinicalId?: string
 ): Promise<ImportedDemographics | null> {
   try {
     // Search cases table for matching patient name
-    let query = supabase
+    const query = supabase
       .from('cases')
       .select('name, age, gender, occupation, area')
       .ilike('name', `%${patientName}%`)
