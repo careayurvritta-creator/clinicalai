@@ -106,9 +106,10 @@ export async function getOrCreatePatientFolder(
   drive: drive_v3.Drive,
   rootFolderId: string,
   patientName: string,
-  clinicalId: string
+  clinicalId: string,
+  uhid?: string
 ): Promise<{ folderId: string; categoryFolders: Record<string, string> }> {
-  const folderName = `${patientName} (${clinicalId})`
+  const folderName = uhid ? `${uhid}_${patientName}` : `${patientName} (${clinicalId})`
 
   // Search for existing patient folder
   const res = await drive.files.list({
@@ -167,6 +168,7 @@ export async function getOrCreatePatientFolder(
 export interface DrivePatient {
   name: string
   clinicalId: string
+  uhid: string
   folderId: string
 }
 
@@ -194,12 +196,27 @@ export async function listPatientsFromDrive(
   const patients: DrivePatient[] = []
 
   for (const file of res.data.files ?? []) {
-    // Parse "Patient Name (CLINICAL_ID)" format
-    const match = file.name?.match(/^(.+?)\s*\(([^)]+)\)$/)
-    if (match && file.id) {
+    if (!file.id) continue
+
+    // Parse "UHID_FirstName LastName" format (e.g., UHID-2605001_John Doe)
+    const uhidMatch = file.name?.match(/^(UHID-\d+)_(.+)$/)
+    if (uhidMatch) {
       patients.push({
-        name: match[1].trim(),
-        clinicalId: match[2].trim(),
+        name: uhidMatch[2].trim(),
+        clinicalId: uhidMatch[1].trim(),
+        uhid: uhidMatch[1].trim(),
+        folderId: file.id,
+      })
+      continue
+    }
+
+    // Legacy format: "Patient Name (CLINICAL_ID)"
+    const legacyMatch = file.name?.match(/^(.+?)\s*\(([^)]+)\)$/)
+    if (legacyMatch) {
+      patients.push({
+        name: legacyMatch[1].trim(),
+        clinicalId: legacyMatch[2].trim(),
+        uhid: '',
         folderId: file.id,
       })
     }
@@ -253,6 +270,19 @@ export async function deleteFile(
   fileId: string
 ): Promise<void> {
   await drive.files.delete({ fileId })
+}
+
+// ─── Rename File/Folder ──────────────────────────────────
+
+export async function renameFolder(
+  drive: drive_v3.Drive,
+  fileId: string,
+  newName: string
+): Promise<void> {
+  await drive.files.update({
+    fileId,
+    requestBody: { name: newName },
+  })
 }
 
 // ─── Get Folder URL ──────────────────────────────────────

@@ -139,7 +139,7 @@ export const useDocumentStore = create<DocumentState & DocumentActions>()(
           editorMode: 'explorer',
           breadcrumbs: [
             { id: 'root', label: 'Patients', type: 'root' },
-            { id: patient.id, label: `${patient.name} (${patient.clinicalId})`, type: 'patient' },
+            { id: patient.id, label: patient.uhid ? `${patient.uhid}_${patient.name}` : `${patient.name} (${patient.clinicalId})`, type: 'patient' },
           ],
         }),
       clearPatient: () =>

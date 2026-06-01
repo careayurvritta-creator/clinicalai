@@ -7,6 +7,7 @@ import { ModeSwitcher } from '@/components/shared/ModeSwitcher'
 interface DrivePatient {
   name: string
   clinicalId: string
+  uhid: string
   folderId: string
 }
 
@@ -61,6 +62,7 @@ export function PatientSidebar() {
       id: patient.folderId,
       name: patient.name,
       clinicalId: patient.clinicalId,
+      uhid: patient.uhid,
       folderUrl: `https://drive.google.com/drive/folders/${patient.folderId}`,
     })
 
@@ -187,10 +189,7 @@ export function PatientSidebar() {
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium truncate">{patient.name}</div>
                   <div className="text-[10px] text-muted-foreground">
-                    {patient.clinicalId}
-                    {selectedPatient?.id === patient.folderId && selectedPatient.uhid && (
-                      <span className="ml-1 text-primary">| {selectedPatient.uhid}</span>
-                    )}
+                    {patient.uhid || patient.clinicalId}
                   </div>
                 </div>
               </button>

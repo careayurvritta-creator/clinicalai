@@ -300,7 +300,7 @@ async function handleCreatePatient(
   try {
     const { drive } = getDriveClients('service-account')
     const rootFolderId = await getOrCreateRootFolder(drive)
-    driveFolder = await getOrCreatePatientFolder(drive, rootFolderId, data.name, uhid)
+    driveFolder = await getOrCreatePatientFolder(drive, rootFolderId, data.name, patientCode, uhid)
 
     // Save the Drive link so the patient can be found from the sidebar
     await supabase.from('patient_drive_links').upsert({
