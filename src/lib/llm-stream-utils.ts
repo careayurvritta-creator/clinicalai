@@ -158,8 +158,8 @@ export async function streamLLMResponse(
   let finishReason: string | null = null
 
   for await (const chunk of stream) {
-    const data = JSON.stringify(chunk)
     try {
+      const data = JSON.stringify(chunk)
       const delta = chunk.choices?.[0]?.delta as Record<string, string> | undefined
       const chunkContent = delta?.content || delta?.reasoning_content || ''
       if (chunkContent) content += chunkContent
@@ -168,8 +168,10 @@ export async function streamLLMResponse(
       if (choice?.finish_reason) {
         finishReason = choice.finish_reason as string
       }
-    } catch {}
-    controller.enqueue(encoder.encode(`data: ${data}\n\n`))
+      controller.enqueue(encoder.encode(`data: ${data}\n\n`))
+    } catch (chunkError) {
+      console.error('[LLM] Chunk processing error:', chunkError)
+    }
   }
 
   return { content, finishReason }

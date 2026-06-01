@@ -2,12 +2,12 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { SYSTEM_PROMPT } from '@/lib/types'
+import { SYSTEM_PROMPT, DEFAULT_MODEL } from '@/lib/types'
 import { vectorSearch, initializeVectorRAG, formatVectorResultsForContext, detectQueryIntent } from '@/lib/ayurrag/vector-rag'
 import { createServerClient } from '@/lib/supabase/client'
 import { analyzeQuery } from '@/lib/ayurrag/query-engine'
 import {
-  DEFAULT_MODEL, MAX_CHAT_CONTINUATIONS,
+  MAX_CHAT_CONTINUATIONS,
   AYURVEDIC_TERMS, INTENT_FOCUS_INSTRUCTIONS,
   streamWithAutoContinuation, type IntentType,
 } from '@/lib/llm-stream-utils'
@@ -172,7 +172,7 @@ export async function POST(req: NextRequest) {
     // Persist user message (fire-and-forget)
     const lastUserMessage = messages[messages.length - 1]
     if (lastUserMessage?.role === 'user') {
-      persistMessage({ sessionId, role: 'user', content: lastUserMessage.content, model, module })
+      persistMessage({ sessionId, role: 'user', content: lastUserMessage.content, model, module }).catch(err => console.error('[Chat API] Failed to persist user message:', err))
     }
 
     // ─── RAG Enhancement ───────────────────────────────────────────────────
@@ -279,7 +279,7 @@ export async function POST(req: NextRequest) {
 
           // Persist complete assistant response
           if (assistantContent) {
-            persistMessage({ sessionId, role: 'assistant', content: assistantContent, model, module, ragSources })
+            persistMessage({ sessionId, role: 'assistant', content: assistantContent, model, module, ragSources }).catch(err => console.error('[Chat API] Failed to persist assistant message:', err))
           }
 
           console.log('[Chat API] Stream complete in', Date.now() - startTime, 'ms, length:', assistantContent.length, 'continuations:', continuationCount)

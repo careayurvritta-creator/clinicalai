@@ -83,8 +83,9 @@ export function PatientSidebar() {
           }
         }
       }
-    } catch {
+    } catch (err) {
       // No Supabase record yet — chatbot will collect demographics
+      console.debug('[PatientSidebar] No Supabase link for patient:', patient.name, err)
     }
   }
 

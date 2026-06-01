@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
 // POST /api/drive/folders — Create patient folder structure
 export async function POST(request: NextRequest) {
   const body = await request.json()
-  const { access_token, refresh_token, patient_name, clinical_id, root_folder_id } = body
+  const { access_token, refresh_token, patient_name, clinical_id, root_folder_id, uhid } = body
 
   if (!access_token || !patient_name || !clinical_id || !root_folder_id) {
     return NextResponse.json(
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const drive = createOAuthDrive(access_token, refresh_token)
-    const result = await getOrCreatePatientFolder(drive, root_folder_id, patient_name, clinical_id)
+    const result = await getOrCreatePatientFolder(drive, root_folder_id, patient_name, clinical_id, uhid)
     return NextResponse.json({ success: true, ...result })
   } catch (error) {
     console.error('Drive folders error:', error)

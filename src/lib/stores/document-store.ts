@@ -198,7 +198,7 @@ export const useDocumentStore = create<DocumentState & DocumentActions>()(
           breadcrumbs: s.selectedPatient
             ? [
                 { id: 'root', label: 'Patients', type: 'root' as const },
-                { id: s.selectedPatient.id, label: `${s.selectedPatient.name} (${s.selectedPatient.clinicalId})`, type: 'patient' as const },
+                { id: s.selectedPatient.id, label: s.selectedPatient.uhid ? `${s.selectedPatient.uhid}_${s.selectedPatient.name}` : `${s.selectedPatient.name} (${s.selectedPatient.clinicalId})`, type: 'patient' as const },
               ]
             : [],
           editingFile: null,
