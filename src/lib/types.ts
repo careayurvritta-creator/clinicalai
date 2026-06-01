@@ -375,63 +375,13 @@ export interface PatientData {
   date_of_birth?: string | null
 }
 
-export interface PatientRecord {
-  id: string
-  patient_code: string | null
-  clinical_id: string | null
-  uhid: string | null
-  abha_id: string | null
-  name: string
-  age: number | null
-  date_of_birth: string | null
-  gender: 'Male' | 'Female' | 'Other' | null
-  occupation: string | null
-  area: string | null
-  phone: string | null
-  email: string | null
-  address: string | null
-  blood_group: string | null
-  height_cm: number | null
-  weight_kg: number | null
-  bmi: number | null
-  emergency_contact: string | null
-  emergency_phone: string | null
-  notes: string | null
-  created_at: string
-  updated_at: string
-}
-
-export interface PatientRecord {
-  id: string
-  patient_code: string | null
-  clinical_id: string | null
-  uhid: string | null
-  abha_id: string | null
-  name: string
-  age: number | null
-  date_of_birth: string | null
-  gender: 'Male' | 'Female' | 'Other' | null
-  occupation: string | null
-  area: string | null
-  phone: string | null
-  email: string | null
-  address: string | null
-  blood_group: string | null
-  height_cm: number | null
-  weight_kg: number | null
-  bmi: number | null
-  emergency_contact: string | null
-  emergency_phone: string | null
-  notes: string | null
-  created_at: string
-  updated_at: string
-}
-
 /** Full Supabase patient record (matches patients table) */
 export interface PatientRecord {
   id: string
   patient_code: string | null
+  clinical_id: string | null
   uhid: string | null
+  abha_id: string | null
   name: string
   age: number | null
   date_of_birth: string | null
@@ -449,32 +399,6 @@ export interface PatientRecord {
   emergency_phone: string | null
   notes: string | null
   is_archived: boolean
-  created_at: string
-  updated_at: string
-}
-
-export interface PatientRecord {
-  id: string
-  patient_code: string | null
-  clinical_id: string | null
-  uhid: string | null
-  abha_id: string | null
-  name: string
-  age: number | null
-  date_of_birth: string | null
-  gender: 'Male' | 'Female' | 'Other' | null
-  occupation: string | null
-  area: string | null
-  phone: string | null
-  email: string | null
-  address: string | null
-  blood_group: string | null
-  height_cm: number | null
-  weight_kg: number | null
-  bmi: number | null
-  emergency_contact: string | null
-  emergency_phone: string | null
-  notes: string | null
   created_at: string
   updated_at: string
 }
