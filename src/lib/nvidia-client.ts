@@ -59,63 +59,34 @@ function validateModel(model: string): void {
   if (!model || typeof model !== 'string') {
     throw new Error('[NVIDIA] Model must be a non-empty string')
   }
-  // Warn if model is not in our known set (don't block — new models may be added)
-  if (VALID_MODELS.size > 0 && !VALID_MODELS.has(model)) {
-    console.warn(`[NVIDIA] Model "${model}" is not in known models list. Proceeding anyway.`)
-  }
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 /**
- * Creates a chat completion stream with exponential backoff retry.
+ * Creates a chat completion stream.
+ * Uses the OpenAI SDK's built-in retry (maxRetries: 3) which correctly
+ * applies exponential backoff for transient errors (5xx, network) but
+ * does NOT retry on client errors (401, 429, etc.) — avoiding rate limit
+ * amplification that our own retry loop would cause.
  */
 export async function createChatStream(
   messages: ChatMessage[],
   model: string,
-  params?: ChatParams,
-  retries = 3
+  params?: ChatParams
 ) {
   validateModel(model)
 
+  const client = getNvidiaClient()
   const merged = { ...DEFAULT_PARAMS, ...params }
-  let lastError: Error | null = null
 
-  for (let attempt = 0; attempt < retries; attempt++) {
-    try {
-      const client = getNvidiaClient()
-      return client.chat.completions.create(
-        {
-          model,
-          messages: messages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
-          max_tokens: merged.max_tokens,
-          temperature: merged.temperature,
-          top_p: merged.top_p,
-          stream: true,
-        },
-        { maxRetries: 1 }
-      )
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error))
-      const isRateLimit = lastError.message.toLowerCase().includes('rate')
-      const isLastAttempt = attempt === retries - 1
-
-      if (isLastAttempt) {
-        console.error(`[NVIDIA] All ${retries} attempts failed:`, lastError.message)
-        throw lastError
-      }
-
-      const backoffMs = Math.pow(2, attempt) * 1000 + Math.random() * 500
-      console.warn(
-        `[NVIDIA] Attempt ${attempt + 1}/${retries} failed${isRateLimit ? ' (rate limit)' : ''}: ` +
-        `${lastError.message}. Retrying in ${Math.round(backoffMs)}ms...`
-      )
-      await sleep(backoffMs)
-    }
-  }
-
-  // This should never be reached due to the throw above, but TypeScript needs it
-  throw lastError ?? new Error('[NVIDIA] createChatStream failed unexpectedly')
+  return client.chat.completions.create(
+    {
+      model,
+      messages: messages as OpenAI.Chat.Completions.ChatCompletionMessageParam[],
+      max_tokens: merged.max_tokens,
+      temperature: merged.temperature,
+      top_p: merged.top_p,
+      stream: true,
+    },
+    { maxRetries: 3 }
+  )
 }
