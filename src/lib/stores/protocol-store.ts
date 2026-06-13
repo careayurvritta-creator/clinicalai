@@ -95,7 +95,25 @@ export const useProtocolStore = create<ProtocolStoreState & ProtocolStoreActions
       setCaseData: (data) => set({ caseData: data }),
 
       clearMessages: () =>
-        set({ messages: [], canvasContent: '', canvasTimestamp: 0, isStreaming: false }),
+        set((state) => {
+          const updatedSessions = { ...state.sessions }
+          const sid = state.activeSessionId
+          if (sid && updatedSessions[sid]) {
+            updatedSessions[sid] = {
+              ...updatedSessions[sid],
+              messages: [],
+              protocolContent: '',
+              updatedAt: Date.now(),
+            }
+          }
+          return {
+            messages: [],
+            sessions: updatedSessions,
+            canvasContent: '',
+            canvasTimestamp: 0,
+            isStreaming: false,
+          }
+        }),
       setChatInputDraft: (draft) => set({ chatInputDraft: draft }),
 
       createSession: (patientName: string) => {
@@ -141,7 +159,7 @@ export const useProtocolStore = create<ProtocolStoreState & ProtocolStoreActions
             messages: session.messages,
             caseData: session.caseData,
             canvasContent: session.protocolContent || '',
-            canvasTimestamp: 0,
+            canvasTimestamp: session.updatedAt || Date.now(),
           }
         }),
 
@@ -182,7 +200,12 @@ export const useProtocolStore = create<ProtocolStoreState & ProtocolStoreActions
     }),
     {
       name: 'clinical-ai-protocol',
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => {
+        if (typeof window === 'undefined') {
+          return { getItem: () => null, setItem: () => {}, removeItem: () => {} }
+        }
+        return localStorage
+      }),
       partialize: (state) => ({
         messages: state.messages,
         selectedModel: state.selectedModel,

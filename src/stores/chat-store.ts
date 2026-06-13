@@ -94,7 +94,24 @@ export const useChatStore = create<ChatState & ChatActions>()(
       setCanvasContent: (content) => set({ canvasContent: content, canvasTimestamp: Date.now() }),
 
       clearMessages: () =>
-        set({ messages: [], canvasContent: '', canvasTimestamp: 0, isStreaming: false }),
+        set((state) => {
+          const updatedSessions = { ...state.sessions }
+          const sid = state.activeSessionId
+          if (sid && updatedSessions[sid]) {
+            updatedSessions[sid] = {
+              ...updatedSessions[sid],
+              messages: [],
+              updatedAt: Date.now(),
+            }
+          }
+          return {
+            messages: [],
+            sessions: updatedSessions,
+            canvasContent: '',
+            canvasTimestamp: 0,
+            isStreaming: false,
+          }
+        }),
 
       setChatInputDraft: (draft) => set({ chatInputDraft: draft }),
 

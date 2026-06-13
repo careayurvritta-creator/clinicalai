@@ -1,6 +1,11 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  // Bundle optimization — tree-shake large shared packages
+  experimental: {
+    optimizePackageImports: ['react-markdown', 'zustand', 'lucide-react'],
+  },
+
   headers: async () => [
     {
       source: '/:path*',

@@ -138,7 +138,15 @@ export async function POST(req: NextRequest) {
   const startTime = Date.now()
 
   try {
-    const body = await req.json()
+    let body: unknown
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json(
+        { error: 'Invalid JSON in request body', code: 'VALIDATION_ERROR' },
+        { status: 400 }
+      )
+    }
     const { messages, model, enableRAG, attachments, sessionId, module } = chatRequestSchema.parse(body)
 
     console.log('[Chat API] Request:', {
@@ -188,24 +196,30 @@ export async function POST(req: NextRequest) {
       const searchMessage = [...messages].reverse().find(m => m.role === 'user')
       if (searchMessage) {
         try {
-          // Single intent detection call (used for both RAG filtering and prompt building)
-          const intent = detectQueryIntent(searchMessage.content)
-          queryIntent = intent.primaryIntent as IntentType
-          const queryAnalysis = analyzeQuery(searchMessage.content)
+          // Parallelize intent detection + query analysis with vector search
+          const [intentResult, searchResults] = await Promise.all([
+            Promise.resolve().then(() => {
+              const intent = detectQueryIntent(searchMessage.content)
+              const queryAnalysis = analyzeQuery(searchMessage.content)
+              return { intent, queryAnalysis }
+            }),
+            vectorSearch(searchMessage.content, {
+              maxResults: 15,
+              minRelevance: 0.20,
+              includeWHO: true,
+              includeAyurKnowledge: true,
+              includeClinicalCases: true,
+            }),
+          ])
+
+          queryIntent = intentResult.intent.primaryIntent as IntentType
+          const { queryAnalysis } = intentResult
 
           console.log('[Chat API] Query analysis:', {
             intent: queryIntent,
-            complexity: intent.complexity,
+            complexity: intentResult.intent.complexity,
             entities: queryAnalysis.entities.length,
             safety: queryAnalysis.requiresSafetyWarning,
-          })
-
-          const searchResults = await vectorSearch(searchMessage.content, {
-            maxResults: 15,
-            minRelevance: 0.20,
-            includeWHO: true,
-            includeAyurKnowledge: true,
-            includeClinicalCases: true,
           })
 
           if (searchResults.length > 0) {
@@ -226,6 +240,7 @@ export async function POST(req: NextRequest) {
           }
         } catch (error) {
           console.error('[Chat API] RAG error:', error)
+          // Gracefully degrade — proceed without RAG context
         }
       }
     }
@@ -285,7 +300,16 @@ export async function POST(req: NextRequest) {
           console.log('[Chat API] Stream complete in', Date.now() - startTime, 'ms, length:', assistantContent.length, 'continuations:', continuationCount)
         } catch (err) {
           console.error('[Chat API] Stream error:', err)
-          controller.error(err)
+          // Send error event to client before closing
+          try {
+            const errorEvent = JSON.stringify({
+              type: 'error',
+              message: err instanceof Error ? err.message : 'Stream processing failed',
+            })
+            controller.enqueue(encoder.encode(`data: ${errorEvent}\n\n`))
+            controller.enqueue(encoder.encode('data: [DONE]\n\n'))
+          } catch { /* controller may already be closed */ }
+          try { controller.close() } catch { /* ignore */ }
         }
       },
     })

@@ -153,7 +153,15 @@ export async function streamLLMResponse(
   existingContent: string = '',
   options?: { max_tokens?: number; temperature?: number; top_p?: number }
 ): Promise<StreamResult> {
-  const stream = await createChatStream(messages as any, model, options)
+  let stream: AsyncIterable<any>
+  try {
+    stream = await createChatStream(messages as any, model, options)
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('[LLM] Failed to create stream:', msg)
+    throw err
+  }
+
   let content = existingContent
   let finishReason: string | null = null
 

@@ -95,8 +95,8 @@ async function logSearchHistory(
 // ─── In-Memory LRU Cache ─────────────────────────────────────────────────────
 
 const searchCache = new Map<string, { results: VectorSearchResult[]; timestamp: number }>()
-const CACHE_MAX_SIZE = 200
-const CACHE_TTL_MS = 5 * 60 * 1000
+const CACHE_MAX_SIZE = 500
+const CACHE_TTL_MS = 10 * 60 * 1000
 
 function getCachedResults(cacheKey: string): VectorSearchResult[] | null {
   const cached = searchCache.get(cacheKey)
@@ -370,8 +370,9 @@ export async function vectorSearch(
 ): Promise<VectorSearchResult[]> {
   const startTime = Date.now()
 
-  // Check cache
-  const cacheKey = `${query}:${config.maxResults}:${config.minRelevance}:${config.includeWHO}:${config.includeAyurKnowledge}:${config.includeClinicalCases}`
+  // Check cache (include sourceFilter in key to avoid stale results)
+  const sourceFilterKey = config.sourceFilter ? config.sourceFilter.sort().join(',') : 'default'
+  const cacheKey = `${query}:${config.maxResults}:${config.minRelevance}:${config.includeWHO}:${config.includeAyurKnowledge}:${config.includeClinicalCases}:${sourceFilterKey}`
   const cached = getCachedResults(cacheKey)
   if (cached) {
     console.log('[VectorRAG] Cache hit for query:', query.substring(0, 50))
@@ -445,15 +446,18 @@ export async function vectorSearch(
   if (results.length < config.maxResults) {
     try {
       const remaining = config.maxResults - results.length
-      const sourceTables = config.sourceFilter || [
+      const sourceTables = config.sourceFilter ? [...config.sourceFilter] : [
         'diseases', 'herbs', 'treatments', 'charak_chapters', 'sushruta_chapters',
         'allopathy_integration', 'clinical_evidence', 'external_qa', 'modern_medicines',
         'fundamentals', 'diagnostics'
       ]
-      if (config.includeWHO) sourceTables.push('who_terminology')
+      // Add optional tables only if not already present (avoid duplicates)
+      if (config.includeWHO && !sourceTables.includes('who_terminology')) {
+        sourceTables.push('who_terminology')
+      }
       if (config.includeClinicalCases) {
-        sourceTables.push('clinical_cases')
-        sourceTables.push('case_studies')
+        if (!sourceTables.includes('clinical_cases')) sourceTables.push('clinical_cases')
+        if (!sourceTables.includes('case_studies')) sourceTables.push('case_studies')
       }
 
       const { data: textResults, error: textError } = await searchKnowledgeBase(

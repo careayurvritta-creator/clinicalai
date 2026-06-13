@@ -1,6 +1,45 @@
 import type { CaseData, ChiefComplaint } from './types'
 import { DISEASES } from './ayurknowledge/diseases'
 
+// ─── Pre-compiled lookup maps for O(1) disease matching ───────────────────────
+let _diseaseMap: Map<string, typeof DISEASES[0]> | null = null
+
+function getDiseaseMap(): Map<string, typeof DISEASES[0]> {
+  if (_diseaseMap) return _diseaseMap
+  _diseaseMap = new Map()
+  for (const disease of DISEASES) {
+    _diseaseMap.set(disease.name.toLowerCase(), disease)
+  }
+  return _diseaseMap
+}
+
+// ─── Pre-compiled symptom normalization patterns ──────────────────────────────
+const SYMPTOM_PATTERNS: [RegExp, string][] = [
+  [/\b(joint\s*pain|knee|pain in joint|pain in knee|pain in shoulder)\b/i, 'joint_pain'],
+  [/\b(morning\s*stiffness|stiffness)\b/i, 'morning_stiffness'],
+  [/\b(joint\s*swelling|knee\s*swelling|swollen\s*joint)\b/i, 'swelling_joint'],
+  [/\b(urination|frequent\s*urine)\b/i, 'polyuria'],
+  [/\b(thirst|excessive\s*thirst)\b/i, 'thirst_excessive'],
+  [/\b(weight\s*loss)\b/i, 'weight_loss'],
+  [/\b(weakness\s*one\s*side)\b/i, 'weakness_one_side'],
+  [/\b(fatigue|tired|weakness)\b/i, 'fatigue'],
+  [/\b(acidity|heartburn)\b/i, 'acidity'],
+  [/\b(bloating|gas)\b/i, 'bloating'],
+  [/\b(constipation|hard\s*stool)\b/i, 'constipation'],
+  [/\b(skin\s*rash|skin\s*lesion|rash|eruption)\b/i, 'skin_rash'],
+  [/\b(itching|itch)\b/i, 'itching'],
+  [/\b(cough)\b/i, 'cough'],
+  [/\b(breathless|shortness of breath|difficulty breathing|dyspnea)\b/i, 'breathlessness'],
+  [/\b(chest\s*pain)\b/i, 'chest_pain'],
+  [/\b(palpitation)\b/i, 'palpitations'],
+  [/\b(headache|head\s*pain)\b/i, 'headache'],
+  [/\b(dizziness|dizzy)\b/i, 'dizziness'],
+  [/\b(insomnia|sleep\s*problem|poor\s*sleep|can't\s*sleep|difficulty\s*sleeping)\b/i, 'insomnia'],
+  [/\b(anxiety|worry)\b/i, 'anxiety'],
+  [/\b(numbness|tingling)\b/i, 'numbness'],
+  [/\b(facial)\b/i, 'facial_deviation'],
+]
+
 export interface DiagnosisMatch {
   disease: string
   sanskrit: string
@@ -52,58 +91,37 @@ const SYMPTOM_WEIGHTS: Record<string, { weight: number; diseases: string[] }> = 
   facial_deviation: { weight: 3, diseases: ['Ardita', 'Pakshaghata'] },
 }
 
+/**
+ * Normalize a symptom string to a canonical key.
+ * Uses pre-compiled regex patterns for better performance.
+ */
 function normalizeSymptom(symptom: string): string {
-  const lower = symptom.toLowerCase()
-  if (lower.includes('joint pain') || lower.includes('knee') || lower.includes('pain in joint') || lower.includes('pain in knee') || lower.includes('pain in shoulder')) return 'joint_pain'
-  if (lower.includes('morning stiffness') || lower.includes('stiffness')) return 'morning_stiffness'
-  if (lower.includes('joint swelling') || lower.includes('knee swelling') || lower.includes('swollen joint')) return 'swelling_joint'
-  if (lower.includes('urination') || lower.includes('frequent urine')) return 'polyuria'
-  if (lower.includes('thirst') || lower.includes('excessive thirst')) return 'thirst_excessive'
-  if (lower.includes('weight loss')) return 'weight_loss'
-  if (lower.includes('weakness one side') || (lower.includes('weakness') && lower.includes('one side'))) return 'weakness_one_side'
-  if (lower.includes('fatigue') || lower.includes('tired') || lower.includes('weakness')) return 'fatigue'
-  if (lower.includes('acidity') || lower.includes('heartburn')) return 'acidity'
-  if (lower.includes('bloating') || lower.includes('gas')) return 'bloating'
-  if (lower.includes('constipation') || lower.includes('hard stool')) return 'constipation'
-  if (lower.includes('skin rash') || lower.includes('skin lesion') || lower.includes('rash') || lower.includes('eruption')) return 'skin_rash'
-  if (lower.includes('itching') || lower.includes('itch')) return 'itching'
-  if (lower.includes('cough')) return 'cough'
-  if (lower.includes('breathless') || lower.includes('shortness of breath') || lower.includes('difficulty breathing') || lower.includes('dyspnea')) return 'breathlessness'
-  if (lower.includes('chest pain')) return 'chest_pain'
-  if (lower.includes('palpitation')) return 'palpitations'
-  if (lower.includes('headache') || lower.includes('head pain')) return 'headache'
-  if (lower.includes('dizziness') || lower.includes('dizzy')) return 'dizziness'
-  if (lower.includes('insomnia') || lower.includes('sleep problem') || lower.includes('poor sleep') || lower.includes("can't sleep") || lower.includes('difficulty sleeping')) return 'insomnia'
-  if (lower.includes('anxiety') || lower.includes('worry')) return 'anxiety'
-  if (lower.includes('numbness') || lower.includes('tingling')) return 'numbness'
-  if (lower.includes('facial')) return 'facial_deviation'
-  return lower.replace(/\s+/g, '_').substring(0, 30)
+  for (const [pattern, normalized] of SYMPTOM_PATTERNS) {
+    if (pattern.test(symptom)) return normalized
+  }
+  return symptom.toLowerCase().replace(/\s+/g, '_').substring(0, 30)
 }
 
+const DOSHA_SIGNS: [string, RegExp][] = [
+  ['vata', /\b(pain|dry|constipation|nervous|anxiety|insomnia|cracking|cold)\b/],
+  ['pitta', /\b(burning|heat|inflammation|redness|acidity|irritability)\b/],
+  ['kapha', /\b(heavy|congestion|cold|swelling|lethargy|slow)\b/],
+]
+
 function extractDoshaFromSymptoms(symptoms: string[]): string[] {
-  const doshaSigns: Record<string, string[]> = {
-    vata: ['pain', 'dry', 'constipation', 'nervous', 'anxiety', 'insomnia', 'cracking', 'cold'],
-    pitta: ['burning', 'heat', 'inflammation', 'redness', 'acidity', 'irritability'],
-    kapha: ['heavy', 'congestion', 'cold', 'swelling', 'lethargy', 'slow'],
-  }
-  
-  const foundDosha: string[] = []
   const joined = symptoms.join(' ').toLowerCase()
-  
-  for (const [dosha, signs] of Object.entries(doshaSigns)) {
-    for (const sign of signs) {
-      if (joined.includes(sign)) {
-        if (!foundDosha.includes(dosha)) {
-          foundDosha.push(dosha)
-        }
-      }
+  const foundDosha: string[] = []
+
+  for (const [dosha, pattern] of DOSHA_SIGNS) {
+    if (pattern.test(joined)) {
+      foundDosha.push(dosha)
     }
   }
-  
+
   if (foundDosha.length === 0) {
     foundDosha.push('Vata', 'Pitta', 'Kapha')
   }
-  
+
   return foundDosha
 }
 
@@ -167,11 +185,11 @@ export function analyzeProvisionalDiagnosis(caseData: CaseData): DiagnosisResult
   
   const diseaseMatches: DiagnosisMatch[] = []
   
+  const diseaseMap = getDiseaseMap()
+
   for (const [diseaseName, score] of symptomScores) {
-    const disease = DISEASES.find(d => 
-      d.name.toLowerCase().includes(diseaseName.toLowerCase()) ||
-      diseaseName.toLowerCase().includes(d.name.toLowerCase())
-    )
+    // O(1) map lookup instead of O(n) linear scan
+    const disease = diseaseMap.get(diseaseName.toLowerCase())
     
     if (disease) {
       const dosha = extractDoshaFromSymptoms(allSymptoms)

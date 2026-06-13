@@ -5,7 +5,7 @@ import { CanvasToolbar } from './CanvasToolbar'
 import { ProtocolRenderer } from './ProtocolRenderer'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 
 export function CanvasPanel() {
@@ -33,38 +33,46 @@ export function CanvasPanel() {
 
   const hasContent = canvasContent.trim().length > 0
 
+  // Memoize content type detection to avoid re-computing on every render
+  const contentInfo = useMemo(() => {
+    if (!hasContent) {
+      return { isProtocol: false, isDiagnosis: false, contentTypeLabel: '' }
+    }
+    const isProtocol =
+      canvasContent.includes('## Abstract') ||
+      canvasContent.includes('## Keywords') ||
+      canvasContent.includes('## Case Summary') ||
+      canvasContent.includes('## Case Presentation') ||
+      canvasContent.includes('## Diagnostic Assessment') ||
+      canvasContent.includes('## Treatment Protocol') ||
+      canvasContent.includes('## Ayurvedic Pathogenesis') ||
+      canvasContent.includes('## Samprapti') ||
+      canvasContent.includes('## Detailed Treatment') ||
+      canvasContent.includes('## Pharmacotherapy') ||
+      canvasContent.includes('## Literature Review') ||
+      canvasContent.includes('## Conclusion')
+    const isDiagnosis =
+      !isProtocol &&
+      (canvasContent.includes('Current Diagnostic Thinking') ||
+        canvasContent.includes('PROVISIONAL DIAGNOSIS') ||
+        canvasContent.includes('CASE PRESENTATION'))
+    const contentTypeLabel = isProtocol
+      ? 'Treatment Protocol'
+      : isDiagnosis
+        ? 'Diagnosis'
+        : 'Output'
+    return { isProtocol, isDiagnosis, contentTypeLabel }
+  }, [hasContent, canvasContent])
+
+  const isProtocol = contentInfo.isProtocol
+  const isDiagnosis = contentInfo.isDiagnosis
+
   // Content is stale if it exists but timestamp is >5 min old
   const isStale = hasContent && canvasTimestamp > 0 && (
     Date.now() - canvasTimestamp > 5 * 60 * 1000
   )
 
-  const isProtocol = hasContent && (
-    canvasContent.includes('## Abstract') ||
-    canvasContent.includes('## Keywords') ||
-    canvasContent.includes('## Case Summary') ||
-    canvasContent.includes('## Case Presentation') ||
-    canvasContent.includes('## Diagnostic Assessment') ||
-    canvasContent.includes('## Treatment Protocol') ||
-    canvasContent.includes('## Ayurvedic Pathogenesis') ||
-    canvasContent.includes('## Samprapti') ||
-    canvasContent.includes('## Detailed Treatment') ||
-    canvasContent.includes('## Pharmacotherapy') ||
-    canvasContent.includes('## Literature Review') ||
-    canvasContent.includes('## Conclusion')
-  )
-
-  const isDiagnosis = hasContent && !isProtocol && (
-    canvasContent.includes('Current Diagnostic Thinking') ||
-    canvasContent.includes('PROVISIONAL DIAGNOSIS') ||
-    canvasContent.includes('CASE PRESENTATION')
-  )
-
-  const getContentType = () => {
-    if (isProtocol) return 'Treatment Protocol'
-    if (isDiagnosis) return 'Diagnosis'
-    if (hasContent) return 'Output'
-    return ''
-  }
+  const getContentType = () => contentInfo.contentTypeLabel
 
   // Streaming is active when the store says so
   const isCanvasStreaming = isStreaming
