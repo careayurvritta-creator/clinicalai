@@ -43,12 +43,26 @@ export async function createSpreadsheet(
     // Prepare data row(s) if data provided
     const rows: unknown[][] = [headers]
     if (data) {
-      const dataRow = section.fields.map((f) => {
-        const value = data[f.name]
-        if (value === undefined || value === null) return f.defaultValue ?? ''
-        return value
-      })
-      rows.push(dataRow)
+      if (section.repeatable && Array.isArray(data[section.id])) {
+        // Repeatable section: create one row per array element
+        const items = data[section.id] as Record<string, unknown>[]
+        for (const item of items) {
+          const dataRow = section.fields.map((f) => {
+            const value = item[f.name]
+            if (value === undefined || value === null) return f.defaultValue ?? ''
+            return String(value)
+          })
+          rows.push(dataRow)
+        }
+      } else {
+        // Single-row section
+        const dataRow = section.fields.map((f) => {
+          const value = data[f.name]
+          if (value === undefined || value === null) return f.defaultValue ?? ''
+          return String(value)
+        })
+        rows.push(dataRow)
+      }
     }
 
     // Write data

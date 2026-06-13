@@ -519,6 +519,9 @@ export function CaseCollectorChat() {
             followupAnswers: newAnswers,
           }),
         })
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status}`)
+        }
         const data = await response.json()
         if (data.caseData) setCaseData(data.caseData)
 
@@ -566,6 +569,9 @@ export function CaseCollectorChat() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'showDiagnosis', caseData: caseDataRef.current }),
       })
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status}`)
+      }
       const data = await response.json()
 
       if (data.diagnosis) {

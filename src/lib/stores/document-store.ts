@@ -68,6 +68,7 @@ interface DocumentState {
   intakeData: Record<string, unknown>
   selectedPatientRecord: PatientRecord | null
   collectedDemographics: Partial<PatientDemographics>
+  refreshPatientsToken: number
 }
 
 interface DocumentActions {
@@ -76,7 +77,7 @@ interface DocumentActions {
   clearPatient: () => void
   addPatient: (patient: PatientFolder) => void
   setLoadingPatients: (loading: boolean) => void
-  navigateToCategory: (categoryId: string, categoryLabel: string) => void
+  navigateToCategory: (categoryId: string, categoryLabel: string, driveFolderId?: string) => void
   navigateToFolder: (folderId: string, label: string) => void
   navigateUp: () => void
   navigateToRoot: () => void
@@ -100,6 +101,7 @@ interface DocumentActions {
   resetCollectedDemographics: () => void
   setPatientSupabaseId: (id: string, uhid: string) => void
   updatePatientDemographics: (demographics: PatientDemographics) => void
+  triggerPatientRefresh: () => void
 }
 
 export const useDocumentStore = create<DocumentState & DocumentActions>()(
@@ -124,6 +126,7 @@ export const useDocumentStore = create<DocumentState & DocumentActions>()(
       intakeData: {},
       selectedPatientRecord: null,
       collectedDemographics: {},
+      refreshPatientsToken: 0,
 
       setPatients: (patients) => set({ patients }),
       selectPatient: (patient) =>
@@ -136,7 +139,7 @@ export const useDocumentStore = create<DocumentState & DocumentActions>()(
           editorMode: 'explorer',
           breadcrumbs: [
             { id: 'root', label: 'Patients', type: 'root' },
-            { id: patient.id, label: `${patient.name} (${patient.clinicalId})`, type: 'patient' },
+            { id: patient.id, label: patient.uhid ? `${patient.uhid}_${patient.name}` : `${patient.name} (${patient.clinicalId})`, type: 'patient' },
           ],
         }),
       clearPatient: () =>
@@ -152,16 +155,16 @@ export const useDocumentStore = create<DocumentState & DocumentActions>()(
       addPatient: (patient) => set((s) => ({ patients: [...s.patients, patient] })),
       setLoadingPatients: (loading) => set({ patientsLoading: loading }),
 
-      navigateToCategory: (categoryId, categoryLabel) =>
+      navigateToCategory: (categoryId, categoryLabel, driveFolderId?) =>
         set((s) => ({
-          currentFolderId: categoryId,
+          currentFolderId: driveFolderId || categoryId,
           currentCategory: categoryLabel,
           files: [],
           editingFile: null,
           editorMode: 'explorer',
           breadcrumbs: [
             ...s.breadcrumbs.filter((b) => b.type === 'root' || b.type === 'patient'),
-            { id: categoryId, label: categoryLabel, type: 'category' },
+            { id: driveFolderId || categoryId, label: categoryLabel, type: 'category' },
           ],
         })),
       navigateToFolder: (folderId, label) =>
@@ -188,15 +191,20 @@ export const useDocumentStore = create<DocumentState & DocumentActions>()(
           }
         }),
       navigateToRoot: () =>
-        set({
+        set((s) => ({
           currentFolderId: null,
           currentCategory: null,
           files: [],
-          breadcrumbs: [],
+          breadcrumbs: s.selectedPatient
+            ? [
+                { id: 'root', label: 'Patients', type: 'root' as const },
+                { id: s.selectedPatient.id, label: s.selectedPatient.uhid ? `${s.selectedPatient.uhid}_${s.selectedPatient.name}` : `${s.selectedPatient.name} (${s.selectedPatient.clinicalId})`, type: 'patient' as const },
+              ]
+            : [],
           editingFile: null,
           editorMode: 'explorer',
-          selectedPatient: null,
-        }),
+          // Don't clear selectedPatient — keep it selected
+        })),
       setFiles: (files) => set({ files }),
       setLoadingFiles: (loading) => set({ filesLoading: loading }),
 
@@ -242,6 +250,7 @@ export const useDocumentStore = create<DocumentState & DocumentActions>()(
             ? { ...s.selectedPatient, demographics, uhid: demographics.uhid ?? s.selectedPatient.uhid }
             : s.selectedPatient,
         })),
+      triggerPatientRefresh: () => set((s) => ({ refreshPatientsToken: s.refreshPatientsToken + 1 })),
     }),
     {
       name: 'clinical-ai-documents-v2',

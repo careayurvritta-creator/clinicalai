@@ -2,7 +2,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getDriveClients } from '@/lib/google-drive/client'
-import { listFilesInFolder, deleteFile } from '@/lib/google-drive/folders'
+import { listFilesInFolder } from '@/lib/google-drive/folders'
+import { deleteFile } from '@/lib/google-drive/files'
 
 export const dynamic = 'force-dynamic'
 

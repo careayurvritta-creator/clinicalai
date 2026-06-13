@@ -2,6 +2,36 @@
 
 import type { drive_v3 } from 'googleapis'
 
+const GOOGLE_DRIVE_SHARE_EMAIL = process.env.GOOGLE_DRIVE_SHARE_EMAIL
+
+// Share a folder/file with a user so it appears in their "Shared with me"
+async function shareWithUser(drive: drive_v3.Drive, fileId: string, email: string): Promise<void> {
+  try {
+    await drive.permissions.create({
+      fileId,
+      requestBody: {
+        role: 'writer',
+        type: 'user',
+        emailAddress: email,
+      },
+      sendNotificationEmail: false,
+    })
+  } catch (err: unknown) {
+    // Ignore "already has permission" errors
+    const message = err instanceof Error ? err.message : String(err)
+    if (!message.includes('alreadyExists') && !message.includes('duplicate')) {
+      console.error(`[Drive] Failed to share ${fileId} with ${email}:`, message)
+    }
+  }
+}
+
+// Ensure a folder is shared with the configured user
+async function ensureShared(drive: drive_v3.Drive, fileId: string): Promise<void> {
+  if (GOOGLE_DRIVE_SHARE_EMAIL) {
+    await shareWithUser(drive, fileId, GOOGLE_DRIVE_SHARE_EMAIL)
+  }
+}
+
 // Standard 20-category folder structure for each patient
 export const PATIENT_FOLDER_CATEGORIES = [
   { name: '01-OPD-Registers', label: 'OPD Visit Registers' },
@@ -46,7 +76,10 @@ export async function getOrCreateRootFolder(
   })
 
   if (res.data.files && res.data.files.length > 0) {
-    return res.data.files[0].id!
+    const existingId = res.data.files[0].id!
+    // Ensure sharing on every access (idempotent)
+    await ensureShared(drive, existingId)
+    return existingId
   }
 
   // Create root folder
@@ -61,7 +94,10 @@ export async function getOrCreateRootFolder(
     fields: 'id',
   })
 
-  return folder.data.id!
+  const folderId = folder.data.id!
+  // Share root folder so it appears in user's "Shared with me"
+  await ensureShared(drive, folderId)
+  return folderId
 }
 
 // ─── Patient Folder ──────────────────────────────────────
@@ -70,9 +106,10 @@ export async function getOrCreatePatientFolder(
   drive: drive_v3.Drive,
   rootFolderId: string,
   patientName: string,
-  clinicalId: string
+  clinicalId: string,
+  uhid?: string
 ): Promise<{ folderId: string; categoryFolders: Record<string, string> }> {
-  const folderName = `${patientName} (${clinicalId})`
+  const folderName = uhid ? `${uhid}_${patientName}` : `${patientName} (${clinicalId})`
 
   // Search for existing patient folder
   const res = await drive.files.list({
@@ -131,14 +168,16 @@ export async function getOrCreatePatientFolder(
 export interface DrivePatient {
   name: string
   clinicalId: string
+  uhid: string
   folderId: string
 }
 
 export async function listPatientsFromDrive(
   drive: drive_v3.Drive,
   rootFolderId: string,
-  searchQuery?: string
-): Promise<DrivePatient[]> {
+  searchQuery?: string,
+  pageToken?: string
+): Promise<{ patients: DrivePatient[]; nextPageToken?: string }> {
   let q = `'${rootFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`
 
   if (searchQuery) {
@@ -147,27 +186,46 @@ export async function listPatientsFromDrive(
 
   const res = await drive.files.list({
     q,
-    fields: 'files(id, name)',
+    fields: 'files(id, name), nextPageToken',
     spaces: 'drive',
     pageSize: 100,
     orderBy: 'name',
+    ...(pageToken ? { pageToken } : {}),
   })
 
   const patients: DrivePatient[] = []
 
   for (const file of res.data.files ?? []) {
-    // Parse "Patient Name (CLINICAL_ID)" format
-    const match = file.name?.match(/^(.+?)\s*\(([^)]+)\)$/)
-    if (match && file.id) {
+    if (!file.id) continue
+
+    // Parse "UHID_FirstName LastName" format (e.g., UHID-2605001_John Doe)
+    const uhidMatch = file.name?.match(/^(UHID-\d+)_(.+)$/)
+    if (uhidMatch) {
       patients.push({
-        name: match[1].trim(),
-        clinicalId: match[2].trim(),
+        name: uhidMatch[2].trim(),
+        clinicalId: uhidMatch[1].trim(),
+        uhid: uhidMatch[1].trim(),
+        folderId: file.id,
+      })
+      continue
+    }
+
+    // Legacy format: "Patient Name (CLINICAL_ID)"
+    const legacyMatch = file.name?.match(/^(.+?)\s*\(([^)]+)\)$/)
+    if (legacyMatch) {
+      patients.push({
+        name: legacyMatch[1].trim(),
+        clinicalId: legacyMatch[2].trim(),
+        uhid: '',
         folderId: file.id,
       })
     }
   }
 
-  return patients
+  return {
+    patients,
+    nextPageToken: res.data.nextPageToken ?? undefined,
+  }
 }
 
 // ─── List Files in Category ──────────────────────────────
@@ -212,6 +270,19 @@ export async function deleteFile(
   fileId: string
 ): Promise<void> {
   await drive.files.delete({ fileId })
+}
+
+// ─── Rename File/Folder ──────────────────────────────────
+
+export async function renameFolder(
+  drive: drive_v3.Drive,
+  fileId: string,
+  newName: string
+): Promise<void> {
+  await drive.files.update({
+    fileId,
+    requestBody: { name: newName },
+  })
 }
 
 // ─── Get Folder URL ──────────────────────────────────────

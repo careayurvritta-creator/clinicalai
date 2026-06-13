@@ -10,17 +10,25 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get('code')
 
   if (code) {
-    // Callback with auth code
+    // Callback with auth code — store tokens in httpOnly cookies, don't expose in response
     try {
       const tokens = await getOAuthTokens(code)
-      return NextResponse.json({
-        success: true,
-        tokens: {
-          access_token: tokens.access_token,
-          refresh_token: tokens.refresh_token,
-          expiry_date: tokens.expiry_date,
-        },
+      const response = NextResponse.json({ success: true, drive_connected: true })
+      response.cookies.set('drive_access_token', tokens.access_token!, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 3600, // 1 hour
       })
+      if (tokens.refresh_token) {
+        response.cookies.set('drive_refresh_token', tokens.refresh_token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 30, // 30 days
+        })
+      }
+      return response
     } catch (error) {
       console.error('Drive auth error:', error)
       return NextResponse.json(

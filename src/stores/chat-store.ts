@@ -134,6 +134,8 @@ export const useChatStore = create<ChatState & ChatActions>()(
             messages: session.messages,
             canvasContent: '',
             canvasTimestamp: 0,
+            isStreaming: false,
+            chatInputDraft: '',
           }
         }),
 

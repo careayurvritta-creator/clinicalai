@@ -467,9 +467,7 @@ export async function getPatientCaseHistory(patientId: string) {
     .rpc('get_patient_case_history', { patient_uuid: patientId })
 }
 
-// TODO: v_patient_summary view needs doctor_id column added
 export async function getPatientSummary(doctorId: string) {
-  // Filter by doctor_id through patients table join since view lacks doctor_id
   return getSupabase()
     .from('patients')
     .select('*')
@@ -479,7 +477,6 @@ export async function getPatientSummary(doctorId: string) {
     .limit(100)
 }
 
-// TODO: v_case_analytics view needs doctor_id column added
 export async function getCaseAnalytics(doctorId: string) {
   return getSupabase()
     .from('cases')
@@ -489,7 +486,6 @@ export async function getCaseAnalytics(doctorId: string) {
     .limit(100)
 }
 
-// TODO: v_treatment_effectiveness view needs doctor_id column added
 export async function getTreatmentEffectiveness(doctorId: string) {
   return getSupabase()
     .from('treatment_protocols')

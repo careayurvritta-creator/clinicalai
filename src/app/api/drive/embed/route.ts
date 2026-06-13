@@ -12,6 +12,16 @@ export async function GET(request: NextRequest) {
   try {
     const drive = getServiceAccountDrive()
 
+    // Ensure file is publicly readable for embedding
+    try {
+      await drive.permissions.create({
+        fileId,
+        requestBody: { role: 'reader', type: 'anyone' },
+      })
+    } catch {
+      // Permission may already exist, ignore
+    }
+
     const file = await drive.files.get({
       fileId,
       fields: 'mimeType, name, webViewLink',

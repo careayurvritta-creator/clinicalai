@@ -495,7 +495,6 @@ select
   c.severity_score,
   c.prakriti,
   c.vikriti,
-  c.dosha_involvement,
   count(distinct co.id) as follow_up_count,
   avg(co.outcome_rating) as avg_outcome_rating,
   count(distinct tp.id) as protocol_count,
@@ -509,7 +508,7 @@ left join investigation_findings if2 on c.id = if2.case_id
 left join chief_complaints cc on c.id = cc.case_id
 group by c.id, c.case_number, c.visit_date, c.visit_type, c.visit_number,
          p.name, p.age, p.gender, c.provisional_diagnosis, c.final_diagnosis,
-         c.status, c.severity_score, c.prakriti, c.vikriti, c.dosha_involvement;
+         c.status, c.severity_score, c.prakriti, c.vikriti;
 
 comment on view v_case_analytics is 'Case analytics with patient info and outcome metrics';
 

@@ -8,6 +8,13 @@ interface PatientData {
   address?: string | null
   occupation?: string | null
   uhid?: string | null
+  comorbidities?: unknown
+  allergies?: string | null
+  medical_history?: string | null
+  prakriti?: string | null
+  vikriti?: string | null
+  blood_group?: string | null
+  area?: string | null
   [key: string]: unknown
 }
 
@@ -72,6 +79,22 @@ function resolveAutoFillFrom(ref: string, patient: PatientData): unknown {
       return patient.occupation
     case 'patient.uhid':
       return patient.uhid
+    case 'patient.comorbidities':
+      return Array.isArray(patient.comorbidities)
+        ? patient.comorbidities.join(', ')
+        : patient.comorbidities
+    case 'patient.allergies':
+      return patient.allergies
+    case 'patient.medical_history':
+      return patient.medical_history
+    case 'patient.prakriti':
+      return patient.prakriti
+    case 'patient.vikriti':
+      return patient.vikriti
+    case 'patient.blood_group':
+      return patient.blood_group
+    case 'patient.area':
+      return patient.area
     default:
       if (ref.startsWith('patient.')) {
         const key = ref.replace('patient.', '')
