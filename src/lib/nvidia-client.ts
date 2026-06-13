@@ -45,9 +45,14 @@ const DEFAULT_PARAMS: Required<ChatParams> = {
   top_p: 0.7,
 }
 
-/** Set of known valid model IDs for validation */
+/** Set of known valid model IDs for validation (mirrors MODELS in types.ts) */
 const VALID_MODELS = new Set([
   'mistralai/mistral-large-3-675b-instruct-2512',
+  'qwen/qwen3-coder-480b-a35b-instruct',
+  'nvidia/llama-3.3-nemotron-super-49b-v1.5',
+  'qwen/qwen3.5-397b-a17b',
+  'meta/llama-3.3-70b-instruct',
+  'mistralai/mistral-nemotron',
 ])
 
 function validateModel(model: string): void {

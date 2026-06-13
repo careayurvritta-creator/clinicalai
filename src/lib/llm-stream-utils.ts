@@ -165,9 +165,25 @@ export async function streamLLMResponse(
   let content = existingContent
   let finishReason: string | null = null
 
+  let chunkCount = 0
   for await (const chunk of stream) {
     try {
+      chunkCount++
       const data = JSON.stringify(chunk)
+
+      // Check for error in stream chunk
+      const chunkAny = chunk as any
+      if (chunkAny?.error) {
+        console.error('[LLM] Stream error in chunk:', JSON.stringify(chunkAny.error))
+        // Send error event to client
+        const errorEvent = JSON.stringify({
+          type: 'error',
+          message: chunkAny.error.message || chunkAny.error || 'Unknown stream error',
+        })
+        controller.enqueue(encoder.encode(`data: ${errorEvent}\n\n`))
+        break
+      }
+
       const delta = chunk.choices?.[0]?.delta as Record<string, string> | undefined
       const chunkContent = delta?.content || delta?.reasoning_content || ''
       if (chunkContent) content += chunkContent
@@ -180,6 +196,9 @@ export async function streamLLMResponse(
     } catch (chunkError) {
       console.error('[LLM] Chunk processing error:', chunkError)
     }
+  }
+  if (chunkCount === 0) {
+    console.warn('[LLM] Stream returned 0 chunks — possible API key or model issue')
   }
 
   return { content, finishReason }

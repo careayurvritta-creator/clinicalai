@@ -218,6 +218,15 @@ export function ChatInput() {
           if (data === '[DONE]' || !data) continue
           try {
             const json = JSON.parse(data)
+
+            // Handle server-sent error events
+            if (json.type === 'error') {
+              console.error('[Chat] Server error event:', json.message)
+              throw new Error(json.message || 'Server stream error')
+            }
+            // Skip metadata/control events
+            if (json.type === 'rag_metadata' || json.type === 'continuation') continue
+
             const content =
               json.choices?.[0]?.delta?.content ??
               json.choices?.[0]?.delta?.reasoning_content ??
@@ -231,7 +240,13 @@ export function ChatInput() {
               fullContent += content
               updateLastMessage(fullContent, 'streaming')
             }
-          } catch { /* skip malformed chunks */ }
+          } catch (parseErr) {
+            // If it's an error we threw from a server error event, re-throw
+            if (parseErr instanceof Error && parseErr.message !== 'Unexpected token' && !parseErr.message.startsWith('JSON')) {
+              throw parseErr
+            }
+            /* skip malformed chunks */
+          }
         }
       }
 
