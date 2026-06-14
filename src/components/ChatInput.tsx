@@ -13,32 +13,25 @@ const MAX_TEXTAREA_HEIGHT_PX = 120
 function extractTaggedParts(text: string) {
   const lower = text.toLowerCase()
 
-  const chatOpen = lower.indexOf('[chat]')
-  const chatClose = lower.indexOf('[/chat]')
-  const outOpen = lower.indexOf('[output]')
-  const outClose = lower.indexOf('[/output]')
+  const chatOpenIdx = lower.indexOf('[chat]')
+  const chatCloseIdx = lower.indexOf('[/chat]')
+  const outOpenIdx = lower.indexOf('[output]')
+  const outCloseIdx = lower.indexOf('[/output]')
 
-  const hasChatTag = chatOpen !== -1 || chatClose !== -1
-  const hasOutputTag = outOpen !== -1 || outClose !== -1
+  const chatHasOpen = chatOpenIdx !== -1
+  const outputHasOpen = outOpenIdx !== -1
 
-  let chat = ''
-  if (chatOpen !== -1) {
-    const start = chatOpen + '[chat]'.length
-    const end = chatClose !== -1 ? chatClose : text.length
-    chat = text.slice(start, end)
-  }
+  const chatStart = chatHasOpen ? chatOpenIdx + '[chat]'.length : -1
+  const chatEnd = chatCloseIdx !== -1 ? chatCloseIdx : text.length
+  const chat = chatHasOpen ? text.slice(chatStart, chatEnd) : ''
 
-  let output = ''
-  if (outOpen !== -1) {
-    const start = outOpen + '[output]'.length
-    const end = outClose !== -1 ? outClose : text.length
-    output = text.slice(start, end)
-  }
-
-  const hasAnyTags = hasChatTag || hasOutputTag
+  const outStart = outputHasOpen ? outOpenIdx + '[output]'.length : -1
+  const outEnd = outCloseIdx !== -1 ? outCloseIdx : text.length
+  const output = outputHasOpen ? text.slice(outStart, outEnd) : ''
 
   return {
-    hasAnyTags,
+    chatHasOpen,
+    outputHasOpen,
     chat: chat.trim(),
     output: output.trim(),
   }
@@ -276,40 +269,30 @@ export function ChatInput() {
               const lower = fullContent.toLowerCase()
 
               const chatOpenIdx = lower.indexOf('[chat]')
-              const chatCloseIdx = lower.indexOf('[/chat]')
               const outOpenIdx = lower.indexOf('[output]')
-              const outCloseIdx = lower.indexOf('[/output]')
-
               const hasChatOpen = chatOpenIdx !== -1
-              const hasChatClose = chatCloseIdx !== -1
               const hasOutputOpen = outOpenIdx !== -1
-              const hasOutputClose = outCloseIdx !== -1
 
               const { chat, output } = extractTaggedParts(fullContent)
 
-              // Chat rules:
-              // - If [CHAT] has started, render only its slice.
-              // - If [CHAT] hasn't started yet, keep legacy behavior (show full stream in chat)
-              //   to avoid "stuck" UX before tags arrive.
+              // Critical: never let OUTPUT leak into the chat panel.
+              // During streaming:
+              // - chat panel shows only [CHAT] content when [CHAT] has appeared
+              // - otherwise chat panel stays empty (prevents detailed answer showing in chat)
               if (hasChatOpen) {
                 updateLastMessage(chat, 'streaming')
               } else {
-                updateLastMessage(fullContent, 'streaming')
+                updateLastMessage('', 'streaming')
               }
 
-              // Output rules:
-              // - Only render OUTPUT once the [OUTPUT] section has at least started AND has closing tag.
-              //   This prevents partial OUTPUT from polluting UI / causing mid-stream stops.
-              if (hasOutputOpen && hasOutputClose) {
+              // Output panel:
+              // - once [OUTPUT] starts, render it immediately (even if [/OUTPUT] not received yet)
+              //   so users don't see "missing output" mid-stream.
+              if (hasOutputOpen) {
                 setCanvasContent(output)
-              } else if (hasOutputOpen && !hasOutputClose) {
-                // Keep output blank until complete to avoid half-rendered markdown/tags.
-                setCanvasContent('')
               } else {
                 setCanvasContent('')
               }
-
-              // (Optional) no need for hasAnyTags; rules above already cover legacy vs split.
             }
           } catch (parseErr) {
             // If it's an error we threw from a server error event, re-throw
@@ -326,23 +309,20 @@ export function ChatInput() {
       }
 
       const lower = fullContent.toLowerCase()
-      const chatOpenIdx = lower.indexOf('[chat]')
-      const outOpenIdx = lower.indexOf('[output]')
-      const outCloseIdx = lower.indexOf('[/output]')
-
-      const hasChatOpen = chatOpenIdx !== -1
-      const hasOutputOpen = outOpenIdx !== -1
-      const hasOutputClose = outCloseIdx !== -1
+      const hasChatOpen = lower.indexOf('[chat]') !== -1
+      const hasOutputOpen = lower.indexOf('[output]') !== -1
 
       const { chat, output } = extractTaggedParts(fullContent)
 
+      // Completion fallback:
+      // - If [CHAT] exists: use it
+      // - else: keep legacy behavior (whole response in chat)
       updateLastMessage(hasChatOpen ? chat : fullContent, 'complete')
 
-      if (hasOutputOpen && hasOutputClose) {
-        setCanvasContent(output)
-      } else {
-        setCanvasContent('')
-      }
+      // Output completion:
+      // - If [OUTPUT] exists: show it
+      // - else: clear
+      setCanvasContent(hasOutputOpen ? output : '')
     } catch (error) {
       console.error('Chat error:', error)
       updateLastMessage(`Error: ${error instanceof Error ? error.message : 'Failed to get response'}`, 'error')
