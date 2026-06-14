@@ -273,20 +273,43 @@ export function ChatInput() {
               ''
             if (content) {
               fullContent += content
-              const { hasAnyTags, chat, output } = extractTaggedParts(fullContent)
+              const lower = fullContent.toLowerCase()
 
-              // Separation rules:
-              // - If tags exist, never cross-fill chat from OUTPUT.
-              // - Chat comes only from [CHAT] section when present; otherwise it remains '' until [CHAT] appears.
-              // - Output comes only from [OUTPUT] section when present.
-              if (hasAnyTags) {
+              const chatOpenIdx = lower.indexOf('[chat]')
+              const chatCloseIdx = lower.indexOf('[/chat]')
+              const outOpenIdx = lower.indexOf('[output]')
+              const outCloseIdx = lower.indexOf('[/output]')
+
+              const hasChatOpen = chatOpenIdx !== -1
+              const hasChatClose = chatCloseIdx !== -1
+              const hasOutputOpen = outOpenIdx !== -1
+              const hasOutputClose = outCloseIdx !== -1
+
+              const { chat, output } = extractTaggedParts(fullContent)
+
+              // Chat rules:
+              // - If [CHAT] has started, render only its slice.
+              // - If [CHAT] hasn't started yet, keep legacy behavior (show full stream in chat)
+              //   to avoid "stuck" UX before tags arrive.
+              if (hasChatOpen) {
                 updateLastMessage(chat, 'streaming')
-                setCanvasContent(output)
               } else {
-                // Legacy behavior: everything goes to chat
                 updateLastMessage(fullContent, 'streaming')
+              }
+
+              // Output rules:
+              // - Only render OUTPUT once the [OUTPUT] section has at least started AND has closing tag.
+              //   This prevents partial OUTPUT from polluting UI / causing mid-stream stops.
+              if (hasOutputOpen && hasOutputClose) {
+                setCanvasContent(output)
+              } else if (hasOutputOpen && !hasOutputClose) {
+                // Keep output blank until complete to avoid half-rendered markdown/tags.
+                setCanvasContent('')
+              } else {
                 setCanvasContent('')
               }
+
+              // (Optional) no need for hasAnyTags; rules above already cover legacy vs split.
             }
           } catch (parseErr) {
             // If it's an error we threw from a server error event, re-throw
@@ -301,13 +324,23 @@ export function ChatInput() {
       if (!fullContent.trim()) {
         throw new Error('AI returned empty response. Check NVIDIA_API_KEY in Vercel settings.')
       }
-      const { hasAnyTags, chat, output } = extractTaggedParts(fullContent)
 
-      if (hasAnyTags) {
-        updateLastMessage(chat, 'complete')
+      const lower = fullContent.toLowerCase()
+      const chatOpenIdx = lower.indexOf('[chat]')
+      const outOpenIdx = lower.indexOf('[output]')
+      const outCloseIdx = lower.indexOf('[/output]')
+
+      const hasChatOpen = chatOpenIdx !== -1
+      const hasOutputOpen = outOpenIdx !== -1
+      const hasOutputClose = outCloseIdx !== -1
+
+      const { chat, output } = extractTaggedParts(fullContent)
+
+      updateLastMessage(hasChatOpen ? chat : fullContent, 'complete')
+
+      if (hasOutputOpen && hasOutputClose) {
         setCanvasContent(output)
       } else {
-        updateLastMessage(fullContent, 'complete')
         setCanvasContent('')
       }
     } catch (error) {
