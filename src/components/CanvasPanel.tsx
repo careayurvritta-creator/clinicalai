@@ -3,6 +3,7 @@
 import { useProtocolStore } from '@/lib/stores/protocol-store'
 import { CanvasToolbar } from './CanvasToolbar'
 import { ProtocolRenderer } from './ProtocolRenderer'
+import { OutputFileExplorer } from './OutputFileExplorer'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -148,6 +149,8 @@ export function CanvasPanel() {
                 </button>
               </div>
             )}
+
+            <OutputFileExplorer canvasContent={canvasContent} />
 
             {isProtocol ? (
               <ProtocolRenderer content={canvasContent} />
