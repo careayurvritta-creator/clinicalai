@@ -11,12 +11,31 @@ const MAX_CHARS = 4000
 const MAX_TEXTAREA_HEIGHT_PX = 120
 
 function extractTaggedParts(text: string) {
-  const chatMatch = text.match(/\[CHAT\]([\s\S]*?)\[\/CHAT\]/i)
-  const outputMatch = text.match(/\[OUTPUT\]([\s\S]*?)\[\/OUTPUT\]/i)
-  const hasAnyTags = /\[(CHAT|OUTPUT)\]/i.test(text)
+  const lower = text.toLowerCase()
 
-  const chat = chatMatch?.[1]?.trimEnd() ?? ''
-  const output = outputMatch?.[1]?.trimEnd() ?? ''
+  const chatOpen = lower.indexOf('[chat]')
+  const chatClose = lower.indexOf('[/chat]')
+  const outOpen = lower.indexOf('[output]')
+  const outClose = lower.indexOf('[/output]')
+
+  const hasChatTag = chatOpen !== -1 || chatClose !== -1
+  const hasOutputTag = outOpen !== -1 || outClose !== -1
+
+  let chat = ''
+  if (chatOpen !== -1) {
+    const start = chatOpen + '[chat]'.length
+    const end = chatClose !== -1 ? chatClose : text.length
+    chat = text.slice(start, end)
+  }
+
+  let output = ''
+  if (outOpen !== -1) {
+    const start = outOpen + '[output]'.length
+    const end = outClose !== -1 ? outClose : text.length
+    output = text.slice(start, end)
+  }
+
+  const hasAnyTags = hasChatTag || hasOutputTag
 
   return {
     hasAnyTags,
