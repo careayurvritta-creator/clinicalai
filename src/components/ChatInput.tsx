@@ -275,9 +275,12 @@ export function ChatInput() {
               fullContent += content
               const { hasAnyTags, chat, output } = extractTaggedParts(fullContent)
 
+              // Separation rules:
+              // - If tags exist, never cross-fill chat from OUTPUT.
+              // - Chat comes only from [CHAT] section when present; otherwise it remains '' until [CHAT] appears.
+              // - Output comes only from [OUTPUT] section when present.
               if (hasAnyTags) {
-                // Small chat: prefer CHAT part, but fall back to OUTPUT if CHAT empty so streaming never looks blank
-                updateLastMessage(chat || output || '', 'streaming')
+                updateLastMessage(chat, 'streaming')
                 setCanvasContent(output)
               } else {
                 // Legacy behavior: everything goes to chat
@@ -301,7 +304,7 @@ export function ChatInput() {
       const { hasAnyTags, chat, output } = extractTaggedParts(fullContent)
 
       if (hasAnyTags) {
-        updateLastMessage(chat || output || '', 'complete')
+        updateLastMessage(chat, 'complete')
         setCanvasContent(output)
       } else {
         updateLastMessage(fullContent, 'complete')
