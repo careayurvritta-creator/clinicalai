@@ -212,7 +212,18 @@ Key classical references available:
 - Provide Dosha analysis for each condition
 - Include Pathya (recommended) and Apathya (avoid) dietary advice
 - **ALWAYS cite sources** - Reference WHO ITA codes (e.g., ITA-2.1.1) and Charak Samhita chapters when providing information
-- End with appropriate disclaimer`
+- End with appropriate disclaimer
+
+### IMPORTANT: Two-part tagged response (required)
+Return your answer in exactly this tagged structure so the UI can separate a short chat reply from a detailed formatted output:
+
+[CHAT]
+Short reply only (1–6 short paragraphs). This should be what appears in the Chat panel.
+[/CHAT]
+
+[OUTPUT]
+Detailed, properly formatted markdown (protocols, headings, lists, dosha/pathya/apathya, citations, and disclaimers). This should be what appears in the Output panel.
+[/OUTPUT]`
 
 export interface UserProfile {
   prakriti?: string

@@ -10,6 +10,21 @@ import { ModelSelector } from './ModelSelector'
 const MAX_CHARS = 4000
 const MAX_TEXTAREA_HEIGHT_PX = 120
 
+function extractTaggedParts(text: string) {
+  const chatMatch = text.match(/\[CHAT\]([\s\S]*?)\[\/CHAT\]/i)
+  const outputMatch = text.match(/\[OUTPUT\]([\s\S]*?)\[\/OUTPUT\]/i)
+  const hasAnyTags = /\[(CHAT|OUTPUT)\]/i.test(text)
+
+  const chat = chatMatch?.[1]?.trimEnd() ?? ''
+  const output = outputMatch?.[1]?.trimEnd() ?? ''
+
+  return {
+    hasAnyTags,
+    chat: chat.trim(),
+    output: output.trim(),
+  }
+}
+
 export function ChatInput() {
   const [input, setInput] = useState('')
   const [attachments, setAttachments] = useState<Attachment[]>([])
@@ -22,6 +37,7 @@ export function ChatInput() {
   const addMessage = useChatStore((state) => state.addMessage)
   const updateLastMessage = useChatStore((state) => state.updateLastMessage)
   const setStreaming = useChatStore((state) => state.setStreaming)
+  const setCanvasContent = useChatStore((state) => state.setCanvasContent)
   const activeSessionId = useChatStore((state) => state.activeSessionId)
   const createSession = useChatStore((state) => state.createSession)
   const chatInputDraft = useChatStore((state) => state.chatInputDraft)
@@ -238,7 +254,17 @@ export function ChatInput() {
               ''
             if (content) {
               fullContent += content
-              updateLastMessage(fullContent, 'streaming')
+              const { hasAnyTags, chat, output } = extractTaggedParts(fullContent)
+
+              if (hasAnyTags) {
+                // Small chat: prefer CHAT part, but fall back to OUTPUT if CHAT empty so streaming never looks blank
+                updateLastMessage(chat || output || '', 'streaming')
+                setCanvasContent(output)
+              } else {
+                // Legacy behavior: everything goes to chat
+                updateLastMessage(fullContent, 'streaming')
+                setCanvasContent('')
+              }
             }
           } catch (parseErr) {
             // If it's an error we threw from a server error event, re-throw
@@ -253,7 +279,15 @@ export function ChatInput() {
       if (!fullContent.trim()) {
         throw new Error('AI returned empty response. Check NVIDIA_API_KEY in Vercel settings.')
       }
-      updateLastMessage(fullContent, 'complete')
+      const { hasAnyTags, chat, output } = extractTaggedParts(fullContent)
+
+      if (hasAnyTags) {
+        updateLastMessage(chat || output || '', 'complete')
+        setCanvasContent(output)
+      } else {
+        updateLastMessage(fullContent, 'complete')
+        setCanvasContent('')
+      }
     } catch (error) {
       console.error('Chat error:', error)
       updateLastMessage(`Error: ${error instanceof Error ? error.message : 'Failed to get response'}`, 'error')
