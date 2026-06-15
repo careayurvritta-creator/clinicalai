@@ -1,0 +1,5 @@
+- [ ] Add a “HI” starter quick-action in the empty chat screen that sets `chatInputDraft` to "Hi" (so ChatInput fills and focuses).
+- [ ] Read any related UI components if needed to ensure no conflicts (e.g., ensure store action is available in ChatView).
+- [ ] Implement code changes in `src/app/chat/page.tsx`.
+- [ ] Run TypeScript/Next build or lint to confirm no errors.
+- [ ] `git add`, `git commit`, and `git push` (include also untracked supabase migration if intended).
