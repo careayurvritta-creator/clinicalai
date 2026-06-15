@@ -287,23 +287,32 @@ export function ChatInput() {
 
               const { chat, output } = extractTaggedParts(fullContent)
 
-              // Chat panel routing:
-              // - [CHAT] tags present → show only the [CHAT] content
-              // - [OUTPUT] only (no [CHAT]) → keep chat empty during streaming
-              // - No tags at all → stream entire content into chat (legacy behavior)
+              // ─── Chat panel routing ───
               if (hasChatOpen) {
+                // [CHAT] present → show only [CHAT] content in chat
                 updateLastMessage(chat, 'streaming')
               } else if (hasOutputOpen) {
+                // [OUTPUT] present (no [CHAT]) → keep chat empty, content goes to output
                 updateLastMessage('', 'streaming')
               } else {
-                updateLastMessage(fullContent, 'streaming')
+                // No tags at all → smart split based on response length
+                if (fullContent.length < 400) {
+                  // Short response → stream into chat
+                  updateLastMessage(fullContent, 'streaming')
+                } else {
+                  // Long response without tags → show summary in chat, full in output
+                  const paragraphs = fullContent.split(/\n\n+/)
+                  const chatPreview = paragraphs.slice(0, 2).join('\n\n').trim()
+                  updateLastMessage(chatPreview + '\n\n_[Continuing in Output panel →]', 'streaming')
+                }
               }
 
-              // Output panel routing:
-              // - [OUTPUT] tags present → show [OUTPUT] content
-              // - No [OUTPUT] tags → clear output
+              // ─── Output panel routing ───
               if (hasOutputOpen) {
                 setCanvasContent(output)
+              } else if (!hasChatOpen && fullContent.length >= 400) {
+                // Long untagged response → stream full content into output panel
+                setCanvasContent(fullContent)
               } else {
                 setCanvasContent('')
               }
@@ -335,16 +344,24 @@ export function ChatInput() {
       } else if (hasOutputOpen) {
         // Only [OUTPUT] present (no [CHAT]) → brief note in chat, details in output panel
         updateLastMessage('📋 Detailed output generated. Check the Output panel →', 'complete')
+      } else if (fullContent.trim() && fullContent.length > 500) {
+        // No tags but response is long → split: first ~2 paragraphs in chat, full response in output
+        const paragraphs = fullContent.split(/\n\n+/)
+        const chatReply = paragraphs.slice(0, 2).join('\n\n').trim()
+        updateLastMessage(chatReply + '\n\n_\n[Detailed output moved to Output panel →]', 'complete')
+        setCanvasContent(fullContent)
       } else if (fullContent.trim()) {
-        // No tags at all → legacy behavior (whole response in chat)
+        // No tags + short response → show in chat only
         updateLastMessage(fullContent, 'complete')
       } else {
         // Ultimate fallback — never leave assistant message empty
         updateLastMessage('Response received.', 'complete')
       }
 
-      // Output panel:
-      setCanvasContent(hasOutputOpen ? output : '')
+      // Output panel (already set for long untagged responses above):
+      if (!hasOutputOpen && !(fullContent.length > 500 && !hasChatOpen)) {
+        setCanvasContent('')
+      }
     } catch (error) {
       console.error('Chat error:', error)
       updateLastMessage(`Error: ${error instanceof Error ? error.message : 'Failed to get response'}`, 'error')
