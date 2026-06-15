@@ -18,22 +18,24 @@ function extractTaggedParts(text: string) {
   const outOpenIdx = lower.indexOf('[output]')
   const outCloseIdx = lower.indexOf('[/output]')
 
-  const chatHasOpen = chatOpenIdx !== -1
-  const outputHasOpen = outOpenIdx !== -1
+  const chatHasFull = chatOpenIdx !== -1 && chatCloseIdx !== -1 && chatCloseIdx >= chatOpenIdx
+  const outputHasFull = outOpenIdx !== -1 && outCloseIdx !== -1 && outCloseIdx >= outOpenIdx
 
-  const chatStart = chatHasOpen ? chatOpenIdx + '[chat]'.length : -1
-  const chatEnd = chatCloseIdx !== -1 ? chatCloseIdx : text.length
-  const chat = chatHasOpen ? text.slice(chatStart, chatEnd) : ''
+  const chat = chatHasFull
+    ? text.slice(chatOpenIdx + '[chat]'.length, chatCloseIdx).trim()
+    : ''
 
-  const outStart = outputHasOpen ? outOpenIdx + '[output]'.length : -1
-  const outEnd = outCloseIdx !== -1 ? outCloseIdx : text.length
-  const output = outputHasOpen ? text.slice(outStart, outEnd) : ''
+  const output = outputHasFull
+    ? text.slice(outOpenIdx + '[output]'.length, outCloseIdx).trim()
+    : ''
 
   return {
-    chatHasOpen,
-    outputHasOpen,
-    chat: chat.trim(),
-    output: output.trim(),
+    chatHasOpen: chatOpenIdx !== -1,
+    outputHasOpen: outOpenIdx !== -1,
+    chatHasFull,
+    outputHasFull,
+    chat,
+    output,
   }
 }
 

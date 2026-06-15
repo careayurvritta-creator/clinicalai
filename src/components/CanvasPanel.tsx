@@ -3,7 +3,7 @@
 import { useProtocolStore } from '@/lib/stores/protocol-store'
 import { CanvasToolbar } from './CanvasToolbar'
 import { ProtocolRenderer } from './ProtocolRenderer'
-import { OutputFileExplorer } from './OutputFileExplorer'
+import { OutputFileExplorer, type ExplorerFile } from './OutputFileExplorer'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -16,10 +16,12 @@ export function CanvasPanel() {
   const isStreaming = useProtocolStore((state) => state.isStreaming)
   const contentEndRef = useRef<HTMLDivElement>(null)
   const [dismissedStale, setDismissedStale] = useState(false)
+  const [openedExplorerFile, setOpenedExplorerFile] = useState<ExplorerFile | null>(null)
 
-  // Reset stale dismissal when content changes
+  // Reset stale dismissal + explorer open state when content changes
   useEffect(() => {
     setDismissedStale(false)
+    setOpenedExplorerFile(null)
   }, [canvasContent])
 
   // Auto-scroll only if user is near bottom
@@ -80,26 +82,45 @@ export function CanvasPanel() {
 
   return (
     <div className="flex flex-col flex-1 min-h-0 h-full bg-panel-canvas">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
-        <div className="flex items-center gap-2">
-          {/* Mobile back button */}
-          <button
-            onClick={() => window.dispatchEvent(new CustomEvent('canvas:back-to-chat'))}
-            className="md:hidden p-1 -ml-1 rounded-md hover:bg-secondary transition-colors"
-            aria-label="Back to chat"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <h2 className="text-sm font-semibold text-foreground">Output</h2>
-          {isCanvasStreaming && (
-            <span className="flex items-center gap-1.5 text-xs text-primary">
-              <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
-              Generating...
-            </span>
-          )}
-        </div>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
+          <div className="flex items-center gap-2">
+            {/* Back button for explorer-open mode */}
+            {openedExplorerFile && (
+              <button
+                onClick={() => setOpenedExplorerFile(null)}
+                className="p-1 -ml-1 rounded-md hover:bg-secondary transition-colors"
+                aria-label="Back to full output"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+            )}
+
+            {/* Mobile back button */}
+            {!openedExplorerFile && (
+              <button
+                onClick={() => window.dispatchEvent(new CustomEvent('canvas:back-to-chat'))}
+                className="md:hidden p-1 -ml-1 rounded-md hover:bg-secondary transition-colors"
+                aria-label="Back to chat"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+            )}
+
+            <h2 className="text-sm font-semibold text-foreground">
+              {openedExplorerFile ? `Output: ${openedExplorerFile.title}` : 'Output'}
+            </h2>
+
+            {isCanvasStreaming && (
+              <span className="flex items-center gap-1.5 text-xs text-primary">
+                <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
+                Generating...
+              </span>
+            )}
+          </div>
         {hasContent && (
           <span className="text-xs text-muted-foreground truncate max-w-[200px]">
             {getContentType()}
@@ -150,9 +171,19 @@ export function CanvasPanel() {
               </div>
             )}
 
-            <OutputFileExplorer canvasContent={canvasContent} />
+            <OutputFileExplorer
+              canvasContent={canvasContent}
+              openedFileId={openedExplorerFile?.id ?? null}
+              onOpenFile={setOpenedExplorerFile}
+            />
 
-            {isProtocol ? (
+            {openedExplorerFile ? (
+              <div className="prose prose-sm prose-invert max-w-none">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {openedExplorerFile.content}
+                </ReactMarkdown>
+              </div>
+            ) : isProtocol ? (
               <ProtocolRenderer content={canvasContent} />
             ) : (
               <div className="prose prose-sm prose-invert max-w-none">

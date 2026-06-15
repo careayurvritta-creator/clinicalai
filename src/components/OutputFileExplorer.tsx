@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 
-type ExplorerFile = {
+export type ExplorerFile = {
   id: string
   title: string
   content: string
@@ -99,7 +99,15 @@ async function downloadTextAsPDF(fileNameBase: string, content: string) {
   await html2pdf().set(opt).from(wrapper).save()
 }
 
-export function OutputFileExplorer({ canvasContent }: { canvasContent: string }) {
+export function OutputFileExplorer({
+  canvasContent,
+  openedFileId,
+  onOpenFile,
+}: {
+  canvasContent: string
+  openedFileId: string | null
+  onOpenFile: (file: ExplorerFile) => void
+}) {
   const [busyFileId, setBusyFileId] = useState<string | null>(null)
 
   const files = useMemo(() => parseFilesFromCanvasContent(canvasContent), [canvasContent])
@@ -119,30 +127,48 @@ export function OutputFileExplorer({ canvasContent }: { canvasContent: string })
       <div className="max-h-[260px] overflow-y-auto">
         {files.map((f) => {
           const base = normalizeHeadingToFileName(f.title) || f.id
+          const isOpened = openedFileId === f.id
+
           return (
             <div
               key={f.id}
               className="px-3 py-2 flex items-start justify-between gap-3 border-b border-border/40 last:border-b-0"
             >
-              <div className="min-w-0">
-                <div className="text-xs font-medium truncate">{f.title}</div>
-                <div className="text-[10px] text-muted-foreground/70 break-words">
+              <button
+                type="button"
+                className="min-w-0 text-left flex-1"
+                onClick={() => onOpenFile(f)}
+                aria-label={`Open ${f.title}`}
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                      isOpened ? 'bg-primary' : 'bg-muted-foreground/40'
+                    }`}
+                  />
+                  <div className="text-xs font-medium truncate">{f.title}</div>
+                </div>
+                <div className="text-[10px] text-muted-foreground/70 break-words mt-0.5">
                   {Math.max(0, f.content.length)} chars
                 </div>
-              </div>
+              </button>
 
-              <div className="flex gap-2 flex-shrink-0">
+              <div className="flex gap-2 flex-shrink-0 pl-2">
                 <button
-                  className="px-2 py-1 text-[11px] rounded bg-muted hover:bg-muted/70 text-foreground"
+                  className="px-2 py-1 text-[11px] rounded bg-muted hover:bg-muted/70 text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={busyFileId === f.id}
-                  onClick={() => downloadTextAsFile(`${base}.txt`, f.content)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    downloadTextAsFile(`${base}.txt`, f.content)
+                  }}
                 >
                   {busyFileId === f.id ? '...' : 'TXT'}
                 </button>
                 <button
-                  className="px-2 py-1 text-[11px] rounded bg-primary/10 hover:bg-primary/20 text-foreground"
+                  className="px-2 py-1 text-[11px] rounded bg-primary/10 hover:bg-primary/20 text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={busyFileId === f.id}
-                  onClick={async () => {
+                  onClick={async (e) => {
+                    e.stopPropagation()
                     setBusyFileId(f.id)
                     try {
                       await downloadTextAsPDF(base, f.content)
