@@ -2,12 +2,20 @@
 
 import { useChatStore } from '@/stores/chat-store'
 import { CanvasToolbar } from '@/components/CanvasToolbar'
+import { OutputFileExplorer, type ExplorerFile } from '@/components/OutputFileExplorer'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { useState, useEffect } from 'react'
 
 export function ChatCanvas() {
   const canvasContent = useChatStore((state) => state.canvasContent)
   const canvasTimestamp = useChatStore((state) => state.canvasTimestamp)
+  const [openedFile, setOpenedFile] = useState<ExplorerFile | null>(null)
+
+  // Reset opened file when content changes
+  useEffect(() => {
+    setOpenedFile(null)
+  }, [canvasContent])
 
   if (!canvasContent) {
     return (
@@ -42,14 +50,48 @@ export function ChatCanvas() {
         </div>
       )}
       <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin px-6 py-4">
-        <div className="prose prose-sm dark:prose-invert max-w-none
-          prose-table:border-collapse prose-th:border prose-th:border-border prose-th:px-3 prose-th:py-2 prose-th:bg-muted/50
-          prose-td:border prose-td:border-border prose-td:px-3 prose-td:py-2
-          prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-xs
-          prose-pre:bg-muted prose-pre:border prose-pre:border-border prose-pre:rounded-lg
-          prose-li:marker:text-primary">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{canvasContent}</ReactMarkdown>
-        </div>
+        {/* Back button when viewing a file */}
+        {openedFile && (
+          <button
+            onClick={() => setOpenedFile(null)}
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground mb-3 transition-colors"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to full output
+          </button>
+        )}
+
+        {/* File explorer (downloads) */}
+        {!openedFile && (
+          <OutputFileExplorer
+            canvasContent={canvasContent}
+            openedFileId={null}
+            onOpenFile={setOpenedFile}
+          />
+        )}
+
+        {/* Rendered content */}
+        {openedFile ? (
+          <div className="prose prose-sm dark:prose-invert max-w-none
+            prose-table:border-collapse prose-th:border prose-th:border-border prose-th:px-3 prose-th:py-2 prose-th:bg-muted/50
+            prose-td:border prose-td:border-border prose-td:px-3 prose-td:py-2
+            prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-xs
+            prose-pre:bg-muted prose-pre:border prose-pre:border-border prose-pre:rounded-lg
+            prose-li:marker:text-primary">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{openedFile.content}</ReactMarkdown>
+          </div>
+        ) : (
+          <div className="prose prose-sm dark:prose-invert max-w-none
+            prose-table:border-collapse prose-th:border prose-th:border-border prose-th:px-3 prose-th:py-2 prose-th:bg-muted/50
+            prose-td:border prose-td:border-border prose-td:px-3 prose-td:py-2
+            prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-xs
+            prose-pre:bg-muted prose-pre:border prose-pre:border-border prose-pre:rounded-lg
+            prose-li:marker:text-primary">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{canvasContent}</ReactMarkdown>
+          </div>
+        )}
       </div>
       <CanvasToolbar canvasContent={canvasContent} onClear={() => useChatStore.getState().clearMessages()} />
     </div>

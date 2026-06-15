@@ -277,19 +277,21 @@ export function ChatInput() {
 
               const { chat, output } = extractTaggedParts(fullContent)
 
-              // Critical: never let OUTPUT leak into the chat panel.
-              // During streaming:
-              // - chat panel shows only [CHAT] content when [CHAT] has appeared
-              // - otherwise chat panel stays empty (prevents detailed answer showing in chat)
+              // Chat panel routing:
+              // - [CHAT] tags present → show only the [CHAT] content
+              // - [OUTPUT] only (no [CHAT]) → keep chat empty during streaming
+              // - No tags at all → stream entire content into chat (legacy behavior)
               if (hasChatOpen) {
                 updateLastMessage(chat, 'streaming')
-              } else {
+              } else if (hasOutputOpen) {
                 updateLastMessage('', 'streaming')
+              } else {
+                updateLastMessage(fullContent, 'streaming')
               }
 
-              // Output panel:
-              // - once [OUTPUT] starts, render it immediately (even if [/OUTPUT] not received yet)
-              //   so users don't see "missing output" mid-stream.
+              // Output panel routing:
+              // - [OUTPUT] tags present → show [OUTPUT] content
+              // - No [OUTPUT] tags → clear output
               if (hasOutputOpen) {
                 setCanvasContent(output)
               } else {
@@ -316,14 +318,19 @@ export function ChatInput() {
 
       const { chat, output } = extractTaggedParts(fullContent)
 
-      // Completion fallback:
-      // - If [CHAT] exists: use it
-      // - else: keep legacy behavior (whole response in chat)
-      updateLastMessage(hasChatOpen ? chat : fullContent, 'complete')
+      // Completion routing (prevent OUTPUT content from leaking into chat):
+      if (hasChatOpen) {
+        // [CHAT] tags present → use extracted chat content (short reply)
+        updateLastMessage(chat, 'complete')
+      } else if (hasOutputOpen) {
+        // Only [OUTPUT] present (no [CHAT]) → brief note in chat, details in output panel
+        updateLastMessage('📋 Detailed output generated. Check the Output panel →', 'complete')
+      } else {
+        // No tags at all → legacy behavior (whole response in chat)
+        updateLastMessage(fullContent, 'complete')
+      }
 
-      // Output completion:
-      // - If [OUTPUT] exists: show it
-      // - else: clear
+      // Output panel:
       setCanvasContent(hasOutputOpen ? output : '')
     } catch (error) {
       console.error('Chat error:', error)
