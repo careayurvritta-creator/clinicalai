@@ -166,8 +166,11 @@ export function ChatInput() {
 
     try {
       const currentMessages = useChatStore.getState().messages
+      // Never send empty messages to the API — assistant messages with empty content
+      // cause a 400 error from the LLM provider. Filter out any message (regardless
+      // of status) whose content is empty.
       const apiMessages = currentMessages
-        .filter((m) => m.content.trim() !== '' || m.status !== 'streaming')
+        .filter((m) => m.content.trim() !== '')
         .map((m) => ({ role: m.role, content: m.content }))
 
       let imageDescription = ''
@@ -319,15 +322,18 @@ export function ChatInput() {
       const { chat, output } = extractTaggedParts(fullContent)
 
       // Completion routing (prevent OUTPUT content from leaking into chat):
-      if (hasChatOpen) {
-        // [CHAT] tags present → use extracted chat content (short reply)
+      if (hasChatOpen && chat.trim()) {
+        // [CHAT] tags present with non-empty content → use extracted chat content (short reply)
         updateLastMessage(chat, 'complete')
       } else if (hasOutputOpen) {
         // Only [OUTPUT] present (no [CHAT]) → brief note in chat, details in output panel
         updateLastMessage('📋 Detailed output generated. Check the Output panel →', 'complete')
-      } else {
+      } else if (fullContent.trim()) {
         // No tags at all → legacy behavior (whole response in chat)
         updateLastMessage(fullContent, 'complete')
+      } else {
+        // Ultimate fallback — never leave assistant message empty
+        updateLastMessage('Response received.', 'complete')
       }
 
       // Output panel:
