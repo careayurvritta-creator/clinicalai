@@ -18,20 +18,27 @@ function extractTaggedParts(text: string) {
   const outOpenIdx = lower.indexOf('[output]')
   const outCloseIdx = lower.indexOf('[/output]')
 
+  // Chat: require both [CHAT] and [/CHAT] to extract
   const chatHasFull = chatOpenIdx !== -1 && chatCloseIdx !== -1 && chatCloseIdx >= chatOpenIdx
-  const outputHasFull = outOpenIdx !== -1 && outCloseIdx !== -1 && outCloseIdx >= outOpenIdx
+
+  // Output: if [OUTPUT] exists, extract content even without [/OUTPUT]
+  // (AI models often omit the closing tag, especially during streaming)
+  const outputHasOpen = outOpenIdx !== -1
+  const outputHasFull = outputHasOpen && (outCloseIdx === -1 || outCloseIdx >= outOpenIdx)
 
   const chat = chatHasFull
     ? text.slice(chatOpenIdx + '[chat]'.length, chatCloseIdx).trim()
     : ''
 
   const output = outputHasFull
-    ? text.slice(outOpenIdx + '[output]'.length, outCloseIdx).trim()
+    ? outCloseIdx !== -1 && outCloseIdx >= outOpenIdx
+      ? text.slice(outOpenIdx + '[output]'.length, outCloseIdx).trim()
+      : text.slice(outOpenIdx + '[output]'.length).trim()
     : ''
 
   return {
     chatHasOpen: chatOpenIdx !== -1,
-    outputHasOpen: outOpenIdx !== -1,
+    outputHasOpen,
     chatHasFull,
     outputHasFull,
     chat,
